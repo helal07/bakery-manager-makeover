@@ -1,55 +1,77 @@
-## Goal
-Replace hard-coded role checks with real RBAC using the existing tables (`app_roles`, `permissions`, `role_permissions`, `user_role_assignments`). Superadmin defines which roles get which permissions in **Settings → Access Control** (Ultimate POS style), and the app enforces it in the sidebar and on the routes.
 
-## Root cause today
-- `public.permissions` catalog is empty → the Matrix tab has nothing to toggle → no permission to enforce.
-- No route or sidebar entry uses `usePermissions().can(...)` yet.
-- `usePermissions` hook is already correct (Superadmin bypass, per-showroom scope). We reuse it.
+## লক্ষ্য
 
-## Changes
+Lovable Cloud-এর current schema থেকে একটা clean, runnable SQL baseline তৈরি করা যেটা আপনি সেলফ-হোস্টেড Supabase-এর **SQL Editor**-এ copy-paste করে চালাতে পারবেন। ভবিষ্যতে প্রতিটা নতুন schema change আলাদা `.sql` ফাইল হিসেবে পাবেন — সেগুলোও SQL Editor-এ চালানো যাবে।
 
-### 1. `MIGRATIONS_part12_rbac_permission_catalog.sql` (idempotent seed, no schema change)
-Insert a full catalog into `public.permissions` grouped by module. Includes:
-- dashboard, pos, sales, purchases, products, inventory
-- **production**: `production.access`, `production.recipes.view/manage`, `production.raw_materials.view/manage`, `production.work_orders.manage`, `production.wastage.manage`, `production.qc.manage`, `production.reports.view`
-- contacts, expenses, reports, showrooms, employees, settings (incl. `settings.access`)
+## ধাপ
 
-Then seed sensible defaults into `role_permissions` for the built-in roles that already exist (`Admin` → everything except `settings.access`; `Manager` → operational + production; `Cashier` → dashboard + POS + basic sales + customers) using `ON CONFLICT DO NOTHING`. Superadmin bypasses at code level; no rows required.
+### 1. পুরনো partX ফাইল archive
+`MIGRATIONS_part1.sql` … `MIGRATIONS_part13_stock_onconflict_fix.sql` এবং `MIGRATIONS.md` — সব `legacy-migrations/` ফোল্ডারে সরানো হবে + একটা README যাতে লেখা: "এই ফাইলগুলো আর ব্যবহার হবে না, historical reference মাত্র।"
 
-### 2. New `src/components/permission-gate.tsx`
-```tsx
-<PermissionGate anyOf={["production.access"]}>{children}</PermissionGate>
+### 2. Baseline SQL তৈরি (SQL Editor-friendly)
+
+`sql/00_baseline.sql` — একটাই ফাইল, শুরু থেকে শেষ পর্যন্ত copy করে SQL Editor-এ paste করে Run চাপলেই পুরো schema তৈরি হবে।
+
+Structure:
 ```
-- Loading → bare `AppShell` skeleton (no flash).
-- Superadmin OR any listed key present → renders children.
-- Otherwise → `AppShell` with a "Not authorized" card and a link back to `/dashboard`.
-- Backed by `usePermissions()`.
+-- 1. Reset
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 
-### 3. Gate Production routes
-- `src/routes/_authenticated/production.tsx` layout → wrap `<Outlet />` in `PermissionGate anyOf={["production.access"]}` (covers every `/production/*` child).
-- `src/routes/_authenticated/recipes.tsx` → `production.recipes.view`.
-- `src/routes/_authenticated/raw-materials.tsx`, `raw-material-stock.tsx` → `production.raw_materials.view`.
+-- 2. Extensions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-Child production pages need no changes.
+-- 3. Enums (app_role ইত্যাদি)
+-- 4. Tables (dependency order-এ: showrooms → products → stock → sales …)
+--    প্রতিটার পরে GRANT + ALTER TABLE ... ENABLE RLS + POLICIES
+-- 5. Functions (has_role, commit_stock_movement, commit_raw_stock_movement,
+--    commit_production_batch, update_updated_at_column, handle_new_user_role,
+--    find_user_id_by_email)
+-- 6. Triggers (updated_at triggers, auth.users → handle_new_user_role)
+-- 7. Seed data (app_roles, permissions catalog, default company_settings row,
+--    default units/categories যদি লাগে)
+```
 
-### 4. Permission-driven sidebar in `src/components/app-shell.tsx`
-- Add optional `permission?: string` to `NavItem` and child type.
-- Call `usePermissions()` once inside `AppShell`. Superadmin sees everything; otherwise hide items/children whose `permission` is set and the user lacks it. Items without a `permission` stay visible (no regressions for un-tagged items).
-- If every child of a group is hidden, hide the group header too.
-- Tag Production group + children with the production keys above; tag Showrooms/Reports children/Employees/Settings→Access with their keys.
+আমি Cloud DB introspect করে (exec + `psql` দিয়ে `pg_dump --schema-only --schema=public` বা catalog queries) সব `CREATE TABLE`, indexes, constraints, policies, functions, triggers বের করে এই এক ফাইলে সাজাব। NULLS NOT DISTINCT unique indexes সহ সব latest fix included থাকবে।
 
-### 5. Small cleanup in `src/hooks/use-is-admin.ts`
-Include `superadmin` alongside `owner`/`admin` for consistency. It is no longer the primary gate — `usePermissions` is — but any remaining call sites stay correct.
+যেহেতু SQL Editor একটাই বড় statement batch handle করে, ফাইলটা যেন `BEGIN;` … `COMMIT;` wrap করা থাকে তাই দেব — কোনো step fail করলে rollback হয়ে যাবে।
 
-## Self-test
-- After the migration is approved, `supabase--read_query` confirms `permissions` has ~50 rows and `role_permissions` links the built-in roles (Admin/Manager/Cashier) to the expected keys.
-- Playwright (localhost:8080, injected Supabase session):
-  1. Open `/settings/access` → Matrix tab, screenshot Production module listed.
-  2. Open `/production` and `/recipes` as Superadmin → renders normally.
-  3. In the Matrix tab, uncheck all `production.*` keys for the Manager role, save, and read `role_permissions` to confirm the delete landed. This proves the write path Superadmin will actually use to control Production access per role.
-- Runtime deny-case UI (non-superadmin without `production.access`) verified by code review of `PermissionGate`; we do not spin up a second test user just for the screenshot.
+### 3. Seed data আলাদা রাখব (optional চালানোর জন্য)
 
-## Out of scope
-- No DB schema changes, no RLS changes.
-- Not touching other module pages beyond adding `permission` tags in the sidebar.
-- No new sign-in flow for a second test user.
+`sql/01_seed.sql` — শুধু dummy data (products, customers, suppliers ইত্যাদি) যদি আপনি demo data চান। Baseline চালানো বাধ্যতামূলক, seed optional।
+
+### 4. README
+
+`sql/README.md`-এ ছবির মতো clear steps (বাংলায়):
+```
+1. Supabase Studio → SQL Editor খুলুন
+2. sql/00_baseline.sql পুরোটা copy করে paste করে Run চাপুন
+3. (Optional) sql/01_seed.sql একইভাবে চালান
+4. ভবিষ্যতে supabase/migrations/ ফোল্ডারে যত নতুন
+   <timestamp>_xxx.sql ফাইল আসবে, filename-এর
+   timestamp ascending order-এ একটা একটা করে
+   SQL Editor-এ চালাবেন
+```
+
+### 5. ভবিষ্যৎ workflow
+
+- Cloud-এ যতবার schema change হবে, `supabase/migrations/<timestamp>_<slug>.sql` auto তৈরি হয় (ইতিমধ্যেই হচ্ছে)।
+- আমি আর কখনো root-level `MIGRATIONS_partX.sql` বানাব না।
+- আপনার job: প্রতিটা চ্যাটের পরে `supabase/migrations/` ফোল্ডার দেখে নতুন ফাইলগুলো SQL Editor-এ paste করে চালানো।
+- Track রাখার জন্য `sql/applied.md` checklist template থাকবে যেখানে filename tick করবেন।
+
+## Deliverables
+
+- `legacy-migrations/` — পুরনো partX + MIGRATIONS.md সরানো, একটা README যোগ
+- `sql/00_baseline.sql` — SQL Editor-এ paste করে চালানোর জন্য single self-contained file
+- `sql/01_seed.sql` — optional demo data
+- `sql/README.md` — বাংলায় step-by-step
+- `sql/applied.md` — কোন migration চালিয়েছেন track করার checklist
+
+## Notes
+
+- শুধু `public` schema; `auth`/`storage`/`realtime`/`vault` touch করব না।
+- Cloud-এ কোনো পরিবর্তন হবে না — শুধু export।
+- Approve করলে build mode-এ Cloud DB introspect করে সব ফাইল লিখব।
