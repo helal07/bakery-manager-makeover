@@ -34,7 +34,6 @@ export const Route = createFileRoute("/_authenticated/raw-materials")({
     </PermissionGate>
   ),
 });
-});
 
 function RawMaterials() {
   const { currentShowroomId } = useShowroomScope();
