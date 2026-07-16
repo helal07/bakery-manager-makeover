@@ -174,14 +174,20 @@ function Recipes() {
           </div>
           <h3 className="text-base font-semibold mb-1">No recipes defined</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Add ingredients to a product to build its bill of materials.
+            Create a recipe to define the raw materials required to produce a finished product.
           </p>
-          <Link
-            to="/products"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+          <button
+            onClick={openNewRecipe}
+            disabled={products.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50"
           >
-            Go to Products
-          </Link>
+            <Plus className="size-4" /> Create Recipe
+          </button>
+          {products.length === 0 && (
+            <div className="text-xs text-muted-foreground mt-3">
+              No products yet. <Link to="/products" className="text-primary hover:underline">Add products first</Link>.
+            </div>
+          )}
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5">
