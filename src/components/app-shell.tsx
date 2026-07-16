@@ -51,7 +51,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Overview",
     items: [
-      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard.access" },
     ],
   },
   {
@@ -61,11 +61,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         to: "/sales",
         label: "Sales",
         icon: ScanBarcode,
+        permission: "sales.view",
         children: [
-          { to: "/pos", label: "Add Sale", icon: Plus },
-          { to: "/sales/list", label: "Sale List", icon: List },
-          { to: "/sales/return", label: "Return Sale", icon: Undo2 },
-          { to: "/sales/payments", label: "Customer Payments", icon: Wallet },
+          { to: "/pos", label: "Add Sale", icon: Plus, permission: "pos.access" },
+          { to: "/sales/list", label: "Sale List", icon: List, permission: "sales.view" },
+          { to: "/sales/return", label: "Return Sale", icon: Undo2, permission: "sales.return" },
+          { to: "/sales/payments", label: "Customer Payments", icon: Wallet, permission: "sales.payments" },
         ],
       },
       {
@@ -73,9 +74,9 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         label: "Contact",
         icon: ContactIcon,
         children: [
-          { to: "/crm", label: "Customer", icon: Users },
-          { to: "/customer-groups", label: "Customer Group", icon: Users },
-          { to: "/suppliers", label: "Supplier", icon: Truck },
+          { to: "/crm", label: "Customer", icon: Users, permission: "contacts.customers.view" },
+          { to: "/customer-groups", label: "Customer Group", icon: Users, permission: "contacts.customer_groups.manage" },
+          { to: "/suppliers", label: "Supplier", icon: Truck, permission: "contacts.suppliers.view" },
         ],
       },
     ],
@@ -87,14 +88,15 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         to: "/products",
         label: "Products",
         icon: Package,
+        permission: "products.view",
         children: [
-          { to: "/products/new", label: "Add Product", icon: Plus },
-          { to: "/products", label: "List Products", icon: List },
-          { to: "/products/categories", label: "Add Category", icon: Plus, hash: "new" },
-          { to: "/products/categories", label: "List Categories", icon: Tag },
-          { to: "/products/units", label: "Units", icon: Tag },
-          { to: "/products/selling-price-groups", label: "Selling Price Groups", icon: Tag },
-          { to: "/product-stock", label: "Product Stock", icon: Layers },
+          { to: "/products/new", label: "Add Product", icon: Plus, permission: "products.create" },
+          { to: "/products", label: "List Products", icon: List, permission: "products.view" },
+          { to: "/products/categories", label: "Add Category", icon: Plus, hash: "new", permission: "products.categories.manage" },
+          { to: "/products/categories", label: "List Categories", icon: Tag, permission: "products.categories.manage" },
+          { to: "/products/units", label: "Units", icon: Tag, permission: "products.units.manage" },
+          { to: "/products/selling-price-groups", label: "Selling Price Groups", icon: Tag, permission: "products.selling_prices.manage" },
+          { to: "/product-stock", label: "Product Stock", icon: Layers, permission: "inventory.view" },
         ],
       },
       {
