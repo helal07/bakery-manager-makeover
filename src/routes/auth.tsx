@@ -8,7 +8,6 @@ import bakeryBg from "@/assets/auth-bakery-bg.jpg";
 const searchSchema = z.object({ denied: z.coerce.number().optional() });
 
 export const Route = createFileRoute("/auth")({
-  ssr: false,
   head: () => ({ meta: [{ title: "Sign in · Crumb & Co." }] }),
   validateSearch: searchSchema,
   component: AuthPage,

@@ -40,13 +40,11 @@ export const defaultLanding: LandingContent = {
   },
 };
 
-const sb = supabase as any;
-
 export async function fetchLandingContent(): Promise<LandingContent> {
-  const { data, error } = await sb
+  const { data, error } = await supabase
     .from("landing_content")
     .select("content")
-    .eq("is_current", true)
+    .eq("id", true)
     .maybeSingle();
   if (error || !data) return defaultLanding;
   return { ...defaultLanding, ...(data.content as Partial<LandingContent>) } as LandingContent;
@@ -54,21 +52,8 @@ export async function fetchLandingContent(): Promise<LandingContent> {
 
 export async function saveLandingContent(content: LandingContent) {
   const { data: userRes } = await supabase.auth.getUser();
-  const { data: existing } = await sb
+  const { error } = await supabase
     .from("landing_content")
-    .select("id")
-    .eq("is_current", true)
-    .maybeSingle();
-  if (existing?.id) {
-    const { error } = await sb
-      .from("landing_content")
-      .update({ content, updated_by: userRes.user?.id ?? null })
-      .eq("id", existing.id);
-    if (error) throw error;
-  } else {
-    const { error } = await sb
-      .from("landing_content")
-      .insert({ content, is_current: true, updated_by: userRes.user?.id ?? null });
-    if (error) throw error;
-  }
+    .upsert({ id: true, content, updated_by: userRes.user?.id ?? null });
+  if (error) throw error;
 }

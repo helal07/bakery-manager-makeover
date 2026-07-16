@@ -6,7 +6,27 @@ function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
 }
 
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
+function shouldProxySupabaseRequest(supabaseUrl: string): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    window.location.protocol === 'https:' &&
+    supabaseUrl.startsWith('http://')
+  );
+}
+
+function toProxyUrl(input: RequestInfo | URL, supabaseUrl: string): RequestInfo | URL {
+  if (!shouldProxySupabaseRequest(supabaseUrl)) return input;
+
+  const rawUrl = typeof input === 'string' || input instanceof URL ? input.toString() : input.url;
+  const baseUrl = new URL(supabaseUrl);
+  const requestUrl = new URL(rawUrl);
+
+  if (requestUrl.origin !== baseUrl.origin) return input;
+
+  return `/api/public/supabase-proxy?target=${encodeURIComponent(requestUrl.pathname + requestUrl.search)}`;
+}
+
+function createSupabaseFetch(supabaseUrl: string, supabaseKey: string): typeof fetch {
   return (input, init) => {
     const headers = new Headers(
       typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
@@ -22,7 +42,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     headers.set('apikey', supabaseKey);
-    return fetch(input, { ...init, headers });
+    return fetch(toProxyUrl(input, supabaseUrl), { ...init, headers });
   };
 }
 
@@ -45,7 +65,7 @@ function createSupabaseClient() {
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
+      fetch: createSupabaseFetch(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY),
     },
     auth: {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
@@ -56,13 +76,50 @@ function createSupabaseClient() {
 }
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
+let _initFailed = false;
+
+function makeStubClient(): any {
+  const noopSub = { subscription: { unsubscribe() {} } };
+  const err = new Error("Supabase is not configured. Connect Lovable Cloud to enable backend features.");
+  const rejected = () => Promise.resolve({ data: null, error: err });
+  const chain: any = new Proxy(function () {}, {
+    get: () => chain,
+    apply: () => chain,
+  });
+  const auth = new Proxy({} as any, {
+    get(_t, prop) {
+      if (prop === "onAuthStateChange") return () => ({ data: noopSub });
+      if (prop === "getSession" || prop === "getUser") return () => Promise.resolve({ data: { session: null, user: null }, error: null });
+      if (prop === "signOut") return () => Promise.resolve({ error: null });
+      return () => rejected();
+    },
+  });
+  return new Proxy({} as any, {
+    get(_t, prop) {
+      if (prop === "auth") return auth;
+      if (prop === "from" || prop === "rpc") return () => chain;
+      if (prop === "storage") return { from: () => chain };
+      if (prop === "channel") return () => ({ on: () => ({ subscribe: () => noopSub.subscription }), subscribe: () => noopSub.subscription, unsubscribe() {} });
+      if (prop === "removeChannel") return () => {};
+      return () => rejected();
+    },
+  });
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
   get(_, prop, receiver) {
-    if (!_supabase) _supabase = createSupabaseClient();
-    return Reflect.get(_supabase, prop, receiver);
+    if (!_supabase && !_initFailed) {
+      try {
+        _supabase = createSupabaseClient();
+      } catch {
+        _initFailed = true;
+        _supabase = makeStubClient();
+      }
+    }
+    return Reflect.get(_supabase as object, prop, receiver);
   },
 });
+
 
