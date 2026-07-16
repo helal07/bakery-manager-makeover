@@ -38,11 +38,13 @@ import {
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string };
 type NavItem = {
   to: string;
   label: string;
   icon: any;
-  children?: { to: string; label: string; icon: any; hash?: string }[];
+  permission?: string;
+  children?: NavChild[];
 };
 
 const navGroups: { label: string; items: NavItem[] }[] = [
