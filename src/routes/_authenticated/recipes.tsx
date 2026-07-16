@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { ChefHat, Play, Search, Package, AlertTriangle, CircleDollarSign, Minus, Plus } from "lucide-react";
+import { ChefHat, Play, Search, Package, AlertTriangle, CircleDollarSign, Minus, Plus, Pencil, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { loadRecipes, commitProduction } from "@/lib/recipe-store";
+import { loadRecipes, commitProduction, saveRecipe, type Ingredient } from "@/lib/recipe-store";
 import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
