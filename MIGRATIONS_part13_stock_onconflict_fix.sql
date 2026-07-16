@@ -83,14 +83,12 @@ WITH ranked AS (
       PARTITION BY material_id, showroom_id
       ORDER BY id
     ) AS keep_id,
-    sum(quantity) OVER (PARTITION BY material_id, showroom_id) AS total_quantity,
-    max(min_stock) OVER (PARTITION BY material_id, showroom_id) AS max_min_stock
+    sum(quantity) OVER (PARTITION BY material_id, showroom_id) AS total_quantity
   FROM public.raw_material_stock
 )
 UPDATE public.raw_material_stock rms
 SET
   quantity = ranked.total_quantity,
-  min_stock = ranked.max_min_stock,
   updated_at = now()
 FROM ranked
 WHERE rms.id = ranked.keep_id
