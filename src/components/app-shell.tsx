@@ -168,16 +168,16 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Administration",
     items: [
-      { to: "/employees", label: "Teams & Roles", icon: UserCog },
+      { to: "/employees", label: "Teams & Roles", icon: UserCog, permission: "employees.view" },
       {
         to: "/settings",
         label: "Settings",
         icon: Settings,
         children: [
-          { to: "/settings", label: "General", icon: Settings },
-          { to: "/settings/showrooms", label: "Showrooms", icon: ShoppingBag },
-          { to: "/settings/access", label: "Access Control", icon: ShieldCheck },
-          { to: "/settings/landing", label: "Landing Page", icon: LayoutDashboard },
+          { to: "/settings", label: "General", icon: Settings, permission: "settings.general" },
+          { to: "/settings/showrooms", label: "Showrooms", icon: ShoppingBag, permission: "showrooms.view" },
+          { to: "/settings/access", label: "Access Control", icon: ShieldCheck, permission: "settings.access" },
+          { to: "/settings/landing", label: "Landing Page", icon: LayoutDashboard, permission: "settings.landing" },
         ],
       },
     ],
