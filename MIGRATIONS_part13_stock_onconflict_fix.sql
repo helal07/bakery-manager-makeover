@@ -36,11 +36,11 @@ WITH ranked AS (
     showroom_id,
     row_number() OVER (
       PARTITION BY product_id, showroom_id
-      ORDER BY created_at, id
+      ORDER BY id
     ) AS rn,
     first_value(id) OVER (
       PARTITION BY product_id, showroom_id
-      ORDER BY created_at, id
+      ORDER BY id
     ) AS keep_id,
     sum(quantity) OVER (PARTITION BY product_id, showroom_id) AS total_quantity,
     max(min_stock) OVER (PARTITION BY product_id, showroom_id) AS max_min_stock
