@@ -84,18 +84,18 @@ INSERT INTO public.permissions (key, module, label) VALUES
   ('settings.general',                    'Settings',    'General settings'),
   ('settings.landing',                    'Settings',    'Edit landing page'),
   ('settings.access',                     'Settings',    'Access Control (roles & permissions)')
-ON CONFLICT (permission_key) DO UPDATE
+ON CONFLICT (key) DO UPDATE
   SET module = EXCLUDED.module,
       label  = EXCLUDED.label;
 
 -- 3) Default grants for built-in roles ----------------------------
 -- Admin: everything except settings.access
 INSERT INTO public.role_permissions (role_id, permission_key)
-SELECT r.id, p.permission_key
+SELECT r.id, p.key
 FROM public.app_roles r
 CROSS JOIN public.permissions p
 WHERE r.name = 'Admin'
-  AND p.permission_key <> 'settings.access'
+  AND p.key <> 'settings.access'
 ON CONFLICT DO NOTHING;
 
 -- Manager: operations + production (no settings, no employees management, no purchases delete)
