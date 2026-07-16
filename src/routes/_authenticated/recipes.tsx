@@ -387,6 +387,153 @@ function Recipes() {
           </div>
         </div>
       )}
+
+      {editorOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4"
+          onClick={() => !editorSaving && setEditorOpen(false)}
+        >
+          <div
+            className="bg-card border border-border rounded-lg shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-semibold">
+                  {recipeMap[editorProductId]?.length ? "Edit Recipe" : "Create Recipe"}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Select a finished product and define its raw material requirements per unit.
+                </p>
+              </div>
+              <button
+                onClick={() => !editorSaving && setEditorOpen(false)}
+                className="size-8 grid place-items-center rounded-md hover:bg-accent text-muted-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 overflow-auto">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Product
+                </label>
+                <select
+                  value={editorProductId}
+                  onChange={(e) => setEditorProductId(e.target.value)}
+                  className="mt-1.5 w-full h-10 px-3 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                >
+                  <option value="">— Select a product —</option>
+                  {products.map((p) => {
+                    const has = (recipeMap[p.id]?.length ?? 0) > 0;
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.sku}){has ? " · has recipe" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Ingredients (per unit)
+                  </label>
+                  <button
+                    onClick={() => setEditorItems((it) => [...it, { materialId: "", qty: 1 }])}
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <Plus className="size-3" /> Add ingredient
+                  </button>
+                </div>
+                {rawMaterials.length === 0 ? (
+                  <div className="text-sm text-muted-foreground border border-dashed border-border rounded-md p-4 text-center">
+                    No raw materials yet.{" "}
+                    <Link to="/raw-materials" className="text-primary hover:underline">
+                      Add raw materials
+                    </Link>{" "}
+                    first.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {editorItems.map((it, idx) => {
+                      const raw = rawMaterials.find((r) => r.id === it.materialId);
+                      return (
+                        <div key={idx} className="flex items-center gap-2">
+                          <select
+                            value={it.materialId}
+                            onChange={(e) =>
+                              setEditorItems((arr) =>
+                                arr.map((x, i) => (i === idx ? { ...x, materialId: e.target.value } : x)),
+                              )
+                            }
+                            className="flex-1 h-9 px-2 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                          >
+                            <option value="">— Select material —</option>
+                            {rawMaterials.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.name} ({r.unit})
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.001"
+                            value={it.qty}
+                            onChange={(e) =>
+                              setEditorItems((arr) =>
+                                arr.map((x, i) =>
+                                  i === idx ? { ...x, qty: Math.max(0, +e.target.value || 0) } : x,
+                                ),
+                              )
+                            }
+                            className="w-24 h-9 px-2 rounded-md border border-border bg-background text-sm text-right outline-none focus:border-primary"
+                          />
+                          <span className="text-xs text-muted-foreground w-10">{raw?.unit ?? ""}</span>
+                          <button
+                            onClick={() =>
+                              setEditorItems((arr) => arr.filter((_, i) => i !== idx))
+                            }
+                            className="size-9 grid place-items-center rounded-md hover:bg-destructive/10 text-destructive"
+                            aria-label="Remove ingredient"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {editorItems.length === 0 && (
+                      <div className="text-xs text-muted-foreground text-center py-3">
+                        No ingredients added yet.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-border flex items-center justify-end gap-2">
+              <button
+                onClick={() => setEditorOpen(false)}
+                disabled={editorSaving}
+                className="px-3 h-9 rounded-md border border-border bg-background text-sm hover:bg-accent disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEditor}
+                disabled={editorSaving || !editorProductId}
+                className="px-4 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+              >
+                {editorSaving ? "Saving…" : "Save Recipe"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
