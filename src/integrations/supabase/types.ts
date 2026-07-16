@@ -1289,20 +1289,26 @@ export type Database = {
       }
       recipe_categories: {
         Row: {
+          color: string | null
           created_at: string
           id: string
+          is_active: boolean
           name: string
           updated_at: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           id?: string
+          is_active?: boolean
           name: string
           updated_at?: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           id?: string
+          is_active?: boolean
           name?: string
           updated_at?: string
         }
@@ -2125,30 +2131,39 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          logged_at: string
           material_id: string | null
+          notes: string | null
           product_id: string | null
           qty: number
           reason: string | null
+          ref_ledger_id: string | null
           showroom_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          logged_at?: string
           material_id?: string | null
+          notes?: string | null
           product_id?: string | null
           qty?: number
           reason?: string | null
+          ref_ledger_id?: string | null
           showroom_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          logged_at?: string
           material_id?: string | null
+          notes?: string | null
           product_id?: string | null
           qty?: number
           reason?: string | null
+          ref_ledger_id?: string | null
           showroom_id?: string | null
           updated_at?: string
         }
