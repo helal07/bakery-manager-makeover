@@ -45,11 +45,26 @@ function Recipes() {
   };
   const saveEditor = async () => {
     if (!editorProductId) return toast.error("Select a product");
-    const clean = editorItems.filter((i) => i.materialId && i.qty > 0);
-    if (clean.length === 0) return toast.error("Add at least one ingredient");
+    const populated = editorItems.filter((i) => i.materialId);
+    if (populated.length === 0) return toast.error("Add at least one ingredient");
+    // Reject zero/negative quantities
+    const bad = populated.find((i) => !(Number(i.qty) > 0));
+    if (bad) {
+      const raw = rawMaterials.find((r) => r.id === bad.materialId);
+      return toast.error(`Quantity must be greater than zero${raw ? ` for ${raw.name}` : ""}`);
+    }
+    // Reject duplicate ingredients in the same BOM
+    const seen = new Set<string>();
+    for (const i of populated) {
+      if (seen.has(i.materialId)) {
+        const raw = rawMaterials.find((r) => r.id === i.materialId);
+        return toast.error(`Duplicate ingredient: ${raw?.name ?? i.materialId}`);
+      }
+      seen.add(i.materialId);
+    }
     setEditorSaving(true);
     try {
-      await saveRecipe(editorProductId, clean);
+      await saveRecipe(editorProductId, populated);
       toast.success("Recipe saved");
       setEditorOpen(false);
       setActiveId(editorProductId);
