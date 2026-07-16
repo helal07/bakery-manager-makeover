@@ -1,0 +1,111 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { AppShell, Card } from "@/components/app-shell";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { addUnit, loadUnits, removeUnit, renameUnit, type Unit } from "@/lib/unit-store";
+
+export const Route = createFileRoute("/_authenticated/products/units")({
+  head: () => ({ meta: [{ title: "Units · Crumb & Co." }] }),
+  component: UnitsPage,
+});
+
+function UnitsPage() {
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Unit | null>(null);
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+
+  const reload = () => loadUnits().then(setUnits).catch((e) => toast.error(e.message));
+  useEffect(() => { reload(); }, []);
+
+  const openAdd = () => { setEditing(null); setCode(""); setName(""); setOpen(true); };
+  const openEdit = (u: Unit) => { setEditing(u); setCode(u.code); setName(u.name); setOpen(true); };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editing) { await renameUnit(editing.id, code, name); toast.success("Unit updated"); }
+      else { await addUnit(code, name); toast.success(`Added "${code.trim()}"`); }
+      setOpen(false);
+      reload();
+    } catch (err: any) { toast.error(err?.message ?? "Failed"); }
+  };
+
+  const del = async (u: Unit) => {
+    if (!confirm(`Remove unit "${u.code}"?`)) return;
+    try { await removeUnit(u.id); toast.success("Removed"); reload(); }
+    catch (err: any) { toast.error(err?.message ?? "Failed"); }
+  };
+
+  return (
+    <AppShell
+      title="Units"
+      subtitle="Measurement units used by raw materials (e.g. kg, L, pc)"
+      actions={
+        <button
+          onClick={openAdd}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+        >
+          <Plus className="size-4" /> Add Unit
+        </button>
+      }
+    >
+      <Card className="overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="text-xs text-muted-foreground bg-muted/40">
+            <tr>
+              <th className="text-left font-medium px-5 py-3">Code</th>
+              <th className="text-left font-medium px-5 py-3">Name</th>
+              <th className="px-5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {units.map((u) => (
+              <tr key={u.id} className="hover:bg-muted/30">
+                <td className="px-5 py-3 font-mono">{u.code}</td>
+                <td className="px-5 py-3">{u.name}</td>
+                <td className="px-5 py-3 text-right">
+                  <div className="inline-flex gap-1">
+                    <button onClick={() => openEdit(u)} className="size-7 grid place-items-center rounded hover:bg-muted text-muted-foreground"><Pencil className="size-3.5" /></button>
+                    <button onClick={() => del(u)} className="size-7 grid place-items-center rounded hover:bg-muted text-destructive"><Trash2 className="size-3.5" /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {units.length === 0 && (
+              <tr><td colSpan={3} className="px-5 py-8 text-center text-muted-foreground text-sm">No units yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <form onSubmit={submit}>
+            <DialogHeader><DialogTitle>{editing ? "Edit Unit" : "Add Unit"}</DialogTitle></DialogHeader>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-3">
+              <div>
+                <Label htmlFor="u-code">Code</Label>
+                <Input id="u-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="kg, L, pc" autoFocus />
+              </div>
+              <div>
+                <Label htmlFor="u-name">Name</Label>
+                <Input id="u-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Kilogram, Litre, Piece" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit">{editing ? "Save" : "Add"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </AppShell>
+  );
+}

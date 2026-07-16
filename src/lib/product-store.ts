@@ -1,0 +1,167 @@
+import { supabase } from "@/integrations/supabase/client";
+import type { ProductCategory } from "./product-types";
+
+const sb = supabase as any;
+
+export type Product = {
+  id: string;
+  sku: string;
+  name: string;
+  category: ProductCategory;
+  price: number;
+  cost: number;
+  stock: number;
+  threshold: number;
+  mfgDate?: string;
+  expiryDate?: string;
+  shelfLifeDays?: number;
+  imageUrl?: string;
+};
+
+export type ProductInput = {
+  sku: string;
+  name: string;
+  category: ProductCategory;
+  price: number;
+  cost?: number;
+  threshold?: number;
+  mfgDate?: string;
+  expiryDate?: string;
+  shelfLifeDays?: number;
+  imageUrl?: string;
+};
+
+function mapRow(r: any, stockMap: Map<string, { qty: number; min: number }>): Product {
+  const s = stockMap.get(r.id);
+  return {
+    id: r.id,
+    sku: r.sku ?? "",
+    name: r.name,
+    category: (r.category ?? "Cake") as ProductCategory,
+    price: Number(r.price) || 0,
+    cost: Number(r.cost) || 0,
+    stock: s?.qty ?? 0,
+    threshold: s?.min ?? 0,
+    mfgDate: r.mfg_date ?? undefined,
+    expiryDate: r.expiry_date ?? undefined,
+    shelfLifeDays: r.shelf_life_days ?? undefined,
+    imageUrl: r.image_url ?? undefined,
+  };
+}
+
+export async function loadProducts(showroomId?: string | null): Promise<Product[]> {
+  const { data: rows, error } = await sb
+    .from("products")
+    .select("id,sku,name,category,price,cost,mfg_date,expiry_date,shelf_life_days,image_url,is_active")
+    .eq("is_active", true)
+    .order("name");
+  if (error) throw error;
+
+  let stockQ = sb.from("product_stock").select("product_id,showroom_id,quantity,min_stock");
+  if (showroomId) stockQ = stockQ.eq("showroom_id", showroomId);
+  else stockQ = stockQ.is("showroom_id", null);
+  const { data: stocks, error: e2 } = await stockQ;
+  if (e2) throw e2;
+
+  const stockMap = new Map<string, { qty: number; min: number }>();
+  for (const s of (stocks ?? []) as any[]) {
+    stockMap.set(s.product_id, { qty: Number(s.quantity) || 0, min: Number(s.min_stock) || 0 });
+  }
+  return ((rows ?? []) as any[]).map((r) => mapRow(r, stockMap));
+}
+
+export async function addProduct(
+  p: ProductInput,
+  opts?: { showroomId?: string | null; openingStock?: number },
+): Promise<Product> {
+  // Auto-compute manufacture/expiry from shelf life when not provided.
+  const today = new Date().toISOString().slice(0, 10);
+  const mfg = p.mfgDate || (p.shelfLifeDays != null ? today : null);
+  let expiry = p.expiryDate || null;
+  if (!expiry && mfg && p.shelfLifeDays != null && p.shelfLifeDays > 0) {
+    const d = new Date(mfg);
+    d.setDate(d.getDate() + Number(p.shelfLifeDays));
+    expiry = d.toISOString().slice(0, 10);
+  }
+  const { data, error } = await sb
+    .from("products")
+    .insert({
+      sku: p.sku,
+      name: p.name,
+      category: p.category,
+      price: p.price,
+      cost: p.cost ?? 0,
+      mfg_date: mfg,
+      expiry_date: expiry,
+      shelf_life_days: p.shelfLifeDays ?? null,
+      image_url: p.imageUrl ?? null,
+    })
+    .select("id,sku,name,category,price,cost,mfg_date,expiry_date,shelf_life_days,image_url")
+    .single();
+  if (error) throw error;
+
+  const threshold = p.threshold ?? 0;
+  const opening = opts?.openingStock ?? 0;
+  if (threshold > 0) {
+    await sb.from("product_stock").upsert(
+      { product_id: data.id, showroom_id: opts?.showroomId ?? null, min_stock: threshold, quantity: 0 },
+      { onConflict: "product_id,showroom_id" },
+    );
+  }
+  if (opening > 0) {
+    await sb.rpc("commit_stock_movement", {
+      _product_id: data.id,
+      _showroom_id: opts?.showroomId ?? null,
+      _qty: opening,
+      _kind: "adjustment",
+      _note: "Opening stock",
+    });
+  }
+  return {
+    id: data.id,
+    sku: data.sku ?? "",
+    name: data.name,
+    category: data.category,
+    price: Number(data.price) || 0,
+    cost: Number(data.cost) || 0,
+    stock: opening,
+    threshold,
+    mfgDate: data.mfg_date ?? undefined,
+    expiryDate: data.expiry_date ?? undefined,
+    shelfLifeDays: data.shelf_life_days ?? undefined,
+    imageUrl: data.image_url ?? undefined,
+  };
+}
+
+export async function updateProduct(
+  id: string,
+  patch: Partial<ProductInput>,
+  opts?: { showroomId?: string | null },
+): Promise<void> {
+  const row: Record<string, unknown> = {};
+  if (patch.sku !== undefined) row.sku = patch.sku;
+  if (patch.name !== undefined) row.name = patch.name;
+  if (patch.category !== undefined) row.category = patch.category;
+  if (patch.price !== undefined) row.price = patch.price;
+  if (patch.cost !== undefined) row.cost = patch.cost;
+  if (patch.mfgDate !== undefined) row.mfg_date = patch.mfgDate || null;
+  if (patch.expiryDate !== undefined) row.expiry_date = patch.expiryDate || null;
+  if (patch.shelfLifeDays !== undefined) row.shelf_life_days = patch.shelfLifeDays ?? null;
+  if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl || null;
+  if (Object.keys(row).length > 0) {
+    const { error } = await sb.from("products").update(row).eq("id", id);
+    if (error) throw error;
+  }
+  if (patch.threshold !== undefined) {
+    const { error } = await sb.from("product_stock").upsert(
+      { product_id: id, showroom_id: opts?.showroomId ?? null, min_stock: patch.threshold, quantity: 0 },
+      { onConflict: "product_id,showroom_id", ignoreDuplicates: false },
+    );
+    if (error) throw error;
+  }
+}
+
+export async function removeProduct(id: string): Promise<void> {
+  const { error } = await sb.from("products").update({ is_active: false }).eq("id", id);
+  if (error) throw error;
+}
