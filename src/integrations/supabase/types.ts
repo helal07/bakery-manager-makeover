@@ -2259,6 +2259,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      commit_production_batch: {
+        Args: {
+          _batch: number
+          _ingredients: Json
+          _product_id: string
+          _showroom_id: string
+        }
+        Returns: string
+      }
       commit_raw_stock_movement: {
         Args: {
           _kind: string
