@@ -101,7 +101,7 @@ WITH ranked AS (
     id,
     row_number() OVER (
       PARTITION BY material_id, showroom_id
-      ORDER BY created_at, id
+      ORDER BY id
     ) AS rn
   FROM public.raw_material_stock
 )
