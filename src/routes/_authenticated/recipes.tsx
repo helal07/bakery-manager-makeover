@@ -286,6 +286,19 @@ function Recipes() {
                       </button>
                     </div>
                     <button
+                      onClick={() => openEditRecipe(active.product.id)}
+                      className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md border border-border bg-background text-sm hover:bg-accent"
+                    >
+                      <Pencil className="size-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={deleteActiveRecipe}
+                      className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md border border-border bg-background text-sm text-destructive hover:bg-destructive/10"
+                      aria-label="Delete recipe"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                    <button
                       onClick={approve}
                       disabled={!canApprove}
                       className="inline-flex items-center gap-1.5 px-4 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
