@@ -40,8 +40,10 @@ export const defaultLanding: LandingContent = {
   },
 };
 
+const sb = supabase as any;
+
 export async function fetchLandingContent(): Promise<LandingContent> {
-  const { data, error } = await supabase
+  const { data, error } = await sb
     .from("landing_content")
     .select("content")
     .eq("id", true)
@@ -52,7 +54,7 @@ export async function fetchLandingContent(): Promise<LandingContent> {
 
 export async function saveLandingContent(content: LandingContent) {
   const { data: userRes } = await supabase.auth.getUser();
-  const { error } = await supabase
+  const { error } = await sb
     .from("landing_content")
     .upsert({ id: true, content, updated_by: userRes.user?.id ?? null });
   if (error) throw error;
