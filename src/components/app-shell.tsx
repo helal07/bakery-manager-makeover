@@ -200,6 +200,25 @@ export function AppShell({ children, title, subtitle, actions }: {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [company, setCompany] = useState<CompanySettings>(defaultCompany);
+  const { loading: permLoading, isSuperadmin, permissions } = usePermissions();
+
+  const can = (key?: string) => !key || isSuperadmin || permissions.has(key);
+  const visibleGroups = permLoading
+    ? []
+    : navGroups
+        .map((g) => {
+          const items = g.items
+            .map((it) => {
+              if (!can(it.permission)) return null;
+              if (!it.children) return it;
+              const kids = it.children.filter((c) => can(c.permission));
+              if (kids.length === 0 && it.permission == null) return null;
+              return { ...it, children: kids };
+            })
+            .filter(Boolean) as NavItem[];
+          return { ...g, items };
+        })
+        .filter((g) => g.items.length > 0);
 
   useEffect(() => {
     let mounted = true;
