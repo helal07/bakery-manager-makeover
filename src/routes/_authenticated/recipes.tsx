@@ -26,6 +26,51 @@ function Recipes() {
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
   const [recipeMap, setRecipeMap] = useState<Record<string, { materialId: string; qty: number }[]>>({});
   const [busy, setBusy] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorProductId, setEditorProductId] = useState<string>("");
+  const [editorItems, setEditorItems] = useState<Ingredient[]>([]);
+  const [editorSaving, setEditorSaving] = useState(false);
+
+  const openNewRecipe = () => {
+    const firstFree = products.find((p) => !(recipeMap[p.id]?.length));
+    setEditorProductId(firstFree?.id ?? products[0]?.id ?? "");
+    setEditorItems([{ materialId: "", qty: 1 }]);
+    setEditorOpen(true);
+  };
+  const openEditRecipe = (productId: string) => {
+    setEditorProductId(productId);
+    const existing = recipeMap[productId] ?? [];
+    setEditorItems(existing.length ? existing.map((i) => ({ ...i })) : [{ materialId: "", qty: 1 }]);
+    setEditorOpen(true);
+  };
+  const saveEditor = async () => {
+    if (!editorProductId) return toast.error("Select a product");
+    const clean = editorItems.filter((i) => i.materialId && i.qty > 0);
+    if (clean.length === 0) return toast.error("Add at least one ingredient");
+    setEditorSaving(true);
+    try {
+      await saveRecipe(editorProductId, clean);
+      toast.success("Recipe saved");
+      setEditorOpen(false);
+      setActiveId(editorProductId);
+      await refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to save recipe");
+    } finally {
+      setEditorSaving(false);
+    }
+  };
+  const deleteActiveRecipe = async () => {
+    if (!active) return;
+    if (!confirm(`Delete recipe for "${active.product.name}"?`)) return;
+    try {
+      await saveRecipe(active.product.id, []);
+      toast.success("Recipe deleted");
+      await refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete recipe");
+    }
+  };
 
   const refresh = async () => {
     try {
