@@ -8,11 +8,17 @@ import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/recipes")({
   head: () => ({ meta: [{ title: "Recipes & BOM · Crumb & Co." }] }),
-  component: Recipes,
+  component: () => (
+    <PermissionGate anyOf={["production.recipes.view", "production.access"]} title="Recipes & BOM">
+      <Recipes />
+    </PermissionGate>
+  ),
 });
+
 
 function Recipes() {
   const { currentShowroomId } = useShowroomScope();

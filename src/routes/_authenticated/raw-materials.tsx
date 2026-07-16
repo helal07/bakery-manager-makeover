@@ -24,10 +24,15 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { z } from "zod";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/raw-materials")({
   head: () => ({ meta: [{ title: "Raw Materials · Crumb & Co." }] }),
-  component: RawMaterials,
+  component: () => (
+    <PermissionGate anyOf={["production.raw_materials.view", "production.access"]} title="Raw Materials">
+      <RawMaterials />
+    </PermissionGate>
+  ),
 });
 
 function RawMaterials() {

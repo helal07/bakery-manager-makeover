@@ -4,6 +4,7 @@ import { LogOut, Menu, X, Store, Factory } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
 import { getProfile, type UserProfile } from "@/lib/profile-settings";
 import {
@@ -38,18 +39,20 @@ import {
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string };
 type NavItem = {
   to: string;
   label: string;
   icon: any;
-  children?: { to: string; label: string; icon: any; hash?: string }[];
+  permission?: string;
+  children?: NavChild[];
 };
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Overview",
     items: [
-      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard.access" },
     ],
   },
   {
@@ -59,11 +62,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         to: "/sales",
         label: "Sales",
         icon: ScanBarcode,
+        permission: "sales.view",
         children: [
-          { to: "/pos", label: "Add Sale", icon: Plus },
-          { to: "/sales/list", label: "Sale List", icon: List },
-          { to: "/sales/return", label: "Return Sale", icon: Undo2 },
-          { to: "/sales/payments", label: "Customer Payments", icon: Wallet },
+          { to: "/pos", label: "Add Sale", icon: Plus, permission: "pos.access" },
+          { to: "/sales/list", label: "Sale List", icon: List, permission: "sales.view" },
+          { to: "/sales/return", label: "Return Sale", icon: Undo2, permission: "sales.return" },
+          { to: "/sales/payments", label: "Customer Payments", icon: Wallet, permission: "sales.payments" },
         ],
       },
       {
@@ -71,9 +75,9 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         label: "Contact",
         icon: ContactIcon,
         children: [
-          { to: "/crm", label: "Customer", icon: Users },
-          { to: "/customer-groups", label: "Customer Group", icon: Users },
-          { to: "/suppliers", label: "Supplier", icon: Truck },
+          { to: "/crm", label: "Customer", icon: Users, permission: "contacts.customers.view" },
+          { to: "/customer-groups", label: "Customer Group", icon: Users, permission: "contacts.customer_groups.manage" },
+          { to: "/suppliers", label: "Supplier", icon: Truck, permission: "contacts.suppliers.view" },
         ],
       },
     ],
@@ -85,37 +89,38 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         to: "/products",
         label: "Products",
         icon: Package,
+        permission: "products.view",
         children: [
-          { to: "/products/new", label: "Add Product", icon: Plus },
-          { to: "/products", label: "List Products", icon: List },
-          { to: "/products/categories", label: "Add Category", icon: Plus, hash: "new" },
-          { to: "/products/categories", label: "List Categories", icon: Tag },
-          { to: "/products/units", label: "Units", icon: Tag },
-          { to: "/products/selling-price-groups", label: "Selling Price Groups", icon: Tag },
-          { to: "/product-stock", label: "Product Stock", icon: Layers },
+          { to: "/products/new", label: "Add Product", icon: Plus, permission: "products.create" },
+          { to: "/products", label: "List Products", icon: List, permission: "products.view" },
+          { to: "/products/categories", label: "Add Category", icon: Plus, hash: "new", permission: "products.categories.manage" },
+          { to: "/products/categories", label: "List Categories", icon: Tag, permission: "products.categories.manage" },
+          { to: "/products/units", label: "Units", icon: Tag, permission: "products.units.manage" },
+          { to: "/products/selling-price-groups", label: "Selling Price Groups", icon: Tag, permission: "products.selling_prices.manage" },
+          { to: "/product-stock", label: "Product Stock", icon: Layers, permission: "inventory.view" },
         ],
       },
       {
         to: "/production",
         label: "Production",
         icon: Factory,
+        permission: "production.access",
         children: [
-          { to: "/production", label: "Dashboard", icon: LayoutDashboard },
-          
-          { to: "/raw-materials", label: "Raw Materials", icon: Wheat },
-          { to: "/raw-material-stock", label: "Raw Material Stock", icon: Layers },
-          { to: "/recipes", label: "Recipes & BOM", icon: ChefHat },
-          { to: "/production/recipe-categories", label: "Recipe Categories", icon: Tag },
-          { to: "/production/batches", label: "Production Batches", icon: Factory },
-          { to: "/production/work-orders", label: "Work Orders", icon: List },
-          { to: "/production/wastage", label: "Wastage Log", icon: Undo2 },
-          { to: "/production/qc", label: "Quality Check", icon: ShieldCheck },
-          { to: "/production/cost-report", label: "Cost Report", icon: BarChart3 },
-          { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat },
+          { to: "/production", label: "Dashboard", icon: LayoutDashboard, permission: "production.access" },
+          { to: "/raw-materials", label: "Raw Materials", icon: Wheat, permission: "production.raw_materials.view" },
+          { to: "/raw-material-stock", label: "Raw Material Stock", icon: Layers, permission: "production.raw_materials.view" },
+          { to: "/recipes", label: "Recipes & BOM", icon: ChefHat, permission: "production.recipes.view" },
+          { to: "/production/recipe-categories", label: "Recipe Categories", icon: Tag, permission: "production.recipes.manage" },
+          { to: "/production/batches", label: "Production Batches", icon: Factory, permission: "production.access" },
+          { to: "/production/work-orders", label: "Work Orders", icon: List, permission: "production.work_orders.manage" },
+          { to: "/production/wastage", label: "Wastage Log", icon: Undo2, permission: "production.wastage.manage" },
+          { to: "/production/qc", label: "Quality Check", icon: ShieldCheck, permission: "production.qc.manage" },
+          { to: "/production/cost-report", label: "Cost Report", icon: BarChart3, permission: "production.reports.view" },
+          { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: "production.reports.view" },
         ],
       },
-      { to: "/transfers", label: "Transfers", icon: ArrowRightLeft },
-      { to: "/sales/history", label: "Sales History", icon: Receipt },
+      { to: "/transfers", label: "Transfers", icon: ArrowRightLeft, permission: "inventory.transfer" },
+      { to: "/sales/history", label: "Sales History", icon: Receipt, permission: "sales.view" },
     ],
   },
   {
@@ -125,12 +130,13 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         to: "/purchasing",
         label: "Purchase",
         icon: ShoppingBag,
+        permission: "purchases.view",
         children: [
-          { to: "/purchasing/new", label: "Add Purchase", icon: Plus },
-          { to: "/purchasing/list", label: "Purchase List", icon: List },
-          { to: "/purchasing/categories", label: "Purchase Category", icon: Tag },
-          { to: "/purchasing/returns", label: "Purchase Returns", icon: Undo2 },
-          { to: "/purchasing/payments", label: "Supplier Payments", icon: Wallet },
+          { to: "/purchasing/new", label: "Add Purchase", icon: Plus, permission: "purchases.create" },
+          { to: "/purchasing/list", label: "Purchase List", icon: List, permission: "purchases.view" },
+          { to: "/purchasing/categories", label: "Purchase Category", icon: Tag, permission: "purchases.view" },
+          { to: "/purchasing/returns", label: "Purchase Returns", icon: Undo2, permission: "purchases.return" },
+          { to: "/purchasing/payments", label: "Supplier Payments", icon: Wallet, permission: "purchases.payments" },
         ],
       },
     ],
@@ -142,11 +148,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         to: "/expenses",
         label: "Expenses",
         icon: Receipt,
+        permission: "expenses.view",
         children: [
-          { to: "/expenses/new", label: "Add Expense", icon: Plus },
-          { to: "/expenses/list", label: "List Expenses", icon: List },
-          { to: "/expenses/categories", label: "Expense Categories", icon: Tag },
-          { to: "/expenses/report", label: "Expense Report", icon: BarChart3 },
+          { to: "/expenses/new", label: "Add Expense", icon: Plus, permission: "expenses.manage" },
+          { to: "/expenses/list", label: "List Expenses", icon: List, permission: "expenses.view" },
+          { to: "/expenses/categories", label: "Expense Categories", icon: Tag, permission: "expenses.categories.manage" },
+          { to: "/expenses/report", label: "Expense Report", icon: BarChart3, permission: "reports.expenses" },
         ],
       },
       {
@@ -154,11 +161,11 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         label: "Reports",
         icon: BarChart3,
         children: [
-          { to: "/reports/stock", label: "Stock Reports", icon: Boxes },
-          { to: "/reports/sales", label: "Sales Reports", icon: ScanBarcode },
-          { to: "/reports/purchase", label: "Purchase Reports", icon: ShoppingBag },
-          { to: "/reports/ledgers", label: "Payment & Return Ledger", icon: ReceiptText },
-          { to: "/reports/expenses", label: "Expense Reports", icon: Wallet },
+          { to: "/reports/stock", label: "Stock Reports", icon: Boxes, permission: "reports.stock" },
+          { to: "/reports/sales", label: "Sales Reports", icon: ScanBarcode, permission: "reports.sales" },
+          { to: "/reports/purchase", label: "Purchase Reports", icon: ShoppingBag, permission: "reports.purchase" },
+          { to: "/reports/ledgers", label: "Payment & Return Ledger", icon: ReceiptText, permission: "reports.ledgers" },
+          { to: "/reports/expenses", label: "Expense Reports", icon: Wallet, permission: "reports.expenses" },
         ],
       },
     ],
@@ -166,16 +173,16 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Administration",
     items: [
-      { to: "/employees", label: "Teams & Roles", icon: UserCog },
+      { to: "/employees", label: "Teams & Roles", icon: UserCog, permission: "employees.view" },
       {
         to: "/settings",
         label: "Settings",
         icon: Settings,
         children: [
-          { to: "/settings", label: "General", icon: Settings },
-          { to: "/settings/showrooms", label: "Showrooms", icon: ShoppingBag },
-          { to: "/settings/access", label: "Access Control", icon: ShieldCheck },
-          { to: "/settings/landing", label: "Landing Page", icon: LayoutDashboard },
+          { to: "/settings", label: "General", icon: Settings, permission: "settings.general" },
+          { to: "/settings/showrooms", label: "Showrooms", icon: ShoppingBag, permission: "showrooms.view" },
+          { to: "/settings/access", label: "Access Control", icon: ShieldCheck, permission: "settings.access" },
+          { to: "/settings/landing", label: "Landing Page", icon: LayoutDashboard, permission: "settings.landing" },
         ],
       },
     ],
@@ -193,6 +200,25 @@ export function AppShell({ children, title, subtitle, actions }: {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [company, setCompany] = useState<CompanySettings>(defaultCompany);
+  const { loading: permLoading, isSuperadmin, permissions } = usePermissions();
+
+  const can = (key?: string) => !key || isSuperadmin || permissions.has(key);
+  const visibleGroups = permLoading
+    ? []
+    : navGroups
+        .map((g) => {
+          const items = g.items
+            .map((it) => {
+              if (!can(it.permission)) return null;
+              if (!it.children) return it;
+              const kids = it.children.filter((c) => can(c.permission));
+              if (kids.length === 0 && it.permission == null) return null;
+              return { ...it, children: kids };
+            })
+            .filter(Boolean) as NavItem[];
+          return { ...g, items };
+        })
+        .filter((g) => g.items.length > 0);
 
   useEffect(() => {
     let mounted = true;
@@ -271,7 +297,7 @@ export function AppShell({ children, title, subtitle, actions }: {
           </button>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
-          {navGroups.map((g) => (
+          {visibleGroups.map((g) => (
             <div key={g.label}>
               <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
                 {g.label}
