@@ -167,6 +167,15 @@ function Recipes() {
       title="Recipes & Bill of Materials"
       subtitle="Define recipes on products — production deducts raw materials automatically"
     >
+      <div className="flex items-center justify-end mb-4">
+        <button
+          onClick={openNewRecipe}
+          disabled={products.length === 0}
+          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+        >
+          <Plus className="size-4" /> New Recipe
+        </button>
+      </div>
       {withRecipes.length === 0 || !active ? (
         <Card className="p-12 text-center">
           <div className="mx-auto size-12 rounded-full bg-primary/10 grid place-items-center mb-4">
