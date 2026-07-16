@@ -124,11 +124,11 @@ ON CONFLICT DO NOTHING;
 
 -- Cashier: POS + basic sales + customers
 INSERT INTO public.role_permissions (role_id, permission_key)
-SELECT r.id, p.permission_key
+SELECT r.id, p.key
 FROM public.app_roles r
 CROSS JOIN public.permissions p
 WHERE r.name = 'Cashier'
-  AND p.permission_key IN (
+  AND p.key IN (
     'dashboard.access',
     'pos.access','pos.discount',
     'sales.view','sales.create','sales.return','sales.payments',
