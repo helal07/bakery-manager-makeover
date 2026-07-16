@@ -1,7 +1,32 @@
 -- =============================================================
 -- Part 12 · RBAC permission catalog + built-in role defaults
--- Idempotent · safe to re-run · no schema changes
+-- Idempotent · safe to re-run
+-- Auto-heals legacy schema (permissions.key → permission_key)
 -- =============================================================
+
+-- 0) Schema alignment ---------------------------------------------
+-- Older Part 2 shipped permissions.key; current codebase uses
+-- permissions.permission_key. Rename if the legacy column exists.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name   = 'permissions'
+      AND column_name  = 'key'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name   = 'permissions'
+      AND column_name  = 'permission_key'
+  ) THEN
+    EXECUTE 'ALTER TABLE public.permissions RENAME COLUMN key TO permission_key';
+  END IF;
+END $$;
+
+-- Ensure unique index on permission_key so ON CONFLICT resolves
+CREATE UNIQUE INDEX IF NOT EXISTS permissions_permission_key_key
+  ON public.permissions (permission_key);
 
 -- 1) Built-in roles ------------------------------------------------
 INSERT INTO public.app_roles (name, description, is_system, is_active)
@@ -15,7 +40,7 @@ FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM public.app_roles r WHERE r.name = v.name);
 
 -- 2) Permission catalog -------------------------------------------
-INSERT INTO public.permissions (key, module, label) VALUES
+INSERT INTO public.permissions (permission_key, module, label) VALUES
   -- Dashboard
   ('dashboard.access',                    'Dashboard',   'View dashboard'),
   -- POS
