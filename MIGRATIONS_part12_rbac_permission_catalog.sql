@@ -15,7 +15,7 @@ FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM public.app_roles r WHERE r.name = v.name);
 
 -- 2) Permission catalog -------------------------------------------
-INSERT INTO public.permissions (permission_key, module, label) VALUES
+INSERT INTO public.permissions (key, module, label) VALUES
   -- Dashboard
   ('dashboard.access',                    'Dashboard',   'View dashboard'),
   -- POS
@@ -84,27 +84,27 @@ INSERT INTO public.permissions (permission_key, module, label) VALUES
   ('settings.general',                    'Settings',    'General settings'),
   ('settings.landing',                    'Settings',    'Edit landing page'),
   ('settings.access',                     'Settings',    'Access Control (roles & permissions)')
-ON CONFLICT (permission_key) DO UPDATE
+ON CONFLICT (key) DO UPDATE
   SET module = EXCLUDED.module,
       label  = EXCLUDED.label;
 
 -- 3) Default grants for built-in roles ----------------------------
 -- Admin: everything except settings.access
 INSERT INTO public.role_permissions (role_id, permission_key)
-SELECT r.id, p.permission_key
+SELECT r.id, p.key
 FROM public.app_roles r
 CROSS JOIN public.permissions p
 WHERE r.name = 'Admin'
-  AND p.permission_key <> 'settings.access'
+  AND p.key <> 'settings.access'
 ON CONFLICT DO NOTHING;
 
 -- Manager: operations + production (no settings, no employees management, no purchases delete)
 INSERT INTO public.role_permissions (role_id, permission_key)
-SELECT r.id, p.permission_key
+SELECT r.id, p.key
 FROM public.app_roles r
 CROSS JOIN public.permissions p
 WHERE r.name = 'Manager'
-  AND p.permission_key IN (
+  AND p.key IN (
     'dashboard.access',
     'pos.access','pos.discount',
     'sales.view','sales.create','sales.edit','sales.return','sales.payments',
@@ -124,11 +124,11 @@ ON CONFLICT DO NOTHING;
 
 -- Cashier: POS + basic sales + customers
 INSERT INTO public.role_permissions (role_id, permission_key)
-SELECT r.id, p.permission_key
+SELECT r.id, p.key
 FROM public.app_roles r
 CROSS JOIN public.permissions p
 WHERE r.name = 'Cashier'
-  AND p.permission_key IN (
+  AND p.key IN (
     'dashboard.access',
     'pos.access','pos.discount',
     'sales.view','sales.create','sales.return','sales.payments',
