@@ -4,12 +4,15 @@
 -- =============================================================
 
 -- 1) Built-in roles ------------------------------------------------
-INSERT INTO public.app_roles (name, description, is_system, is_active) VALUES
-  ('Superadmin', 'Full access, bypasses all permission checks', true, true),
-  ('Admin',      'Full operational access',                     true, true),
-  ('Manager',    'Operations + production, no access control',  true, true),
-  ('Cashier',    'POS + basic sales + customers',               true, true)
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO public.app_roles (name, description, is_system, is_active)
+SELECT v.name, v.description, true, true
+FROM (VALUES
+  ('Superadmin', 'Full access, bypasses all permission checks'),
+  ('Admin',      'Full operational access'),
+  ('Manager',    'Operations + production, no access control'),
+  ('Cashier',    'POS + basic sales + customers')
+) AS v(name, description)
+WHERE NOT EXISTS (SELECT 1 FROM public.app_roles r WHERE r.name = v.name);
 
 -- 2) Permission catalog -------------------------------------------
 INSERT INTO public.permissions (permission_key, module, label) VALUES
