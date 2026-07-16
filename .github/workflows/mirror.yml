@@ -9,9 +9,11 @@ on:
 jobs:
   mirror:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout (full history)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -26,6 +28,9 @@ jobs:
             echo "in this repo's Settings -> Secrets and variables -> Actions as MIRROR_PAT."
             exit 1
           fi
+          git config --global --unset-all http.https://github.com/.extraheader || true
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          git remote remove mirror 2>/dev/null || true
           git remote add mirror "https://x-access-token:${MIRROR_PAT}@github.com/helal07/bakery-manager-makeover.git"
           git push mirror --all --force
           git push mirror --tags --force
