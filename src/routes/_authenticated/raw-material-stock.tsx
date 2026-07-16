@@ -17,10 +17,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { loadRawMaterials, adjustRawStock, type RawMaterial } from "@/lib/raw-material-store";
 import { exportCsv } from "@/components/report-filters";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/raw-material-stock")({
   head: () => ({ meta: [{ title: "Raw Material Stock · Muzahid Food" }] }),
-  component: RawMaterialStockPage,
+  component: () => (
+    <PermissionGate anyOf={["production.raw_materials.view", "production.access"]} title="Raw Material Stock">
+      <RawMaterialStockPage />
+    </PermissionGate>
+  ),
 });
 
 const sb = supabase as any;
