@@ -15,7 +15,7 @@ FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM public.app_roles r WHERE r.name = v.name);
 
 -- 2) Permission catalog -------------------------------------------
-INSERT INTO public.permissions (permission_key, module, label) VALUES
+INSERT INTO public.permissions (key, module, label) VALUES
   -- Dashboard
   ('dashboard.access',                    'Dashboard',   'View dashboard'),
   -- POS
