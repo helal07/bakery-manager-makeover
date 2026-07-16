@@ -45,41 +45,11 @@ export async function commitProduction(params: {
   ingredients: Ingredient[];
 }): Promise<void> {
   const { productId, showroomId, batch, ingredients } = params;
-  for (const ing of ingredients) {
-    const { error } = await sb.rpc("commit_raw_stock_movement", {
-      _material_id: ing.materialId,
-      _showroom_id: showroomId,
-      _qty: -Math.abs(ing.qty * batch),
-      _kind: "production_consume",
-      _ref_type: "production",
-      _ref_id: null,
-    });
-    if (error) throw error;
-  }
-  const { error } = await sb.rpc("commit_stock_movement", {
+  const { error } = await sb.rpc("commit_production_batch", {
     _product_id: productId,
     _showroom_id: showroomId,
-    _qty: batch,
-    _kind: "production",
-    _ref_type: "production",
-    _ref_id: null,
+    _batch: batch,
+    _ingredients: ingredients,
   });
   if (error) throw error;
-
-  // Stamp mfg/expiry on the product based on its shelf life.
-  const { data: prod } = await sb
-    .from("products")
-    .select("shelf_life_days")
-    .eq("id", productId)
-    .maybeSingle();
-  const shelf = prod?.shelf_life_days ? Number(prod.shelf_life_days) : 0;
-  const today = new Date();
-  const mfg = today.toISOString().slice(0, 10);
-  const patch: Record<string, unknown> = { mfg_date: mfg };
-  if (shelf > 0) {
-    const exp = new Date(today);
-    exp.setDate(exp.getDate() + shelf);
-    patch.expiry_date = exp.toISOString().slice(0, 10);
-  }
-  await sb.from("products").update(patch).eq("id", productId);
 }

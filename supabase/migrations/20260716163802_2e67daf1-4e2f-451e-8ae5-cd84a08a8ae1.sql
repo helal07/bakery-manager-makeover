@@ -1,39 +1,13 @@
--- ============================================================
--- Part 13: Fix batch production stock commits
---
--- Fixes:
---   1) "no unique or exclusion constraint matching the ON CONFLICT
---      specification" on batch approval.
---   2) Raw materials being deducted even when finished product stock
---      movement fails.
---
--- Root cause:
---   Older/self-hosted databases may have plain UNIQUE(product_id,
---   showroom_id) constraints. PostgreSQL treats NULL showroom_id values
---   as distinct in those constraints, so factory-level stock can still
---   duplicate and ON CONFLICT can fail or miss the intended row. Some
---   installs also had expression unique indexes that are not valid
---   arbiters for ON CONFLICT(product_id, showroom_id).
---
--- Approach:
---   - Merge any duplicate stock rows first.
---   - Replace legacy unique constraints/indexes with NULLS NOT DISTINCT
---     indexes on the real columns.
---   - Replace stock movement RPCs so they use UPDATE ... IS NOT DISTINCT
---     FROM ... INSERT instead of relying on ON CONFLICT.
---   - Add commit_production_batch(), a single transactional RPC. If any
---     step fails, raw material deductions roll back automatically.
---
--- Safe to run multiple times.
--- Requires PostgreSQL 15+ for NULLS NOT DISTINCT indexes.
--- ============================================================
+-- Fix stock uniqueness for factory/showroom stock and make production approval atomic.
 
--- ---------- de-duplicate product_stock ----------
+-- Merge duplicate finished product stock rows before enforcing uniqueness.
 WITH ranked AS (
   SELECT
     id,
     product_id,
     showroom_id,
+    quantity,
+    min_stock,
     row_number() OVER (
       PARTITION BY product_id, showroom_id
       ORDER BY created_at, id
@@ -45,36 +19,30 @@ WITH ranked AS (
     sum(quantity) OVER (PARTITION BY product_id, showroom_id) AS total_quantity,
     max(min_stock) OVER (PARTITION BY product_id, showroom_id) AS max_min_stock
   FROM public.product_stock
-)
-UPDATE public.product_stock ps
-SET
-  quantity = ranked.total_quantity,
-  min_stock = ranked.max_min_stock,
-  updated_at = now()
-FROM ranked
-WHERE ps.id = ranked.keep_id
-  AND ranked.rn = 1;
-
-WITH ranked AS (
-  SELECT
-    id,
-    row_number() OVER (
-      PARTITION BY product_id, showroom_id
-      ORDER BY created_at, id
-    ) AS rn
-  FROM public.product_stock
+), keepers AS (
+  UPDATE public.product_stock ps
+  SET
+    quantity = ranked.total_quantity,
+    min_stock = ranked.max_min_stock,
+    updated_at = now()
+  FROM ranked
+  WHERE ps.id = ranked.keep_id
+    AND ranked.rn = 1
+  RETURNING ps.id
 )
 DELETE FROM public.product_stock ps
 USING ranked
 WHERE ps.id = ranked.id
   AND ranked.rn > 1;
 
--- ---------- de-duplicate raw_material_stock ----------
+-- Merge duplicate raw material stock rows before enforcing uniqueness.
 WITH ranked AS (
   SELECT
     id,
     material_id,
     showroom_id,
+    quantity,
+    min_stock,
     row_number() OVER (
       PARTITION BY material_id, showroom_id
       ORDER BY created_at, id
@@ -86,31 +54,23 @@ WITH ranked AS (
     sum(quantity) OVER (PARTITION BY material_id, showroom_id) AS total_quantity,
     max(min_stock) OVER (PARTITION BY material_id, showroom_id) AS max_min_stock
   FROM public.raw_material_stock
-)
-UPDATE public.raw_material_stock rms
-SET
-  quantity = ranked.total_quantity,
-  min_stock = ranked.max_min_stock,
-  updated_at = now()
-FROM ranked
-WHERE rms.id = ranked.keep_id
-  AND ranked.rn = 1;
-
-WITH ranked AS (
-  SELECT
-    id,
-    row_number() OVER (
-      PARTITION BY material_id, showroom_id
-      ORDER BY created_at, id
-    ) AS rn
-  FROM public.raw_material_stock
+), keepers AS (
+  UPDATE public.raw_material_stock rms
+  SET
+    quantity = ranked.total_quantity,
+    min_stock = ranked.max_min_stock,
+    updated_at = now()
+  FROM ranked
+  WHERE rms.id = ranked.keep_id
+    AND ranked.rn = 1
+  RETURNING rms.id
 )
 DELETE FROM public.raw_material_stock rms
 USING ranked
 WHERE rms.id = ranked.id
   AND ranked.rn > 1;
 
--- ---------- product_stock uniqueness ----------
+-- Replace legacy constraints/indexes with NULL-safe uniqueness.
 DROP INDEX IF EXISTS public.product_stock_uniq;
 ALTER TABLE public.product_stock
   DROP CONSTRAINT IF EXISTS product_stock_product_id_showroom_id_key;
@@ -120,7 +80,6 @@ DROP INDEX IF EXISTS public.product_stock_product_showroom_uniq;
 CREATE UNIQUE INDEX product_stock_product_showroom_uniq
   ON public.product_stock (product_id, showroom_id) NULLS NOT DISTINCT;
 
--- ---------- raw_material_stock uniqueness ----------
 DROP INDEX IF EXISTS public.raw_material_stock_uniq;
 ALTER TABLE public.raw_material_stock
   DROP CONSTRAINT IF EXISTS raw_material_stock_material_id_showroom_id_key;
@@ -130,7 +89,8 @@ DROP INDEX IF EXISTS public.raw_material_stock_material_showroom_uniq;
 CREATE UNIQUE INDEX raw_material_stock_material_showroom_uniq
   ON public.raw_material_stock (material_id, showroom_id) NULLS NOT DISTINCT;
 
--- ---------- stock movement RPCs without ON CONFLICT ----------
+-- Make product stock movement independent from ON CONFLICT so old/self-hosted
+-- installs do not partially fail with missing conflict constraints.
 CREATE OR REPLACE FUNCTION public.commit_stock_movement(
   _product_id uuid,
   _showroom_id uuid,
@@ -167,6 +127,7 @@ BEGIN
 END;
 $function$;
 
+-- Make raw stock movement independent from ON CONFLICT too.
 CREATE OR REPLACE FUNCTION public.commit_raw_stock_movement(
   _material_id uuid,
   _showroom_id uuid,
@@ -203,7 +164,8 @@ BEGIN
 END;
 $function$;
 
--- ---------- atomic batch production RPC ----------
+-- One atomic production function: if finished stock cannot be updated, all raw
+-- material deductions are rolled back automatically by the database transaction.
 CREATE OR REPLACE FUNCTION public.commit_production_batch(
   _product_id uuid,
   _showroom_id uuid,
@@ -255,7 +217,7 @@ BEGIN
     RAISE EXCEPTION 'Duplicate ingredients are not allowed in one recipe';
   END IF;
 
-  -- Lock and check every raw stock row before any ledger writes.
+  -- Lock and check every raw stock row before writing any ledger rows.
   FOR _ingredient IN SELECT * FROM jsonb_array_elements(_ingredients)
   LOOP
     _material_id := (_ingredient->>'materialId')::uuid;
@@ -321,17 +283,9 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.commit_stock_movement(uuid, uuid, numeric, text, text, uuid, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.commit_stock_movement(uuid, uuid, numeric, text, text, uuid, text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.commit_stock_movement(uuid, uuid, numeric, text, text, uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.commit_stock_movement(uuid, uuid, numeric, text, text, uuid, text) TO service_role;
-
-REVOKE ALL ON FUNCTION public.commit_raw_stock_movement(uuid, uuid, numeric, text, text, uuid, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.commit_raw_stock_movement(uuid, uuid, numeric, text, text, uuid, text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.commit_raw_stock_movement(uuid, uuid, numeric, text, text, uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.commit_raw_stock_movement(uuid, uuid, numeric, text, text, uuid, text) TO service_role;
-
-REVOKE ALL ON FUNCTION public.commit_production_batch(uuid, uuid, numeric, jsonb) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.commit_production_batch(uuid, uuid, numeric, jsonb) FROM anon;
 GRANT EXECUTE ON FUNCTION public.commit_production_batch(uuid, uuid, numeric, jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.commit_production_batch(uuid, uuid, numeric, jsonb) TO service_role;
