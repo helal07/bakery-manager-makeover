@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import {
   ShoppingBag, Cake, AlertTriangle, ArrowUpRight, ArrowDownRight,
@@ -117,12 +117,12 @@ function Dashboard() {
           >
             <Plus className="size-4" /> Add Item
           </button>
-          <button
-            onClick={() => setSaleOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
+          <Link
+            to="/pos"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-base font-semibold hover:bg-primary/90 shadow-md"
           >
-            <ScanBarcode className="size-4" /> New Sale
-          </button>
+            <ScanBarcode className="size-5" /> New Sale
+          </Link>
         </>
       }
     >
