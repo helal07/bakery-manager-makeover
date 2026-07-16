@@ -1,0 +1,30 @@
+name: Mirror to helal07/bakery-manager-makeover
+
+on:
+  push:
+    branches: ['**']
+  delete:
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push mirror to helal07/bakery-manager-makeover
+        env:
+          MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
+        run: |
+          if [ -z "$MIRROR_PAT" ]; then
+            echo "ERROR: MIRROR_PAT secret is not set."
+            echo "Add a fine-grained PAT with 'Contents: Read and write' on helal07/bakery-manager-makeover"
+            echo "in this repo's Settings -> Secrets and variables -> Actions as MIRROR_PAT."
+            exit 1
+          fi
+          git remote add mirror "https://x-access-token:${MIRROR_PAT}@github.com/helal07/bakery-manager-makeover.git"
+          git push mirror --all --force
+          git push mirror --tags --force
