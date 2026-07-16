@@ -60,7 +60,7 @@ WITH ranked AS (
     id,
     row_number() OVER (
       PARTITION BY product_id, showroom_id
-      ORDER BY created_at, id
+      ORDER BY id
     ) AS rn
   FROM public.product_stock
 )
