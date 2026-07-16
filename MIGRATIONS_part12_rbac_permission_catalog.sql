@@ -100,11 +100,11 @@ ON CONFLICT DO NOTHING;
 
 -- Manager: operations + production (no settings, no employees management, no purchases delete)
 INSERT INTO public.role_permissions (role_id, permission_key)
-SELECT r.id, p.permission_key
+SELECT r.id, p.key
 FROM public.app_roles r
 CROSS JOIN public.permissions p
 WHERE r.name = 'Manager'
-  AND p.permission_key IN (
+  AND p.key IN (
     'dashboard.access',
     'pos.access','pos.discount',
     'sales.view','sales.create','sales.edit','sales.return','sales.payments',
