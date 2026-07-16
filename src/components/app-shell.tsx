@@ -297,7 +297,7 @@ export function AppShell({ children, title, subtitle, actions }: {
           </button>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
-          {navGroups.map((g) => (
+          {visibleGroups.map((g) => (
             <div key={g.label}>
               <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
                 {g.label}
