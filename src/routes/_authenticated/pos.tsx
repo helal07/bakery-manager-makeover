@@ -719,11 +719,12 @@ function PosPage() {
               </span>
               <button
                 onClick={complete}
-                disabled={!canComplete}
+                disabled={saving || items.length === 0}
                 className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-bold disabled:opacity-50 shadow"
               >
                 Complete (F9)
               </button>
+
             </div>
           )}
 
