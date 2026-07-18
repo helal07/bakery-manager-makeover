@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart,
-  X, Keyboard, ArrowLeft, User, Users, Pause, PlayCircle, DollarSign,
+  X, Keyboard, ArrowLeft, User, UserPlus, Users, Pause, PlayCircle, DollarSign,
   Lock, Unlock, Receipt, Calendar, Calculator, Maximize2, Briefcase,
   CircleX, RotateCcw, CreditCard, FileText, History, Info,
 } from "lucide-react";
@@ -63,6 +63,9 @@ function PosPage() {
   const [custResults, setCustResults] = useState<CustomerLite[]>([]);
   const [custOpen, setCustOpen] = useState(false);
   const [customerDue, setCustomerDue] = useState(0);
+  const [addCustOpen, setAddCustOpen] = useState(false);
+  const [newCust, setNewCust] = useState({ name: "", phone: "", email: "", address: "" });
+  const [savingCust, setSavingCust] = useState(false);
 
   // Groups
   const [groups, setGroups] = useState<GroupLite[]>([]);
@@ -186,6 +189,34 @@ function PosPage() {
     setCustQuery("");
     setSelectedGroupId("");
   };
+
+  async function saveNewCustomer() {
+    const name = newCust.name.trim();
+    if (!name) { toast.error("Customer name is required"); return; }
+    setSavingCust(true);
+    try {
+      const { data, error } = await sb
+        .from("customers")
+        .insert({
+          name,
+          phone: newCust.phone.trim() || null,
+          email: newCust.email.trim() || null,
+          address: newCust.address.trim() || null,
+          is_active: true,
+        })
+        .select("id,name,phone,group_id")
+        .single();
+      if (error || !data) throw error ?? new Error("Insert failed");
+      pickCustomer(data as CustomerLite);
+      setAddCustOpen(false);
+      setNewCust({ name: "", phone: "", email: "", address: "" });
+      toast.success("Customer added");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to add customer");
+    } finally {
+      setSavingCust(false);
+    }
+  }
 
   // Products
   useEffect(() => {
@@ -485,39 +516,60 @@ function PosPage() {
         <section className="flex flex-col overflow-hidden bg-card border-r border-border">
           {/* Toolbar inside 60% split: Customer | Price Group | Invoice Date */}
           <div className="shrink-0 border-b border-border px-2 py-1.5 grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-            <div className="relative" ref={custWrapRef}>
-              <User className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={custQuery}
-                onChange={(e) => { setCustQuery(e.target.value); setCustOpen(true); }}
-                onFocus={() => setCustOpen(true)}
-                placeholder="Walk-in Customer"
-                className="w-full h-9 pl-8 pr-8 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
-              />
-              {(customerId || custQuery) && (
-                <button onClick={resetCustomer} aria-label="Clear customer" className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-accent text-muted-foreground">
-                  <X className="size-3.5" />
-                </button>
-              )}
-              {custOpen && custResults.length > 0 && (
-                <div className="absolute z-50 left-0 right-0 top-10 rounded-md border border-border bg-popover shadow-lg max-h-64 overflow-y-auto">
-                  {custResults.map((c) => (
-                    <button key={c.id} onClick={() => pickCustomer(c)} className="w-full text-left px-3 py-2 hover:bg-accent border-b border-border last:border-b-0">
-                      <div className="text-sm font-medium">{c.name}</div>
-                      <div className="text-[11px] text-muted-foreground">{c.phone ?? "no phone"}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {custOpen && custQuery.trim().length >= 1 && custResults.length === 0 && (
-                <div className="absolute z-50 left-0 right-0 top-10 rounded-md border border-border bg-popover shadow-lg p-3 text-xs text-muted-foreground">
-                  No customer found — sale will use Walk-in Customer.
-                </div>
-              )}
-              {customerId && customerDue > 0 && (
-                <div className="mt-0.5 text-[10px] text-destructive font-semibold">Due: ৳{customerDue.toFixed(2)}</div>
-              )}
+            <div className="flex gap-1.5">
+              <div className="relative flex-1" ref={custWrapRef}>
+                <User className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={custQuery}
+                  onChange={(e) => { setCustQuery(e.target.value); setCustOpen(true); }}
+                  onFocus={() => setCustOpen(true)}
+                  placeholder="Walk-in Customer"
+                  className="w-full h-9 pl-8 pr-8 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                />
+                {(customerId || custQuery) && (
+                  <button onClick={resetCustomer} aria-label="Clear customer" className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-accent text-muted-foreground">
+                    <X className="size-3.5" />
+                  </button>
+                )}
+                {custOpen && custResults.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 top-10 rounded-md border border-border bg-popover shadow-lg max-h-64 overflow-y-auto">
+                    {custResults.map((c) => (
+                      <button key={c.id} onClick={() => pickCustomer(c)} className="w-full text-left px-3 py-2 hover:bg-accent border-b border-border last:border-b-0">
+                        <div className="text-sm font-medium">{c.name}</div>
+                        <div className="text-[11px] text-muted-foreground">{c.phone ?? "no phone"}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {custOpen && custQuery.trim().length >= 1 && custResults.length === 0 && (
+                  <div className="absolute z-50 left-0 right-0 top-10 rounded-md border border-border bg-popover shadow-lg p-3 text-xs text-muted-foreground">
+                    No customer found — click <span className="font-semibold">+</span> to add a new customer.
+                  </div>
+                )}
+                {customerId && customerDue > 0 && (
+                  <div className="mt-0.5 text-[10px] text-destructive font-semibold">Due: ৳{customerDue.toFixed(2)}</div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const q = custQuery.trim();
+                  const looksPhone = /^[\d+\-\s]+$/.test(q);
+                  setNewCust({
+                    name: looksPhone ? "" : q,
+                    phone: looksPhone ? q : "",
+                    email: "",
+                    address: "",
+                  });
+                  setAddCustOpen(true);
+                }}
+                title="Add new customer"
+                className="h-9 px-2.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold inline-flex items-center gap-1 hover:opacity-90"
+              >
+                <UserPlus className="size-4" /> Add
+              </button>
             </div>
+
 
             <div className="relative">
               <DollarSign className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -623,24 +675,29 @@ function PosPage() {
 
           {/* Payment mode helper strip */}
           {(mode === "credit" || mode === "multi") && (
-            <div className="shrink-0 border-t border-border bg-muted/50 px-3 py-1.5 text-[11px] flex items-center justify-between gap-2 flex-wrap">
-              <span>
-                Mode: <span className="font-semibold">{mode === "credit" ? "Credit Sale (100% due)" : "Multiple Pay"}</span>
-                {mode === "multi" && <> · Paid ৳{multiPaid.toFixed(2)} · <button onClick={openMultiPay} className="text-primary underline">Edit tenders</button></>}
+            <div className={`shrink-0 border-t-2 px-3 py-2 text-sm flex items-center justify-between gap-2 flex-wrap ${
+              mode === "credit"
+                ? "border-amber-500 bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100"
+                : "border-border bg-muted/60"
+            }`}>
+              <span className="font-bold">
+                Mode: <span className="font-extrabold uppercase">{mode === "credit" ? "Credit Sale (100% Due)" : "Multiple Pay"}</span>
+                {mode === "multi" && <> · Paid ৳{multiPaid.toFixed(2)} · <button onClick={openMultiPay} className="text-primary underline font-semibold">Edit tenders</button></>}
               </span>
-              <span className={due <= 0 ? "text-[color:var(--success)] font-semibold" : "text-destructive font-semibold"}>
+              <span className={`font-extrabold text-base ${due <= 0 ? "text-[color:var(--success)]" : "text-destructive"}`}>
                 {due <= 0 ? "Fully paid" : `Due ৳${due.toFixed(2)}`}
-                {isWalkIn && due > 0 && " · select a customer"}
+                {isWalkIn && due > 0 && <span className="ml-1 uppercase">· Select a customer!</span>}
               </span>
               <button
                 onClick={complete}
                 disabled={!canComplete}
-                className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
+                className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-bold disabled:opacity-50 shadow"
               >
                 Complete (F9)
               </button>
             </div>
           )}
+
         </section>
 
 
@@ -717,6 +774,47 @@ function PosPage() {
       {closeRegOpen && register && (
         <CloseRegisterModal register={register} onClose={() => setCloseRegOpen(false)}
           onClosed={() => { setRegister(null); setCloseRegOpen(false); toast.success("Register closed"); }} />
+      )}
+      {addCustOpen && (
+        <div className="fixed inset-0 z-[80] bg-black/50 grid place-items-center p-4" onClick={() => !savingCust && setAddCustOpen(false)}>
+          <div className="w-full max-w-md rounded-lg bg-card border border-border shadow-xl p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 font-semibold text-sm"><UserPlus className="size-4 text-primary" /> Add new customer</div>
+              <button onClick={() => setAddCustOpen(false)} className="p-1 rounded hover:bg-accent"><X className="size-4" /></button>
+            </div>
+            <div className="grid gap-2.5">
+              <label className="text-xs font-medium">
+                Name<span className="text-destructive">*</span>
+                <input autoFocus value={newCust.name} onChange={(e) => setNewCust({ ...newCust, name: e.target.value })}
+                  className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary" />
+              </label>
+              <label className="text-xs font-medium">
+                Phone
+                <input value={newCust.phone} onChange={(e) => setNewCust({ ...newCust, phone: e.target.value })}
+                  className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary" />
+              </label>
+              <label className="text-xs font-medium">
+                Email
+                <input type="email" value={newCust.email} onChange={(e) => setNewCust({ ...newCust, email: e.target.value })}
+                  className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary" />
+              </label>
+              <label className="text-xs font-medium">
+                Address
+                <textarea value={newCust.address} onChange={(e) => setNewCust({ ...newCust, address: e.target.value })}
+                  rows={2}
+                  className="mt-1 w-full px-2.5 py-1.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary" />
+              </label>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setAddCustOpen(false)} disabled={savingCust}
+                className="h-9 px-3 rounded-md border border-border text-xs font-semibold hover:bg-accent">Cancel</button>
+              <button onClick={saveNewCustomer} disabled={savingCust || !newCust.name.trim()}
+                className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50">
+                {savingCust ? "Saving…" : "Save customer"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
