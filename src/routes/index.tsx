@@ -82,13 +82,17 @@ function Landing() {
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="size-9 rounded-md bg-primary text-primary-foreground grid place-items-center font-bold">
-              {c.brand.name.slice(0, 2).toUpperCase()}
+            <div className="size-9 rounded-md bg-primary text-primary-foreground grid place-items-center font-bold overflow-hidden">
+              {logoUrl ? (
+                <img src={logoUrl} alt={brandName} className="size-full object-cover" />
+              ) : (
+                brandName.slice(0, 2).toUpperCase()
+              )}
             </div>
             <div className="leading-tight">
-              <div className="font-semibold">{c.brand.name}</div>
+              <div className="font-semibold">{brandName}</div>
               <div className="text-[11px] text-muted-foreground hidden sm:block">
-                {c.brand.tagline}
+                {brandTagline}
               </div>
             </div>
           </div>
