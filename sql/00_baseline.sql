@@ -1950,6 +1950,16 @@ ALTER TABLE ONLY public.customers
 
 
 --
+-- Name: customer_groups customer_groups_selling_price_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customer_groups
+    ADD CONSTRAINT customer_groups_selling_price_group_id_fkey FOREIGN KEY (selling_price_group_id) REFERENCES public.selling_price_groups(id) ON DELETE SET NULL;
+
+
+
+
+--
 -- Name: employees employees_showroom_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
