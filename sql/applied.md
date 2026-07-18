@@ -16,4 +16,5 @@
 -->
 
 - [ ] `sql/02_align_code_schema.sql` — existing DB-তে codebase expected columns যোগ/rename করে schema mismatch ঠিক করবে
+- [ ] `sql/05_factory_only_production.sql` — raw stock / production / wastage / QC / work orders showroom_id NULL enforce (CHECK constraint) + production permission keys seed
 - [ ] `sql/06_reverse_logistics.sql` — damaged_stock / damaged_ledger / repurpose_queue tables, condition on sale_return_items, kind on transfers, is_factory on showrooms, commit_damaged_movement / commit_damaged_transfer_approve / commit_repurpose RPCs, RBAC permission rows
