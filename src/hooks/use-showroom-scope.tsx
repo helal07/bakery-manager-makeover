@@ -61,9 +61,10 @@ export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
     // for global users this returns all active rows.
     const { data: rooms } = await supabase
       .from("showrooms")
-      .select("id, name, code")
+      .select("id, name, code, address, city, phone, manager_name")
       .eq("is_active", true)
       .order("name");
+
 
     const list = (rooms ?? []) as Showroom[];
     setShowrooms(list);
