@@ -44,7 +44,6 @@ function TransfersPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [openView, setOpenView] = useState<TransferRow | null>(null);
-  const [openView, setOpenView] = useState<TransferRow | null>(null);
   const [viewItems, setViewItems] = useState<TransferItem[]>([]);
 
   const load = useCallback(async () => {
@@ -71,11 +70,9 @@ function TransfersPage() {
   };
 
   const sendTransfer = async (row: TransferRow) => {
-    // Fetch items and commit stock_out on source
     const { data: items } = await sb.from("transfer_items").select("*").eq("transfer_id", row.id);
     const list = (items ?? []) as TransferItem[];
     if (list.length === 0) { toast.error("Add items first"); return; }
-    // Validate stock at source
     const productIds = list.map((i) => i.product_id);
     const { data: stockRows } = await sb
       .from("product_stock")
@@ -158,8 +155,10 @@ function TransfersPage() {
   return (
     <AppShell title="Transfers" subtitle="Move stock between factory and showrooms">
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setOpenNew(true)}>
-          <Plus className="w-4 h-4 mr-2" /> New Transfer
+        <Button asChild>
+          <Link to="/transfers/new">
+            <Plus className="w-4 h-4 mr-2" /> New Transfer
+          </Link>
         </Button>
       </div>
 
@@ -203,17 +202,6 @@ function TransfersPage() {
           </div>
         )}
       </Card>
-
-      {openNew && (
-        <NewTransferDialog
-          products={products}
-          showrooms={showrooms}
-          hasGlobalAccess={hasGlobalAccess}
-          currentShowroomId={currentShowroomId}
-          onClose={() => setOpenNew(false)}
-          onCreated={() => { setOpenNew(false); load(); }}
-        />
-      )}
 
       {openView && (
         <Dialog open onOpenChange={() => setOpenView(null)}>
@@ -271,142 +259,5 @@ function TransfersPage() {
         </Dialog>
       )}
     </AppShell>
-  );
-}
-
-function NewTransferDialog({
-  products, showrooms, hasGlobalAccess, currentShowroomId, onClose, onCreated,
-}: {
-  products: Product[];
-  showrooms: Showroom[];
-  hasGlobalAccess: boolean;
-  currentShowroomId: string | null;
-  onClose: () => void;
-  onCreated: () => void;
-}) {
-  const defaultSource = hasGlobalAccess ? "factory" : (currentShowroomId ?? "factory");
-  const [source, setSource] = useState<string>(defaultSource); // "factory" or showroom id
-  const [dest, setDest] = useState<string>("");
-  const [note, setNote] = useState("");
-  const [items, setItems] = useState<{ product_id: string; qty: string }[]>([]);
-  const [saving, setSaving] = useState(false);
-
-  const destOptions = useMemo(
-    () => showrooms.filter((s) => (source === "factory" ? true : s.id !== source)),
-    [showrooms, source]
-  );
-
-  const addRow = () => setItems((v) => [...v, { product_id: "", qty: "" }]);
-  const setRow = (i: number, patch: Partial<{ product_id: string; qty: string }>) =>
-    setItems((v) => v.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
-  const rmRow = (i: number) => setItems((v) => v.filter((_, idx) => idx !== i));
-
-  const submit = async () => {
-    if (!dest) { toast.error("Pick destination"); return; }
-    const clean = items
-      .map((r) => ({ product_id: r.product_id, qty: Number(r.qty) }))
-      .filter((r) => r.product_id && r.qty > 0);
-    if (clean.length === 0) { toast.error("Add at least one item"); return; }
-    setSaving(true);
-    const source_showroom_id = source === "factory" ? null : source;
-    const code = `TR-${Date.now().toString(36).toUpperCase()}`;
-    const { data: created, error } = await sb
-      .from("transfers")
-      .insert({ code, source_showroom_id, dest_showroom_id: dest, note: note || null, status: "draft" })
-      .select("id")
-      .single();
-    if (error || !created) { toast.error(error?.message ?? "Failed"); setSaving(false); return; }
-    const { error: itErr } = await sb
-      .from("transfer_items")
-      .insert(clean.map((c) => ({ transfer_id: created.id, product_id: c.product_id, qty: c.qty })));
-    if (itErr) { toast.error(itErr.message); setSaving(false); return; }
-    toast.success("Transfer created as draft");
-    setSaving(false);
-    onCreated();
-  };
-
-  return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader><DialogTitle>New Transfer</DialogTitle></DialogHeader>
-        <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>From</Label>
-              <Select value={source} onValueChange={setSource} disabled={!hasGlobalAccess}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {hasGlobalAccess && <SelectItem value="factory">Factory</SelectItem>}
-                  {showrooms.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>To</Label>
-              <Select value={dest} onValueChange={setDest}>
-                <SelectTrigger><SelectValue placeholder="Select destination" /></SelectTrigger>
-                <SelectContent>
-                  {destOptions.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label>Items</Label>
-              <Button size="sm" variant="outline" onClick={addRow}>
-                <Plus className="w-4 h-4 mr-1" /> Add item
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {items.length === 0 && (
-                <p className="text-sm text-muted-foreground">No items yet.</p>
-              )}
-              {items.map((row, i) => (
-                <div key={i} className="grid grid-cols-[1fr_120px_40px] gap-2">
-                  <Select value={row.product_id} onValueChange={(v) => setRow(i, { product_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Product" /></SelectTrigger>
-                    <SelectContent>
-                      {products.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}{p.sku ? ` (${p.sku})` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="any"
-                    placeholder="Qty"
-                    value={row.qty}
-                    onChange={(e) => setRow(i, { qty: e.target.value })}
-                  />
-                  <Button size="icon" variant="ghost" onClick={() => rmRow(i)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label>Note</Label>
-            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} disabled={saving}>
-            {saving ? "Creating…" : "Create Draft"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
