@@ -7,6 +7,15 @@ import {
   defaultLanding,
   type LandingContent,
 } from "@/lib/landing-content";
+import { listCarousels, type CarouselSlide } from "@/lib/landing-carousels";
+import { listLandingProducts, type LandingProduct } from "@/lib/landing-products";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import {
   Cake,
   Cookie,
@@ -38,6 +47,17 @@ export const Route = createFileRoute("/")({
 
 const productIcons = [Croissant, Cookie, Cake, ShoppingBag];
 
+function setFavicon(href: string) {
+  if (typeof document === "undefined") return;
+  let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+  link.href = href;
+}
+
 function Landing() {
   const { data, refetch } = useQuery({
     queryKey: ["landing-content"],
@@ -45,6 +65,18 @@ function Landing() {
     staleTime: 60_000,
   });
   const c: LandingContent = data ?? defaultLanding;
+
+  const { data: carousels = [], refetch: refetchCarousels } = useQuery<CarouselSlide[]>({
+    queryKey: ["landing-carousels-public"],
+    queryFn: () => listCarousels({ onlyActive: true }),
+    staleTime: 60_000,
+  });
+
+  const { data: featuredProducts = [], refetch: refetchFeatured } = useQuery<LandingProduct[]>({
+    queryKey: ["landing-featured-products"],
+    queryFn: () => listLandingProducts(),
+    staleTime: 60_000,
+  });
 
   const [company, setCompany] = useState<Awaited<ReturnType<typeof import("@/lib/company-settings").getCompany>> | null>(null);
   useEffect(() => {
@@ -55,7 +87,12 @@ function Landing() {
       if (mounted) setCompany(cc);
     };
     load();
-    const onUpdate = () => { load(); refetch(); };
+    const onUpdate = () => {
+      load();
+      refetch();
+      refetchCarousels();
+      refetchFeatured();
+    };
     window.addEventListener("company-settings-updated", onUpdate);
     window.addEventListener("landing-content-updated", onUpdate);
     return () => {
@@ -63,11 +100,20 @@ function Landing() {
       window.removeEventListener("company-settings-updated", onUpdate);
       window.removeEventListener("landing-content-updated", onUpdate);
     };
-  }, [refetch]);
+  }, [refetch, refetchCarousels, refetchFeatured]);
 
   const brandName = company?.name || c.brand.name;
   const brandTagline = company?.tagline || c.brand.tagline;
   const logoUrl = company?.logoDataUrl;
+
+  useEffect(() => {
+    if (logoUrl) setFavicon(logoUrl);
+  }, [logoUrl]);
+  useEffect(() => {
+    if (typeof document !== "undefined" && brandName) {
+      document.title = `${brandName} · ${brandTagline || "Freshly baked, honestly made"}`;
+    }
+  }, [brandName, brandTagline]);
 
   const [signedIn, setSignedIn] = useState(false);
   useEffect(() => {
@@ -149,7 +195,75 @@ function Landing() {
         </div>
       </section>
 
-      {/* Products */}
+      {/* Carousel */}
+      {carousels.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-4">
+          <Carousel opts={{ loop: true }} className="w-full">
+            <CarouselContent>
+              {carousels.map((s) => {
+                const inner = (
+                  <div className="relative aspect-[16/6] w-full overflow-hidden rounded-xl border border-border bg-muted">
+                    <img src={s.imageUrl} alt={s.title} className="absolute inset-0 size-full object-cover" />
+                    {(s.title || s.subtitle) && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end p-6">
+                        <div className="text-white">
+                          {s.title && <div className="text-lg sm:text-2xl font-semibold">{s.title}</div>}
+                          {s.subtitle && <div className="text-sm opacity-90 mt-1">{s.subtitle}</div>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+                return (
+                  <CarouselItem key={s.id}>
+                    {s.linkUrl ? (
+                      <a href={s.linkUrl} target="_blank" rel="noreferrer">{inner}</a>
+                    ) : (
+                      inner
+                    )}
+                  </CarouselItem>
+                );
+              })}
+            </CarouselContent>
+            {carousels.length > 1 && (
+              <>
+                <CarouselPrevious />
+                <CarouselNext />
+              </>
+            )}
+          </Carousel>
+        </section>
+      )}
+
+      {/* Featured products (from backend) */}
+      {featuredProducts.length > 0 && (
+        <section id="featured" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold">Featured products</h2>
+            <p className="text-muted-foreground mt-2">Handpicked from our current catalog.</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {featuredProducts.map((p) => (
+              <div key={p.id} className="rounded-lg border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors">
+                <div className="aspect-square bg-muted grid place-items-center overflow-hidden">
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt={p.name} className="size-full object-cover" />
+                  ) : (
+                    <Cake className="size-10 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="p-3">
+                  <div className="text-xs text-muted-foreground">{p.category}</div>
+                  <div className="font-medium text-sm mt-0.5 line-clamp-1">{p.name}</div>
+                  <div className="text-sm text-primary font-semibold mt-1">৳ {p.price.toFixed(2)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Products (static highlights) */}
       <section id="products" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
         <div className="text-center mb-10">
           <h2 className="text-2xl sm:text-3xl font-bold">What we bake</h2>
