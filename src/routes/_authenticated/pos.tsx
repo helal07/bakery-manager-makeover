@@ -444,7 +444,7 @@ function PosPage() {
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-[oklch(0.97_0.005_240)] dark:bg-background text-foreground">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-[oklch(0.97_0.005_240)] dark:bg-background text-foreground">
       {/* ============ TOP BAR ============ */}
       <header className="shrink-0 border-b border-border bg-card px-2 py-1.5 flex items-center gap-1.5 flex-wrap">
         <IconBtn title="Exit POS" onClick={() => navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /></IconBtn>
