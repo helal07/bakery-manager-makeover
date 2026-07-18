@@ -45,7 +45,7 @@ BEGIN
 END $$;
 
 -- 3. Permissions catalog — production-related keys নিশ্চিত করা (RBAC gate)
-INSERT INTO public.permissions (permission_key, label, category) VALUES
+INSERT INTO public.permissions (permission_key, label, module) VALUES
   ('production.view',        'View production module',      'Production'),
   ('production.batches',     'Run production batches',      'Production'),
   ('production.recipes',     'Manage recipes / BOM',        'Production'),

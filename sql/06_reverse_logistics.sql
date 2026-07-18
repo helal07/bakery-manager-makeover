@@ -202,7 +202,7 @@ BEGIN
 END; $$;
 
 -- 10. Permissions catalog additions
-INSERT INTO public.permissions (permission_key, label, category)
+INSERT INTO public.permissions (permission_key, label, module)
 VALUES
   ('sales.return.damaged',        'Mark returned items as damaged',   'Sales'),
   ('transfers.damaged.create',    'Create damaged-return transfer',   'Transfers'),
