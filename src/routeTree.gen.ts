@@ -73,6 +73,7 @@ import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authent
 import { Route as AuthenticatedExpensesCategoriesRouteImport } from './routes/_authenticated/expenses.categories'
 import { Route as AuthenticatedCrmIdRouteImport } from './routes/_authenticated/crm.$id'
 import { Route as AuthenticatedSalesEditIdRouteImport } from './routes/_authenticated/sales.edit.$id'
+import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -433,6 +434,12 @@ const AuthenticatedSalesEditIdRoute =
     path: '/sales/edit/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedProductsEditIdRoute =
+  AuthenticatedProductsEditIdRouteImport.update({
+    id: '/products/edit/$id',
+    path: '/products/edit/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -497,6 +504,7 @@ export interface FileRoutesByFullPath {
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
 }
 export interface FileRoutesByTo {
@@ -560,6 +568,7 @@ export interface FileRoutesByTo {
   '/products': typeof AuthenticatedProductsIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
 }
 export interface FileRoutesById {
@@ -627,6 +636,7 @@ export interface FileRoutesById {
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
 }
 export interface FileRouteTypes {
@@ -694,6 +704,7 @@ export interface FileRouteTypes {
     | '/products/'
     | '/reports/'
     | '/settings/'
+    | '/products/edit/$id'
     | '/sales/edit/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -757,6 +768,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/reports'
     | '/settings'
+    | '/products/edit/$id'
     | '/sales/edit/$id'
   id:
     | '__root__'
@@ -823,6 +835,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/'
     | '/_authenticated/reports/'
     | '/_authenticated/settings/'
+    | '/_authenticated/products/edit/$id'
     | '/_authenticated/sales/edit/$id'
   fileRoutesById: FileRoutesById
 }
@@ -1284,6 +1297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSalesEditIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/products/edit/$id': {
+      id: '/_authenticated/products/edit/$id'
+      path: '/products/edit/$id'
+      fullPath: '/products/edit/$id'
+      preLoaderRoute: typeof AuthenticatedProductsEditIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -1410,6 +1430,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsShowroomsRoute: typeof AuthenticatedSettingsShowroomsRoute
   AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
+  AuthenticatedProductsEditIdRoute: typeof AuthenticatedProductsEditIdRoute
   AuthenticatedSalesEditIdRoute: typeof AuthenticatedSalesEditIdRoute
 }
 
@@ -1455,6 +1476,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsShowroomsRoute: AuthenticatedSettingsShowroomsRoute,
   AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
+  AuthenticatedProductsEditIdRoute: AuthenticatedProductsEditIdRoute,
   AuthenticatedSalesEditIdRoute: AuthenticatedSalesEditIdRoute,
 }
 
