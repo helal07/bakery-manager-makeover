@@ -3921,6 +3921,15 @@ INSERT INTO public.role_permissions VALUES ('eb3aeb04-3a05-4b12-bd3a-a57fea598dd
 -- Data for Name: units; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.units (code, name) VALUES
+  ('kg',   'Kilogram'),
+  ('g',    'Gram'),
+  ('L',    'Litre'),
+  ('ml',   'Millilitre'),
+  ('pc',   'Piece'),
+  ('pack', 'Pack'),
+  ('box',  'Box')
+ON CONFLICT (code) DO NOTHING;
 
 
 --
@@ -3933,6 +3942,9 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_role();
+
+-- Refresh PostgREST schema cache so new columns are visible immediately.
+NOTIFY pgrst, 'reload schema';
 
 COMMIT;
 
