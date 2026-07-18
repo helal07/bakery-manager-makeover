@@ -50,6 +50,13 @@ function InvoiceView() {
     getCompany().then(setCompany).catch(() => {});
   }, [id]);
 
+  useEffect(() => {
+    if (!s.ap) return;
+    const t = setTimeout(() => { try { window.print(); } catch { /* ignore */ } }, 500);
+    return () => clearTimeout(t);
+  }, [s.ap]);
+
+
   const customerName = stored?.customer.name ?? s.c ?? "Walk-in Customer";
   const customerPhone = stored?.customer.phone ?? "";
   const branch = stored?.branch ?? s.b ?? "Main Branch";
