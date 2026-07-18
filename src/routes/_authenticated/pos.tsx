@@ -190,6 +190,34 @@ function PosPage() {
     setSelectedGroupId("");
   };
 
+  async function saveNewCustomer() {
+    const name = newCust.name.trim();
+    if (!name) { toast.error("Customer name is required"); return; }
+    setSavingCust(true);
+    try {
+      const { data, error } = await sb
+        .from("customers")
+        .insert({
+          name,
+          phone: newCust.phone.trim() || null,
+          email: newCust.email.trim() || null,
+          address: newCust.address.trim() || null,
+          is_active: true,
+        })
+        .select("id,name,phone,group_id")
+        .single();
+      if (error || !data) throw error ?? new Error("Insert failed");
+      pickCustomer(data as CustomerLite);
+      setAddCustOpen(false);
+      setNewCust({ name: "", phone: "", email: "", address: "" });
+      toast.success("Customer added");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to add customer");
+    } finally {
+      setSavingCust(false);
+    }
+  }
+
   // Products
   useEffect(() => {
     let cancelled = false;
