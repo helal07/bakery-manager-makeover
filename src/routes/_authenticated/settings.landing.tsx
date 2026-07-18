@@ -35,6 +35,7 @@ function LandingEditor() {
     setSaving(true);
     try {
       await saveLandingContent(content);
+      window.dispatchEvent(new Event("landing-content-updated"));
       toast.success("Landing page updated");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
