@@ -1044,8 +1044,9 @@ CREATE TABLE public.transfers (
 
 CREATE TABLE public.units (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
+    code text NOT NULL,
     name text NOT NULL,
-    short_name text,
+    is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -1062,6 +1063,10 @@ CREATE TABLE public.user_profiles (
     email text,
     phone text,
     avatar_url text,
+    bio text,
+    language text,
+    timezone text,
+    software jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
