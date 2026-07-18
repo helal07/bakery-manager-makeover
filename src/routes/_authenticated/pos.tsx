@@ -381,7 +381,20 @@ function PosPage() {
   }
 
   async function complete() {
-    if (!canComplete) return;
+    if (items.length === 0) { toast.error("Cart is empty"); return; }
+    if (saving) return;
+    if (mode === "credit" && isWalkIn) {
+      toast.error("Please select a customer for credit sale");
+      return;
+    }
+    if (mode === "multi" && multiPaid <= 0) {
+      toast.error("Enter tender amounts for multiple pay");
+      return;
+    }
+    if (mode === "multi" && due > 0 && isWalkIn) {
+      toast.error("Select a customer to leave a balance due");
+      return;
+    }
     setSaving(true);
     const externalRef = `TX-${Math.floor(Math.random() * 9000) + 1000}`;
     try {
@@ -440,6 +453,21 @@ function PosPage() {
       }
       await Promise.all(rpcs);
       invalidate("pos:products:");
+
+      // Stash invoice snapshot for the print window
+      try {
+        const snapshot = {
+          customer: { name: customerName.trim() || "Walk-in Customer", phone: customerPhone.trim() || undefined },
+          branch: "Main Branch",
+          date: new Date().toISOString(),
+          mode: paymentMode === "card" ? "cash" : (paymentMode as "cash" | "due" | "partial"),
+          items: items.map(({ p, qty }) => ({ name: p.name, sku: p.sku ?? "", price: priceFor(p), qty })),
+          subtotal, tax: 0, total, paid, due,
+        };
+        sessionStorage.setItem(`invoice:${sale.id}`, JSON.stringify(snapshot));
+      } catch { /* ignore */ }
+      window.open(`/invoice/${sale.id}?ap=1`, "_blank", "noopener,width=420,height=720");
+
       toast.success(`Sale ${externalRef} completed · ৳${total.toFixed(2)}`);
       clearCart();
       setTenders([]);
@@ -452,6 +480,7 @@ function PosPage() {
       setSaving(false);
     }
   }
+
 
   const openMultiPay = () => {
     if (tenders.length === 0) setTenders([{ method: "cash", amount: total }]);
