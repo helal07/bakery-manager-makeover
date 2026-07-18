@@ -775,6 +775,47 @@ function PosPage() {
         <CloseRegisterModal register={register} onClose={() => setCloseRegOpen(false)}
           onClosed={() => { setRegister(null); setCloseRegOpen(false); toast.success("Register closed"); }} />
       )}
+      {addCustOpen && (
+        <div className="fixed inset-0 z-[80] bg-black/50 grid place-items-center p-4" onClick={() => !savingCust && setAddCustOpen(false)}>
+          <div className="w-full max-w-md rounded-lg bg-card border border-border shadow-xl p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 font-semibold text-sm"><UserPlus className="size-4 text-primary" /> Add new customer</div>
+              <button onClick={() => setAddCustOpen(false)} className="p-1 rounded hover:bg-accent"><X className="size-4" /></button>
+            </div>
+            <div className="grid gap-2.5">
+              <label className="text-xs font-medium">
+                Name<span className="text-destructive">*</span>
+                <input autoFocus value={newCust.name} onChange={(e) => setNewCust({ ...newCust, name: e.target.value })}
+                  className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary" />
+              </label>
+              <label className="text-xs font-medium">
+                Phone
+                <input value={newCust.phone} onChange={(e) => setNewCust({ ...newCust, phone: e.target.value })}
+                  className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary" />
+              </label>
+              <label className="text-xs font-medium">
+                Email
+                <input type="email" value={newCust.email} onChange={(e) => setNewCust({ ...newCust, email: e.target.value })}
+                  className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary" />
+              </label>
+              <label className="text-xs font-medium">
+                Address
+                <textarea value={newCust.address} onChange={(e) => setNewCust({ ...newCust, address: e.target.value })}
+                  rows={2}
+                  className="mt-1 w-full px-2.5 py-1.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary" />
+              </label>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setAddCustOpen(false)} disabled={savingCust}
+                className="h-9 px-3 rounded-md border border-border text-xs font-semibold hover:bg-accent">Cancel</button>
+              <button onClick={saveNewCustomer} disabled={savingCust || !newCust.name.trim()}
+                className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50">
+                {savingCust ? "Saving…" : "Save customer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
