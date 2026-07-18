@@ -383,12 +383,15 @@ CREATE TABLE public.company_settings (
 CREATE TABLE public.customer_groups (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
+    mode text DEFAULT 'percentage' NOT NULL,
     discount_pct numeric DEFAULT 0 NOT NULL,
+    selling_price_group_id uuid,
     is_default boolean DEFAULT false NOT NULL,
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
 
 
 --
@@ -757,11 +760,12 @@ CREATE TABLE public.raw_materials (
     name text NOT NULL,
     unit text,
     cost numeric DEFAULT 0 NOT NULL,
-    threshold numeric DEFAULT 0 NOT NULL,
+    min_stock numeric DEFAULT 0 NOT NULL,
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
 
 
 --
