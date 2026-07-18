@@ -67,6 +67,11 @@ export async function uploadCarouselImage(file: File): Promise<string> {
     contentType: file.type,
   });
   if (error) throw error;
-  const { data } = supabase.storage.from("landing-images").getPublicUrl(path);
-  return data.publicUrl;
+  // Try public URL first (works with public buckets on self-hosted Supabase).
+  const pub = supabase.storage.from("landing-images").getPublicUrl(path).data.publicUrl;
+  // Also generate a long-lived signed URL as fallback for private buckets.
+  const { data: signed } = await supabase.storage
+    .from("landing-images")
+    .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+  return signed?.signedUrl || pub;
 }
