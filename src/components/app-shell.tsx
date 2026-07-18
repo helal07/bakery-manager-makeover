@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getCompany, defaultCompany, getCachedCompany, type CompanySettings } from "@/lib/company-settings";
-import { getProfile, type UserProfile } from "@/lib/profile-settings";
+import { getProfile, getCachedProfile, type UserProfile } from "@/lib/profile-settings";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
