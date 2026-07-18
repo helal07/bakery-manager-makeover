@@ -34,7 +34,7 @@ function Production() {
         .eq("kind", "production")
         .order("created_at", { ascending: false })
         .limit(200);
-      if (currentShowroomId) q = q.eq("showroom_id", currentShowroomId);
+      q = q.is("showroom_id", null); // factory-only production
       const { data, error } = await q;
       if (cancelled) return;
       if (error) {
