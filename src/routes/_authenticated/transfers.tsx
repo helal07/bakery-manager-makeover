@@ -43,7 +43,7 @@ function TransfersPage() {
   const [rows, setRows] = useState<TransferRow[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openNew, setOpenNew] = useState(false);
+  const [openView, setOpenView] = useState<TransferRow | null>(null);
   const [openView, setOpenView] = useState<TransferRow | null>(null);
   const [viewItems, setViewItems] = useState<TransferItem[]>([]);
 
