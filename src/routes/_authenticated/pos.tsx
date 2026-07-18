@@ -92,7 +92,7 @@ function PosPage() {
     (async () => {
       const { data } = await sb
         .from("customer_groups")
-        .select("id,name,discount_pct,mode,selling_price_group_id")
+        .select('id,name,discount_pct,mode:"mode",selling_price_group_id')
         .order("name");
       setGroups((data ?? []) as GroupLite[]);
     })();
