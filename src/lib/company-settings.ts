@@ -66,10 +66,21 @@ export async function saveCompany(c: CompanySettings) {
     // Prefer storing the storage path so URLs can be re-signed on load
     logo_url: c.logoPath || c.logoDataUrl || null,
     footer_note: c.footerNote || null,
+    is_current: true,
   };
-  const { error } = await supabase
+  // Find existing current row; update it, otherwise insert a new one.
+  const { data: existing } = await supabase
     .from("company_settings")
-    .update(payload)
-    .eq("is_current", true);
-  if (error) throw error;
+    .select("id")
+    .eq("is_current", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing?.id) {
+    const { error } = await supabase.from("company_settings").update(payload).eq("id", existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from("company_settings").insert(payload);
+    if (error) throw error;
+  }
 }
