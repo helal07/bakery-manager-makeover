@@ -1,6 +1,7 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { ShowroomScopeProvider } from "@/hooks/use-showroom-scope";
+import { AppShellFrame } from "@/components/app-shell";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -8,7 +9,6 @@ export const Route = createFileRoute("/_authenticated")({
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
 
-    // Must have at least one app role (owner/admin/manager/employee)
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated")({
   },
   component: () => (
     <ShowroomScopeProvider>
-      <Outlet />
+      <AppShellFrame />
     </ShowroomScopeProvider>
   ),
 });
