@@ -38,23 +38,45 @@ function fromRow(r: Record<string, unknown>): CompanySettings {
   };
 }
 
+const CACHE_KEY = "company-settings-cache-v1";
+
+export function getCachedCompany(): CompanySettings | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as CompanySettings;
+  } catch { return null; }
+}
+
+function writeCache(c: CompanySettings) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch { /* ignore */ }
+}
+
+let inflight: Promise<CompanySettings> | null = null;
+
 export async function getCompany(): Promise<CompanySettings> {
-  const { data, error } = await supabase
-    .from("company_settings")
-    .select("name, tagline, address, phone, email, vat_reg, logo_url, footer_note")
-    .eq("is_current", true)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error || !data) return defaultCompany;
-  const merged: CompanySettings = { ...defaultCompany, ...fromRow(data) };
-  if (merged.logoPath && !merged.logoDataUrl) {
-    const { data: signed } = await supabase.storage
-      .from("company-logos")
-      .createSignedUrl(merged.logoPath, 60 * 60 * 24 * 7);
-    if (signed?.signedUrl) merged.logoDataUrl = signed.signedUrl;
-  }
-  return merged;
+  if (inflight) return inflight;
+  inflight = (async () => {
+    const { data, error } = await supabase
+      .from("company_settings")
+      .select("name, tagline, address, phone, email, vat_reg, logo_url, footer_note")
+      .eq("is_current", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return defaultCompany;
+    const merged: CompanySettings = { ...defaultCompany, ...fromRow(data) };
+    if (merged.logoPath && !merged.logoDataUrl) {
+      const { data: signed } = await supabase.storage
+        .from("company-logos")
+        .createSignedUrl(merged.logoPath, 60 * 60 * 24 * 7);
+      if (signed?.signedUrl) merged.logoDataUrl = signed.signedUrl;
+    }
+    writeCache(merged);
+    return merged;
+  })();
+  try { return await inflight; } finally { inflight = null; }
 }
 
 export async function saveCompany(c: CompanySettings) {
