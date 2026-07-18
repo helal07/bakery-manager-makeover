@@ -223,7 +223,7 @@ export function AppShell({ children, title, subtitle, actions }: {
   useEffect(() => {
     let mounted = true;
     const load = () => getCompany().then((c) => { if (mounted) setCompany(c); }).catch(() => {});
-    load();
+    if (!companyLoadedOnce) { companyLoadedOnce = true; load(); }
     const handler = () => load();
     window.addEventListener("company-settings-updated", handler);
     return () => { mounted = false; window.removeEventListener("company-settings-updated", handler); };
