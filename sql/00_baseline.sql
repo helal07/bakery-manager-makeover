@@ -1514,6 +1514,9 @@ ALTER TABLE ONLY public.transfers
 ALTER TABLE ONLY public.units
     ADD CONSTRAINT units_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY public.units
+    ADD CONSTRAINT units_code_key UNIQUE (code);
+
 
 --
 -- Name: user_profiles user_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
