@@ -1,5 +1,5 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Link, useRouterState, useNavigate, Outlet } from "@tanstack/react-router";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { LogOut, Menu, X, Store, Factory } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -189,14 +189,47 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 
-let companyLoadedOnce = false;
+// ---------- Page meta context (lets pages set the header without remounting the shell) ----------
 
+type PageMeta = { title: string; subtitle?: string; actions?: ReactNode };
+type PageMetaCtx = {
+  meta: PageMeta;
+  setMeta: (m: PageMeta) => void;
+};
+const PageMetaContext = createContext<PageMetaCtx | null>(null);
+
+function shallowMetaEqual(a: PageMeta, b: PageMeta) {
+  return a.title === b.title && a.subtitle === b.subtitle && a.actions === b.actions;
+}
+
+/**
+ * Per-page wrapper. Preserves the existing `<AppShell title=... actions=...>` API,
+ * but no longer renders the sidebar/header itself — those live in `AppShellFrame`
+ * mounted once by the authenticated layout. This means navigation no longer
+ * remounts the sidebar, permissions, company info, or user menu.
+ */
 export function AppShell({ children, title, subtitle, actions }: {
   children: ReactNode;
   title: string;
   subtitle?: string;
   actions?: ReactNode;
 }) {
+  const ctx = useContext(PageMetaContext);
+  useLayoutEffect(() => {
+    if (!ctx) return;
+    const next = { title, subtitle, actions };
+    if (!shallowMetaEqual(ctx.meta, next)) ctx.setMeta(next);
+  });
+  return <>{children}</>;
+}
+
+let companyLoadedOnce = false;
+
+/**
+ * Persistent chrome (sidebar + header + main slot). Mount ONCE from the
+ * authenticated layout route and put `<Outlet />` inside it.
+ */
+export function AppShellFrame() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const hash = useRouterState({ select: (s) => s.location.hash ?? "" });
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -204,8 +237,12 @@ export function AppShell({ children, title, subtitle, actions }: {
   const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
   const { loading: permLoading, isSuperadmin, permissions } = usePermissions();
 
+  const [meta, setMetaState] = useState<PageMeta>({ title: "" });
+  const setMeta = useCallback((m: PageMeta) => setMetaState(m), []);
+  const metaCtx = useMemo<PageMetaCtx>(() => ({ meta, setMeta }), [meta, setMeta]);
+
   const can = (key?: string) => !key || isSuperadmin || permissions.has(key);
-  const visibleGroups = permLoading
+  const visibleGroups = useMemo(() => (permLoading
     ? []
     : navGroups
         .map((g) => {
@@ -220,7 +257,9 @@ export function AppShell({ children, title, subtitle, actions }: {
             .filter(Boolean) as NavItem[];
           return { ...g, items };
         })
-        .filter((g) => g.items.length > 0);
+        .filter((g) => g.items.length > 0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [permLoading, isSuperadmin, permissions]);
 
   useEffect(() => {
     let mounted = true;
@@ -255,100 +294,104 @@ export function AppShell({ children, title, subtitle, actions }: {
   }, [mobileOpen]);
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      {/* Mobile overlay */}
-      <div
-        className={cn(
-          "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
-          mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-        )}
-        onClick={() => setMobileOpen(false)}
-        aria-hidden="true"
-      />
+    <PageMetaContext.Provider value={metaCtx}>
+      <div className="flex min-h-screen bg-background text-foreground">
+        {/* Mobile overlay */}
+        <div
+          className={cn(
+            "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
+            mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+          )}
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transform-gpu transition-transform duration-300 ease-in-out will-change-transform md:static md:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <div className="px-5 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
-          <div className="size-9 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center overflow-hidden">
-            {company.logoDataUrl ? (
-              <img src={company.logoDataUrl} alt="" className="size-full object-cover" />
-            ) : (
-              <Wheat className="size-5" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold tracking-tight truncate">
-              {company.name || defaultCompany.name}
+        {/* Sidebar */}
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transform-gpu transition-transform duration-300 ease-in-out will-change-transform md:static md:translate-x-0",
+            mobileOpen ? "translate-x-0" : "-translate-x-full",
+          )}
+        >
+          <div className="px-5 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
+            <div className="size-9 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center overflow-hidden">
+              {company.logoDataUrl ? (
+                <img src={company.logoDataUrl} alt="" className="size-full object-cover" />
+              ) : (
+                <Wheat className="size-5" />
+              )}
             </div>
-            <div className="text-[11px] text-sidebar-foreground/60 truncate">
-              {company.tagline || company.address || ""}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setMobileOpen(false)}
-            className="md:hidden p-1.5 rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent"
-            aria-label="Close menu"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
-          {visibleGroups.map((g) => (
-            <div key={g.label}>
-              <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
-                {g.label}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold tracking-tight truncate">
+                {company.name || defaultCompany.name}
               </div>
-              <div className="space-y-0.5">
-                {g.items.map((n) => (
-                  <NavEntry
-                    key={n.to}
-                    item={n}
-                    pathname={pathname}
-                    hash={hash}
-                    openMenu={openMenu}
-                    setOpenMenu={setOpenMenu}
-                  />
-                ))}
+              <div className="text-[11px] text-sidebar-foreground/60 truncate">
+                {company.tagline || company.address || ""}
               </div>
             </div>
-          ))}
-        </nav>
-        <UserMenu />
-      </aside>
-
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Page header */}
-        <div className="px-4 md:px-8 pt-5 md:pt-7 pb-4 flex flex-wrap items-end justify-between gap-4 border-b border-border">
-          <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
-              onClick={() => setMobileOpen(true)}
-              className="md:hidden p-2 -ml-2 rounded-md text-foreground/70 hover:bg-accent"
-              aria-label="Open menu"
+              onClick={() => setMobileOpen(false)}
+              className="md:hidden p-1.5 rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent"
+              aria-label="Close menu"
             >
-              <Menu className="size-5" />
+              <X className="size-4" />
             </button>
-            <div className="min-w-0">
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">{title}</h1>
-              {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
+          </div>
+          <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+            {visibleGroups.map((g) => (
+              <div key={g.label}>
+                <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
+                  {g.label}
+                </div>
+                <div className="space-y-0.5">
+                  {g.items.map((n) => (
+                    <NavEntry
+                      key={n.to}
+                      item={n}
+                      pathname={pathname}
+                      hash={hash}
+                      openMenu={openMenu}
+                      setOpenMenu={setOpenMenu}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
+          <UserMenu />
+        </aside>
+
+        {/* Main */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Page header */}
+          <div className="px-4 md:px-8 pt-5 md:pt-7 pb-4 flex flex-wrap items-end justify-between gap-4 border-b border-border">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="md:hidden p-2 -ml-2 rounded-md text-foreground/70 hover:bg-accent"
+                aria-label="Open menu"
+              >
+                <Menu className="size-5" />
+              </button>
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">{meta.title}</h1>
+                {meta.subtitle && <p className="text-sm text-muted-foreground mt-1">{meta.subtitle}</p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <ShowroomSwitcher />
+              {meta.actions}
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <ShowroomSwitcher />
-            {actions}
-          </div>
-        </div>
 
-        <main className="flex-1 px-4 md:px-8 py-6">{children}</main>
+          <main className="flex-1 px-4 md:px-8 py-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </PageMetaContext.Provider>
   );
 }
 
@@ -383,7 +426,6 @@ function NavEntry({ item, pathname, hash, openMenu, setOpenMenu }: {
   }
 
   const currentHash = (hash || "").replace(/^#/, "");
-  // Determine the single "best" active child: exact path + hash match wins over path-only match.
   const activeKey = (() => {
     const exact = item.children.find((c) => pathname === c.to && (c.hash ?? "") === currentHash);
     if (exact) return `${exact.to}#${exact.hash ?? ""}`;
