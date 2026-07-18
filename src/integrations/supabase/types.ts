@@ -519,6 +519,42 @@ export type Database = {
           },
         ]
       }
+      landing_carousels: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          is_active: boolean
+          link_url: string | null
+          sort_order: number
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       landing_content: {
         Row: {
           content: Json
@@ -766,6 +802,7 @@ export type Database = {
           name: string
           price: number
           shelf_life_days: number | null
+          show_on_landing: boolean
           sku: string | null
           threshold: number
           unit: string | null
@@ -786,6 +823,7 @@ export type Database = {
           name: string
           price?: number
           shelf_life_days?: number | null
+          show_on_landing?: boolean
           sku?: string | null
           threshold?: number
           unit?: string | null
@@ -806,6 +844,7 @@ export type Database = {
           name?: string
           price?: number
           shelf_life_days?: number | null
+          show_on_landing?: boolean
           sku?: string | null
           threshold?: number
           unit?: string | null
