@@ -112,16 +112,16 @@ function AddPurchase() {
     try {
       s = await addSupplier({
         name: supForm.name.trim(),
-        contact: supForm.contact.trim(),
+        email: supForm.email.trim(),
         phone: supForm.phone.trim(),
-        category: supForm.category.trim() || "General",
+        address: supForm.address.trim(),
       });
     } catch (err: any) {
       return toast.error(err?.message ?? "Failed to add supplier");
     }
     setSuppliers((l) => [s, ...l]);
     setSupplierId(s.id);
-    setSupForm({ name: "", contact: "", phone: "", category: "" });
+    setSupForm({ name: "", email: "", phone: "", address: "" });
     setSupOpen(false);
     toast.success("Supplier added");
   };
