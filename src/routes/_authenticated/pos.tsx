@@ -478,7 +478,7 @@ function PosPage() {
           items: items.map(({ p, qty }) => ({ name: p.name, sku: p.sku ?? "", price: priceFor(p), qty })),
           subtotal, tax: 0, total, paid, due,
         };
-        sessionStorage.setItem(`invoice:${sale.id}`, JSON.stringify(snapshot));
+        localStorage.setItem(`invoice:${sale.id}`, JSON.stringify(snapshot));
       } catch { /* ignore */ }
       window.open(`/invoice/${sale.id}?ap=1`, "_blank", "noopener,width=520,height=800");
 
