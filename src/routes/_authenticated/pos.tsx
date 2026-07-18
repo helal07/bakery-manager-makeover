@@ -63,6 +63,9 @@ function PosPage() {
   const [custResults, setCustResults] = useState<CustomerLite[]>([]);
   const [custOpen, setCustOpen] = useState(false);
   const [customerDue, setCustomerDue] = useState(0);
+  const [addCustOpen, setAddCustOpen] = useState(false);
+  const [newCust, setNewCust] = useState({ name: "", phone: "", email: "", address: "" });
+  const [savingCust, setSavingCust] = useState(false);
 
   // Groups
   const [groups, setGroups] = useState<GroupLite[]>([]);
