@@ -1,18 +1,31 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell, Card } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, RotateCcw, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Save, RotateCcw, ExternalLink, Upload, Image as ImageIcon } from "lucide-react";
 import {
   fetchLandingContent,
   saveLandingContent,
   defaultLanding,
   type LandingContent,
 } from "@/lib/landing-content";
+import {
+  listCarousels,
+  upsertCarousel,
+  deleteCarousel,
+  uploadCarouselImage,
+  type CarouselSlide,
+} from "@/lib/landing-carousels";
+import {
+  listAllProductsForLanding,
+  setProductShowOnLanding,
+  type LandingProduct,
+} from "@/lib/landing-products";
 
 export const Route = createFileRoute("/_authenticated/settings/landing")({
   head: () => ({ meta: [{ title: "Landing Page · Settings" }] }),
