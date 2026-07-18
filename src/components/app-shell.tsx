@@ -113,6 +113,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
           { to: "/production/work-orders", label: "Work Orders", icon: List, permission: "production.work_orders.manage" },
           { to: "/production/wastage", label: "Wastage Log", icon: Undo2, permission: "production.wastage.manage" },
           { to: "/production/qc", label: "Quality Check", icon: ShieldCheck, permission: "production.qc.manage" },
+          { to: "/production/repurpose", label: "Repurpose Workshop", icon: Undo2, permission: "production.repurpose" },
           { to: "/production/cost-report", label: "Cost Report", icon: BarChart3, permission: "production.reports.view" },
           { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: "production.reports.view" },
         ],
