@@ -11,7 +11,9 @@ const invoiceSearchSchema = z.object({
   i: z.coerce.number().optional(),
   t: z.coerce.number().optional(),
   p: z.coerce.number().optional(),
+  ap: z.coerce.number().optional(),
 });
+
 
 export const Route = createFileRoute("/invoice/$id")({
   head: ({ params }) => ({ meta: [{ title: `Invoice #${params.id} · Crumb & Co.` }] }),
@@ -47,6 +49,13 @@ function InvoiceView() {
     } catch { /* ignore */ }
     getCompany().then(setCompany).catch(() => {});
   }, [id]);
+
+  useEffect(() => {
+    if (!s.ap) return;
+    const t = setTimeout(() => { try { window.print(); } catch { /* ignore */ } }, 500);
+    return () => clearTimeout(t);
+  }, [s.ap]);
+
 
   const customerName = stored?.customer.name ?? s.c ?? "Walk-in Customer";
   const customerPhone = stored?.customer.phone ?? "";
