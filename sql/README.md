@@ -29,6 +29,22 @@
 3. আপনি patch ফাইলটা SQL Editor-এ paste করে Run চাপবেন।
 4. `sql/applied.md`-এ tick দিয়ে রাখবেন।
 
+## Build-এর আগে schema audit
+
+কোড কোন টেবিল/কলাম আশা করছে এবং SQL baseline/live database-এ সেগুলো আছে কি না দেখতে:
+
+```bash
+bun run db:audit
+```
+
+তারপর build চালাতে চাইলে:
+
+```bash
+bun run build:checked
+```
+
+`PGHOST/PGUSER/PGPASSWORD/PGDATABASE` সেট থাকলে script live database-ও মিলিয়ে দেখবে। না থাকলে শুধু `sql/00_baseline.sql` বনাম codebase মিলিয়ে report দেবে।
+
 ## সমস্যা হলে
 
 - **"schema public does not exist"** — baseline চালানোর সময় transaction rollback হয়েছে। error message পাঠান।
