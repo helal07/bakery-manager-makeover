@@ -212,7 +212,8 @@ function collectExpectedColumns() {
 
       const start = match.index ?? 0;
       const statementEnd = findStatementEnd(content, start);
-      const chain = content.slice(start, statementEnd);
+      const nextStart = fromMatches[i + 1]?.index ?? content.length;
+      const chain = content.slice(start, Math.min(statementEnd, nextStart));
       const line = content.slice(0, start).split(/\r?\n/).length;
       const ref = `${rel}:${line}`;
 
