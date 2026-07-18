@@ -73,7 +73,7 @@ function WorkOrdersPage() {
     try {
       await createWorkOrder({
         productId,
-        showroomId: currentShowroomId ?? null,
+        showroomId: null, // factory-only
         batchQty,
         plannedDate: plannedDate || null,
         assignedTo: assignedTo || null,

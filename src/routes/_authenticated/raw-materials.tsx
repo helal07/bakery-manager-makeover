@@ -202,7 +202,7 @@ function RawMaterials() {
     try {
       await adjustRawStock(
         move.id,
-        currentShowroomId,
+        null, // factory-only raw stock
         move.type === "in" ? n : -n,
         note || undefined,
       );

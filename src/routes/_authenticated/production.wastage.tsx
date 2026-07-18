@@ -51,7 +51,7 @@ function WastagePage() {
     try {
       await logWastage({
         materialId,
-        showroomId: currentShowroomId ?? null,
+        showroomId: null, // factory-only
         qty,
         reason,
         notes: notes || null,
