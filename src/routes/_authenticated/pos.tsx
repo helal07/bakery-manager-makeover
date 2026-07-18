@@ -675,24 +675,29 @@ function PosPage() {
 
           {/* Payment mode helper strip */}
           {(mode === "credit" || mode === "multi") && (
-            <div className="shrink-0 border-t border-border bg-muted/50 px-3 py-1.5 text-[11px] flex items-center justify-between gap-2 flex-wrap">
-              <span>
-                Mode: <span className="font-semibold">{mode === "credit" ? "Credit Sale (100% due)" : "Multiple Pay"}</span>
-                {mode === "multi" && <> · Paid ৳{multiPaid.toFixed(2)} · <button onClick={openMultiPay} className="text-primary underline">Edit tenders</button></>}
+            <div className={`shrink-0 border-t-2 px-3 py-2 text-sm flex items-center justify-between gap-2 flex-wrap ${
+              mode === "credit"
+                ? "border-amber-500 bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100"
+                : "border-border bg-muted/60"
+            }`}>
+              <span className="font-bold">
+                Mode: <span className="font-extrabold uppercase">{mode === "credit" ? "Credit Sale (100% Due)" : "Multiple Pay"}</span>
+                {mode === "multi" && <> · Paid ৳{multiPaid.toFixed(2)} · <button onClick={openMultiPay} className="text-primary underline font-semibold">Edit tenders</button></>}
               </span>
-              <span className={due <= 0 ? "text-[color:var(--success)] font-semibold" : "text-destructive font-semibold"}>
+              <span className={`font-extrabold text-base ${due <= 0 ? "text-[color:var(--success)]" : "text-destructive"}`}>
                 {due <= 0 ? "Fully paid" : `Due ৳${due.toFixed(2)}`}
-                {isWalkIn && due > 0 && " · select a customer"}
+                {isWalkIn && due > 0 && <span className="ml-1 uppercase">· Select a customer!</span>}
               </span>
               <button
                 onClick={complete}
                 disabled={!canComplete}
-                className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
+                className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-bold disabled:opacity-50 shadow"
               >
                 Complete (F9)
               </button>
             </div>
           )}
+
         </section>
 
 
