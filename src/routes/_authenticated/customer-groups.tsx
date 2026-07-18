@@ -45,7 +45,7 @@ function CustomerGroupsPage() {
     const [{ data, error }, { data: spgData }] = await Promise.all([
       sb
       .from("customer_groups")
-      .select("id, name, discount_pct, is_default, mode, selling_price_group_id")
+      .select('id, name, discount_pct, is_default, pricing_mode:"mode", selling_price_group_id')
       .eq("is_active", true)
       .order("is_default", { ascending: false })
       .order("discount_pct", { ascending: true }),
