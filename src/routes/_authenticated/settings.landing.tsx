@@ -253,7 +253,295 @@ function LandingEditor() {
             </div>
           </div>
         </Card>
+
+        {/* Carousel manager */}
+        <Card className="p-5 space-y-3 lg:col-span-2">
+          <CarouselManager />
+        </Card>
+
+        {/* Product publisher */}
+        <Card className="p-5 space-y-3 lg:col-span-2">
+          <ProductPublisher />
+        </Card>
       </div>
     </AppShell>
+  );
+}
+
+function CarouselManager() {
+  const [slides, setSlides] = useState<CarouselSlide[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const reload = async () => {
+    setLoading(true);
+    try {
+      setSlides(await listCarousels());
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load carousels");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    reload();
+  }, []);
+
+  const addSlide = async () => {
+    try {
+      await upsertCarousel({
+        title: "New slide",
+        imageUrl: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1600",
+        sortOrder: slides.length,
+        isActive: true,
+      });
+      await reload();
+      window.dispatchEvent(new Event("landing-content-updated"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Add failed");
+    }
+  };
+
+  const save = async (s: CarouselSlide) => {
+    try {
+      await upsertCarousel(s);
+      toast.success("Slide saved");
+      window.dispatchEvent(new Event("landing-content-updated"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
+    }
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this slide?")) return;
+    try {
+      await deleteCarousel(id);
+      await reload();
+      window.dispatchEvent(new Event("landing-content-updated"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
+  const onUpload = async (s: CarouselSlide, file: File) => {
+    setUploadingId(s.id);
+    try {
+      const url = await uploadCarouselImage(file);
+      await upsertCarousel({ ...s, imageUrl: url });
+      await reload();
+      window.dispatchEvent(new Event("landing-content-updated"));
+      toast.success("Image uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold">Carousel slides</h2>
+          <p className="text-xs text-muted-foreground">Shown at the top of the landing page.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={addSlide}>
+          <Plus className="size-4" /> Add slide
+        </Button>
+      </div>
+      {loading ? (
+        <p className="text-xs text-muted-foreground">Loading…</p>
+      ) : slides.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No slides yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {slides.map((s) => (
+            <div key={s.id} className="grid grid-cols-1 md:grid-cols-[160px_1fr_auto] gap-3 items-start border border-border rounded-md p-3">
+              <div className="aspect-[16/9] rounded bg-muted overflow-hidden grid place-items-center">
+                {s.imageUrl ? (
+                  <img src={s.imageUrl} alt={s.title} className="size-full object-cover" />
+                ) : (
+                  <ImageIcon className="size-6 text-muted-foreground" />
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Title</Label>
+                    <Input
+                      value={s.title}
+                      onChange={(e) =>
+                        setSlides((arr) => arr.map((x) => (x.id === s.id ? { ...x, title: e.target.value } : x)))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Subtitle</Label>
+                    <Input
+                      value={s.subtitle ?? ""}
+                      onChange={(e) =>
+                        setSlides((arr) => arr.map((x) => (x.id === s.id ? { ...x, subtitle: e.target.value } : x)))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Image URL</Label>
+                    <Input
+                      value={s.imageUrl}
+                      onChange={(e) =>
+                        setSlides((arr) => arr.map((x) => (x.id === s.id ? { ...x, imageUrl: e.target.value } : x)))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Link (optional)</Label>
+                    <Input
+                      value={s.linkUrl ?? ""}
+                      onChange={(e) =>
+                        setSlides((arr) => arr.map((x) => (x.id === s.id ? { ...x, linkUrl: e.target.value } : x)))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Sort order</Label>
+                    <Input
+                      type="number"
+                      value={s.sortOrder}
+                      onChange={(e) =>
+                        setSlides((arr) => arr.map((x) => (x.id === s.id ? { ...x, sortOrder: Number(e.target.value) || 0 } : x)))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <Switch
+                      checked={s.isActive}
+                      onCheckedChange={(v) =>
+                        setSlides((arr) => arr.map((x) => (x.id === s.id ? { ...x, isActive: v } : x)))
+                      }
+                    />
+                    <span className="text-xs text-muted-foreground">Active</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={(el) => {
+                    fileRefs.current[s.id] = el;
+                  }}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) onUpload(s, f);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileRefs.current[s.id]?.click()}
+                  disabled={uploadingId === s.id}
+                >
+                  <Upload className="size-4" /> {uploadingId === s.id ? "Uploading…" : "Upload"}
+                </Button>
+                <Button size="sm" onClick={() => save(s)}>
+                  <Save className="size-4" /> Save
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => remove(s.id)} className="text-destructive">
+                  <Trash2 className="size-4" /> Delete
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProductPublisher() {
+  const [items, setItems] = useState<LandingProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+
+  const reload = async () => {
+    setLoading(true);
+    try {
+      setItems(await listAllProductsForLanding());
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    reload();
+  }, []);
+
+  const toggle = async (p: LandingProduct, v: boolean) => {
+    setItems((arr) => arr.map((x) => (x.id === p.id ? { ...x, showOnLanding: v } : x)));
+    try {
+      await setProductShowOnLanding(p.id, v);
+      window.dispatchEvent(new Event("landing-content-updated"));
+    } catch (e) {
+      setItems((arr) => arr.map((x) => (x.id === p.id ? { ...x, showOnLanding: !v } : x)));
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
+  };
+
+  const filtered = items.filter(
+    (p) =>
+      !query ||
+      p.name.toLowerCase().includes(query.toLowerCase()) ||
+      p.sku.toLowerCase().includes(query.toLowerCase()),
+  );
+  const publishedCount = items.filter((p) => p.showOnLanding).length;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-sm font-semibold">Publish products on landing</h2>
+          <p className="text-xs text-muted-foreground">
+            {publishedCount} of {items.length} published
+          </p>
+        </div>
+        <Input
+          placeholder="Search product…"
+          className="max-w-xs"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+      {loading ? (
+        <p className="text-xs text-muted-foreground">Loading…</p>
+      ) : (
+        <div className="border border-border rounded-md divide-y max-h-[420px] overflow-auto">
+          {filtered.map((p) => (
+            <div key={p.id} className="flex items-center gap-3 p-3">
+              <div className="size-10 rounded bg-muted overflow-hidden grid place-items-center shrink-0">
+                {p.imageUrl ? (
+                  <img src={p.imageUrl} alt={p.name} className="size-full object-cover" />
+                ) : (
+                  <ImageIcon className="size-4 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate">{p.name}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {p.sku} · {p.category} · ৳ {p.price.toFixed(2)}
+                </div>
+              </div>
+              <Switch checked={p.showOnLanding} onCheckedChange={(v) => toggle(p, v)} />
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <p className="text-xs text-muted-foreground p-3">No products match.</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
