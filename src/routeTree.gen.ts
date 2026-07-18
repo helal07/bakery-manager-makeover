@@ -39,6 +39,7 @@ import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedProductionIndexRouteImport } from './routes/_authenticated/production.index'
 import { Route as ApiPublicSupabaseProxyRouteImport } from './routes/api/public/supabase-proxy'
+import { Route as AuthenticatedTransfersNewRouteImport } from './routes/_authenticated/transfers.new'
 import { Route as AuthenticatedSettingsShowroomsRouteImport } from './routes/_authenticated/settings.showrooms'
 import { Route as AuthenticatedSettingsLandingRouteImport } from './routes/_authenticated/settings.landing'
 import { Route as AuthenticatedSettingsAccessRouteImport } from './routes/_authenticated/settings.access'
@@ -232,6 +233,12 @@ const ApiPublicSupabaseProxyRoute = ApiPublicSupabaseProxyRouteImport.update({
   path: '/api/public/supabase-proxy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTransfersNewRoute =
+  AuthenticatedTransfersNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedTransfersRoute,
+  } as any)
 const AuthenticatedSettingsShowroomsRoute =
   AuthenticatedSettingsShowroomsRouteImport.update({
     id: '/settings/showrooms',
@@ -464,7 +471,7 @@ export interface FileRoutesByFullPath {
   '/recipes': typeof AuthenticatedRecipesRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/suppliers': typeof AuthenticatedSuppliersRoute
-  '/transfers': typeof AuthenticatedTransfersRoute
+  '/transfers': typeof AuthenticatedTransfersRouteWithChildren
   '/invoice/$id': typeof InvoiceIdRoute
   '/crm/$id': typeof AuthenticatedCrmIdRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
@@ -499,6 +506,7 @@ export interface FileRoutesByFullPath {
   '/settings/access': typeof AuthenticatedSettingsAccessRoute
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
+  '/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/production/': typeof AuthenticatedProductionIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
@@ -528,7 +536,7 @@ export interface FileRoutesByTo {
   '/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/recipes': typeof AuthenticatedRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
-  '/transfers': typeof AuthenticatedTransfersRoute
+  '/transfers': typeof AuthenticatedTransfersRouteWithChildren
   '/invoice/$id': typeof InvoiceIdRoute
   '/crm/$id': typeof AuthenticatedCrmIdRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
@@ -563,6 +571,7 @@ export interface FileRoutesByTo {
   '/settings/access': typeof AuthenticatedSettingsAccessRoute
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
+  '/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/production': typeof AuthenticatedProductionIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
@@ -596,7 +605,7 @@ export interface FileRoutesById {
   '/_authenticated/recipes': typeof AuthenticatedRecipesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
-  '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
+  '/_authenticated/transfers': typeof AuthenticatedTransfersRouteWithChildren
   '/invoice/$id': typeof InvoiceIdRoute
   '/_authenticated/crm/$id': typeof AuthenticatedCrmIdRoute
   '/_authenticated/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
@@ -631,6 +640,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/access': typeof AuthenticatedSettingsAccessRoute
   '/_authenticated/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/_authenticated/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
+  '/_authenticated/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/_authenticated/production/': typeof AuthenticatedProductionIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
@@ -699,6 +709,7 @@ export interface FileRouteTypes {
     | '/settings/access'
     | '/settings/landing'
     | '/settings/showrooms'
+    | '/transfers/new'
     | '/api/public/supabase-proxy'
     | '/production/'
     | '/products/'
@@ -763,6 +774,7 @@ export interface FileRouteTypes {
     | '/settings/access'
     | '/settings/landing'
     | '/settings/showrooms'
+    | '/transfers/new'
     | '/api/public/supabase-proxy'
     | '/production'
     | '/products'
@@ -830,6 +842,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/access'
     | '/_authenticated/settings/landing'
     | '/_authenticated/settings/showrooms'
+    | '/_authenticated/transfers/new'
     | '/api/public/supabase-proxy'
     | '/_authenticated/production/'
     | '/_authenticated/products/'
@@ -1058,6 +1071,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/supabase-proxy'
       preLoaderRoute: typeof ApiPublicSupabaseProxyRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/transfers/new': {
+      id: '/_authenticated/transfers/new'
+      path: '/new'
+      fullPath: '/transfers/new'
+      preLoaderRoute: typeof AuthenticatedTransfersNewRouteImport
+      parentRoute: typeof AuthenticatedTransfersRoute
     }
     '/_authenticated/settings/showrooms': {
       id: '/_authenticated/settings/showrooms'
@@ -1390,6 +1410,20 @@ const AuthenticatedReportsRouteChildren: AuthenticatedReportsRouteChildren = {
 const AuthenticatedReportsRouteWithChildren =
   AuthenticatedReportsRoute._addFileChildren(AuthenticatedReportsRouteChildren)
 
+interface AuthenticatedTransfersRouteChildren {
+  AuthenticatedTransfersNewRoute: typeof AuthenticatedTransfersNewRoute
+}
+
+const AuthenticatedTransfersRouteChildren: AuthenticatedTransfersRouteChildren =
+  {
+    AuthenticatedTransfersNewRoute: AuthenticatedTransfersNewRoute,
+  }
+
+const AuthenticatedTransfersRouteWithChildren =
+  AuthenticatedTransfersRoute._addFileChildren(
+    AuthenticatedTransfersRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountingRoute: typeof AuthenticatedAccountingRoute
   AuthenticatedAiInsightsRoute: typeof AuthenticatedAiInsightsRoute
@@ -1411,7 +1445,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRecipesRoute: typeof AuthenticatedRecipesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
-  AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
+  AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRouteWithChildren
   AuthenticatedProductsCategoriesRoute: typeof AuthenticatedProductsCategoriesRoute
   AuthenticatedProductsNewRoute: typeof AuthenticatedProductsNewRoute
   AuthenticatedProductsSellingPriceGroupsRoute: typeof AuthenticatedProductsSellingPriceGroupsRoute
@@ -1455,7 +1489,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRecipesRoute: AuthenticatedRecipesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
-  AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
+  AuthenticatedTransfersRoute: AuthenticatedTransfersRouteWithChildren,
   AuthenticatedProductsCategoriesRoute: AuthenticatedProductsCategoriesRoute,
   AuthenticatedProductsNewRoute: AuthenticatedProductsNewRoute,
   AuthenticatedProductsSellingPriceGroupsRoute:
