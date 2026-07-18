@@ -330,6 +330,16 @@ function NewReturnModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                       <div className="font-medium">{it.product_name}</div>
                       <div className="text-xs text-muted-foreground">Sold {Number(it.qty)} × ৳{Number(it.unit_price).toFixed(2)}</div>
                     </div>
+                    <select
+                      value={conditions[it.id] ?? "resellable"}
+                      onChange={(e) => setConditions({ ...conditions, [it.id]: e.target.value as any })}
+                      className="h-9 px-2 rounded-md border border-border bg-background text-xs"
+                      title="Condition of returned item"
+                    >
+                      <option value="resellable">Resellable</option>
+                      <option value="damaged">Damaged</option>
+                      <option value="expired">Expired</option>
+                    </select>
                     <input
                       type="number" min={0} max={Number(it.qty)} step="1"
                       value={selected[it.id] ?? 0}
