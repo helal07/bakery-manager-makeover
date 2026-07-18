@@ -7,7 +7,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Send, PackageCheck, X } from "lucide-react";
+import { Plus, Send, PackageCheck, X, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 
@@ -165,7 +165,12 @@ function TransfersPage() {
 
   return (
     <AppShell title="Transfers" subtitle="Move stock between factory and showrooms">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-2 mb-4">
+        <Button asChild variant="outline">
+          <Link to="/transfers/damaged/new">
+            <Undo2 className="w-4 h-4 mr-2" /> New Damaged Return
+          </Link>
+        </Button>
         <Button asChild>
           <Link to="/transfers/new">
             <Plus className="w-4 h-4 mr-2" /> New Transfer
