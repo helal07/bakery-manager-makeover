@@ -192,6 +192,7 @@ function NewReturnModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   const [sale, setSale] = useState<any | null>(null);
   const [saleItems, setSaleItems] = useState<any[]>([]);
   const [selected, setSelected] = useState<Record<string, number>>({});
+  const [conditions, setConditions] = useState<Record<string, "resellable" | "damaged" | "expired">>({});
   const [reason, setReason] = useState<Reason>("damaged");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -217,6 +218,7 @@ function NewReturnModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     const { data } = await sb.from("sale_items").select("*").eq("sale_id", s.id);
     setSaleItems(data ?? []);
     setSelected({});
+    setConditions({});
   };
 
   const totalRefund = useMemo(
@@ -234,6 +236,7 @@ function NewReturnModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
         qty: selected[it.id],
         unit_price: Number(it.unit_price) || 0,
         line_total: (selected[it.id] ?? 0) * (Number(it.unit_price) || 0),
+        condition: conditions[it.id] ?? "resellable",
       }));
     if (!items.length) { alert("Select at least one item to return"); return; }
     setSaving(true);
@@ -257,18 +260,31 @@ function NewReturnModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
       .from("sale_return_items")
       .insert(items.map((it) => ({ ...it, return_id: ret.id })));
     if (iErr) { setSaving(false); alert(iErr.message); return; }
-    // Return finished goods back to stock
+    // Route each line by condition
     for (const it of items) {
       if (!it.product_id) continue;
-      await sb.rpc("commit_stock_movement", {
-        _product_id: it.product_id,
-        _showroom_id: sale.showroom_id,
-        _qty: it.qty,
-        _kind: "return",
-        _ref_type: "sale_return",
-        _ref_id: ret.id,
-        _note: `Return ${reason}`,
-      });
+      if (it.condition === "resellable") {
+        await sb.rpc("commit_stock_movement", {
+          _product_id: it.product_id,
+          _showroom_id: sale.showroom_id,
+          _qty: it.qty,
+          _kind: "return",
+          _ref_type: "sale_return",
+          _ref_id: ret.id,
+          _note: `Return ${reason}`,
+        });
+      } else {
+        // damaged / expired → damaged bucket, NOT saleable stock
+        await sb.rpc("commit_damaged_movement", {
+          _product_id: it.product_id,
+          _showroom_id: sale.showroom_id,
+          _qty: it.qty,
+          _kind: "return_in",
+          _ref_type: "sale_return",
+          _ref_id: ret.id,
+          _note: `Return ${it.condition}`,
+        });
+      }
     }
     setSaving(false);
     onSaved();
@@ -314,6 +330,16 @@ function NewReturnModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                       <div className="font-medium">{it.product_name}</div>
                       <div className="text-xs text-muted-foreground">Sold {Number(it.qty)} × ৳{Number(it.unit_price).toFixed(2)}</div>
                     </div>
+                    <select
+                      value={conditions[it.id] ?? "resellable"}
+                      onChange={(e) => setConditions({ ...conditions, [it.id]: e.target.value as any })}
+                      className="h-9 px-2 rounded-md border border-border bg-background text-xs"
+                      title="Condition of returned item"
+                    >
+                      <option value="resellable">Resellable</option>
+                      <option value="damaged">Damaged</option>
+                      <option value="expired">Expired</option>
+                    </select>
                     <input
                       type="number" min={0} max={Number(it.qty)} step="1"
                       value={selected[it.id] ?? 0}

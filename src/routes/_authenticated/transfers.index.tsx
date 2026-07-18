@@ -7,7 +7,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Send, PackageCheck, X } from "lucide-react";
+import { Plus, Send, PackageCheck, X, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 
@@ -27,6 +27,7 @@ type TransferRow = {
   source_showroom_id: string | null;
   dest_showroom_id: string;
   note: string | null;
+  kind: "normal" | "damaged_return" | null;
   created_at: string;
   sent_at: string | null;
   received_at: string | null;
@@ -70,12 +71,14 @@ function TransfersPage() {
   };
 
   const sendTransfer = async (row: TransferRow) => {
+    const isDamaged = row.kind === "damaged_return";
     const { data: items } = await sb.from("transfer_items").select("*").eq("transfer_id", row.id);
     const list = (items ?? []) as TransferItem[];
     if (list.length === 0) { toast.error("Add items first"); return; }
     const productIds = list.map((i) => i.product_id);
+    const stockTable = isDamaged ? "damaged_stock" : "product_stock";
     const { data: stockRows } = await sb
-      .from("product_stock")
+      .from(stockTable)
       .select("product_id, quantity, showroom_id")
       .in("product_id", productIds);
     const onHand = new Map<string, number>();
@@ -88,12 +91,13 @@ function TransfersPage() {
       const have = onHand.get(it.product_id) ?? 0;
       if (have < Number(it.qty)) {
         const p = products.find((x) => x.id === it.product_id);
-        toast.error(`Insufficient stock for ${p?.name ?? "item"} (have ${have}, need ${it.qty})`);
+        toast.error(`Insufficient ${isDamaged ? "damaged" : ""} stock for ${p?.name ?? "item"} (have ${have}, need ${it.qty})`);
         return;
       }
     }
     for (const it of list) {
-      const { error } = await sb.rpc("commit_stock_movement", {
+      const rpc = isDamaged ? "commit_damaged_movement" : "commit_stock_movement";
+      const { error } = await sb.rpc(rpc, {
         _product_id: it.product_id,
         _showroom_id: row.source_showroom_id,
         _qty: -Number(it.qty),
@@ -115,6 +119,13 @@ function TransfersPage() {
   };
 
   const receiveTransfer = async (row: TransferRow) => {
+    if (row.kind === "damaged_return") {
+      const { error } = await sb.rpc("commit_damaged_transfer_approve", { _transfer_id: row.id });
+      if (error) { toast.error(error.message); return; }
+      toast.success("Received into repurpose queue");
+      setOpenView(null); load();
+      return;
+    }
     const { data: items } = await sb.from("transfer_items").select("*").eq("transfer_id", row.id);
     const list = (items ?? []) as TransferItem[];
     for (const it of list) {
@@ -154,7 +165,12 @@ function TransfersPage() {
 
   return (
     <AppShell title="Transfers" subtitle="Move stock between factory and showrooms">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-2 mb-4">
+        <Button asChild variant="outline">
+          <Link to="/transfers/damaged/new">
+            <Undo2 className="w-4 h-4 mr-2" /> New Damaged Return
+          </Link>
+        </Button>
         <Button asChild>
           <Link to="/transfers/new">
             <Plus className="w-4 h-4 mr-2" /> New Transfer

@@ -63,6 +63,7 @@ import { Route as AuthenticatedProductsNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedProductsCategoriesRouteImport } from './routes/_authenticated/products.categories'
 import { Route as AuthenticatedProductionWorkOrdersRouteImport } from './routes/_authenticated/production.work-orders'
 import { Route as AuthenticatedProductionWastageRouteImport } from './routes/_authenticated/production.wastage'
+import { Route as AuthenticatedProductionRepurposeRouteImport } from './routes/_authenticated/production.repurpose'
 import { Route as AuthenticatedProductionRecipeCategoriesRouteImport } from './routes/_authenticated/production.recipe-categories'
 import { Route as AuthenticatedProductionQcRouteImport } from './routes/_authenticated/production.qc'
 import { Route as AuthenticatedProductionCostReportRouteImport } from './routes/_authenticated/production.cost-report'
@@ -73,6 +74,7 @@ import { Route as AuthenticatedExpensesNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authenticated/expenses.list'
 import { Route as AuthenticatedExpensesCategoriesRouteImport } from './routes/_authenticated/expenses.categories'
 import { Route as AuthenticatedCrmIdRouteImport } from './routes/_authenticated/crm.$id'
+import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
 import { Route as AuthenticatedSalesEditIdRouteImport } from './routes/_authenticated/sales.edit.$id'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
 
@@ -377,6 +379,12 @@ const AuthenticatedProductionWastageRoute =
     path: '/wastage',
     getParentRoute: () => AuthenticatedProductionRoute,
   } as any)
+const AuthenticatedProductionRepurposeRoute =
+  AuthenticatedProductionRepurposeRouteImport.update({
+    id: '/repurpose',
+    path: '/repurpose',
+    getParentRoute: () => AuthenticatedProductionRoute,
+  } as any)
 const AuthenticatedProductionRecipeCategoriesRoute =
   AuthenticatedProductionRecipeCategoriesRouteImport.update({
     id: '/recipe-categories',
@@ -436,6 +444,12 @@ const AuthenticatedCrmIdRoute = AuthenticatedCrmIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedCrmRoute,
 } as any)
+const AuthenticatedTransfersDamagedNewRoute =
+  AuthenticatedTransfersDamagedNewRouteImport.update({
+    id: '/transfers/damaged/new',
+    path: '/transfers/damaged/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSalesEditIdRoute =
   AuthenticatedSalesEditIdRouteImport.update({
     id: '/sales/edit/$id',
@@ -483,6 +497,7 @@ export interface FileRoutesByFullPath {
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/production/qc': typeof AuthenticatedProductionQcRoute
   '/production/recipe-categories': typeof AuthenticatedProductionRecipeCategoriesRoute
+  '/production/repurpose': typeof AuthenticatedProductionRepurposeRoute
   '/production/wastage': typeof AuthenticatedProductionWastageRoute
   '/production/work-orders': typeof AuthenticatedProductionWorkOrdersRoute
   '/products/categories': typeof AuthenticatedProductsCategoriesRoute
@@ -515,6 +530,7 @@ export interface FileRoutesByFullPath {
   '/transfers/': typeof AuthenticatedTransfersIndexRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
+  '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -548,6 +564,7 @@ export interface FileRoutesByTo {
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/production/qc': typeof AuthenticatedProductionQcRoute
   '/production/recipe-categories': typeof AuthenticatedProductionRecipeCategoriesRoute
+  '/production/repurpose': typeof AuthenticatedProductionRepurposeRoute
   '/production/wastage': typeof AuthenticatedProductionWastageRoute
   '/production/work-orders': typeof AuthenticatedProductionWorkOrdersRoute
   '/products/categories': typeof AuthenticatedProductsCategoriesRoute
@@ -580,6 +597,7 @@ export interface FileRoutesByTo {
   '/transfers': typeof AuthenticatedTransfersIndexRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
+  '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -617,6 +635,7 @@ export interface FileRoutesById {
   '/_authenticated/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/_authenticated/production/qc': typeof AuthenticatedProductionQcRoute
   '/_authenticated/production/recipe-categories': typeof AuthenticatedProductionRecipeCategoriesRoute
+  '/_authenticated/production/repurpose': typeof AuthenticatedProductionRepurposeRoute
   '/_authenticated/production/wastage': typeof AuthenticatedProductionWastageRoute
   '/_authenticated/production/work-orders': typeof AuthenticatedProductionWorkOrdersRoute
   '/_authenticated/products/categories': typeof AuthenticatedProductsCategoriesRoute
@@ -649,6 +668,7 @@ export interface FileRoutesById {
   '/_authenticated/transfers/': typeof AuthenticatedTransfersIndexRoute
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
+  '/_authenticated/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -686,6 +706,7 @@ export interface FileRouteTypes {
     | '/production/cost-report'
     | '/production/qc'
     | '/production/recipe-categories'
+    | '/production/repurpose'
     | '/production/wastage'
     | '/production/work-orders'
     | '/products/categories'
@@ -718,6 +739,7 @@ export interface FileRouteTypes {
     | '/transfers/'
     | '/products/edit/$id'
     | '/sales/edit/$id'
+    | '/transfers/damaged/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -751,6 +773,7 @@ export interface FileRouteTypes {
     | '/production/cost-report'
     | '/production/qc'
     | '/production/recipe-categories'
+    | '/production/repurpose'
     | '/production/wastage'
     | '/production/work-orders'
     | '/products/categories'
@@ -783,6 +806,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/products/edit/$id'
     | '/sales/edit/$id'
+    | '/transfers/damaged/new'
   id:
     | '__root__'
     | '/'
@@ -819,6 +843,7 @@ export interface FileRouteTypes {
     | '/_authenticated/production/cost-report'
     | '/_authenticated/production/qc'
     | '/_authenticated/production/recipe-categories'
+    | '/_authenticated/production/repurpose'
     | '/_authenticated/production/wastage'
     | '/_authenticated/production/work-orders'
     | '/_authenticated/products/categories'
@@ -851,6 +876,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transfers/'
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/sales/edit/$id'
+    | '/_authenticated/transfers/damaged/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1241,6 +1267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionWastageRouteImport
       parentRoute: typeof AuthenticatedProductionRoute
     }
+    '/_authenticated/production/repurpose': {
+      id: '/_authenticated/production/repurpose'
+      path: '/repurpose'
+      fullPath: '/production/repurpose'
+      preLoaderRoute: typeof AuthenticatedProductionRepurposeRouteImport
+      parentRoute: typeof AuthenticatedProductionRoute
+    }
     '/_authenticated/production/recipe-categories': {
       id: '/_authenticated/production/recipe-categories'
       path: '/recipe-categories'
@@ -1311,6 +1344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmIdRouteImport
       parentRoute: typeof AuthenticatedCrmRoute
     }
+    '/_authenticated/transfers/damaged/new': {
+      id: '/_authenticated/transfers/damaged/new'
+      path: '/transfers/damaged/new'
+      fullPath: '/transfers/damaged/new'
+      preLoaderRoute: typeof AuthenticatedTransfersDamagedNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sales/edit/$id': {
       id: '/_authenticated/sales/edit/$id'
       path: '/sales/edit/$id'
@@ -1364,6 +1404,7 @@ interface AuthenticatedProductionRouteChildren {
   AuthenticatedProductionCostReportRoute: typeof AuthenticatedProductionCostReportRoute
   AuthenticatedProductionQcRoute: typeof AuthenticatedProductionQcRoute
   AuthenticatedProductionRecipeCategoriesRoute: typeof AuthenticatedProductionRecipeCategoriesRoute
+  AuthenticatedProductionRepurposeRoute: typeof AuthenticatedProductionRepurposeRoute
   AuthenticatedProductionWastageRoute: typeof AuthenticatedProductionWastageRoute
   AuthenticatedProductionWorkOrdersRoute: typeof AuthenticatedProductionWorkOrdersRoute
   AuthenticatedProductionIndexRoute: typeof AuthenticatedProductionIndexRoute
@@ -1379,6 +1420,8 @@ const AuthenticatedProductionRouteChildren: AuthenticatedProductionRouteChildren
     AuthenticatedProductionQcRoute: AuthenticatedProductionQcRoute,
     AuthenticatedProductionRecipeCategoriesRoute:
       AuthenticatedProductionRecipeCategoriesRoute,
+    AuthenticatedProductionRepurposeRoute:
+      AuthenticatedProductionRepurposeRoute,
     AuthenticatedProductionWastageRoute: AuthenticatedProductionWastageRoute,
     AuthenticatedProductionWorkOrdersRoute:
       AuthenticatedProductionWorkOrdersRoute,
@@ -1454,6 +1497,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTransfersIndexRoute: typeof AuthenticatedTransfersIndexRoute
   AuthenticatedProductsEditIdRoute: typeof AuthenticatedProductsEditIdRoute
   AuthenticatedSalesEditIdRoute: typeof AuthenticatedSalesEditIdRoute
+  AuthenticatedTransfersDamagedNewRoute: typeof AuthenticatedTransfersDamagedNewRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1501,6 +1545,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTransfersIndexRoute: AuthenticatedTransfersIndexRoute,
   AuthenticatedProductsEditIdRoute: AuthenticatedProductsEditIdRoute,
   AuthenticatedSalesEditIdRoute: AuthenticatedSalesEditIdRoute,
+  AuthenticatedTransfersDamagedNewRoute: AuthenticatedTransfersDamagedNewRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
