@@ -4,15 +4,15 @@
 
 ## Baseline
 
-- [ ] `sql/00_baseline.sql` — প্রথমবার schema setup
+- [x] `sql/00_baseline.sql` — কোডের সাথে aligned schema (units.code+is_active + user_profiles bio/language/timezone/software included)
 - [ ] `sql/01_seed.sql` — (optional) demo data
 
-## Migrations (chronological)
+## Incremental patches
 
-`supabase/migrations/` ফোল্ডার থেকে নতুন ফাইল যোগ হলে এখানে line add করুন — filename-এর timestamp অনুসারে ascending order-এ।
+`00_baseline.sql`-এর পরে যদি নতুন patch ফাইল যোগ হয়, এখানে line add করুন।
 
-<!-- ফরম্যাট:
-- [ ] supabase/migrations/YYYYMMDDHHMMSS_slug.sql — সংক্ষিপ্ত বর্ণনা
+<!-- format:
+- [ ] sql/NN_slug.sql — সংক্ষিপ্ত বর্ণনা
 -->
 
-- [ ] _(নতুন migration এখানে যোগ করুন)_
+- [ ] _(নতুন patch এখানে যোগ করুন)_

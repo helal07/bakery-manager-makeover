@@ -1044,8 +1044,9 @@ CREATE TABLE public.transfers (
 
 CREATE TABLE public.units (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
+    code text NOT NULL,
     name text NOT NULL,
-    short_name text,
+    is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -1062,6 +1063,10 @@ CREATE TABLE public.user_profiles (
     email text,
     phone text,
     avatar_url text,
+    bio text,
+    language text,
+    timezone text,
+    software jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -1508,6 +1513,9 @@ ALTER TABLE ONLY public.transfers
 
 ALTER TABLE ONLY public.units
     ADD CONSTRAINT units_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.units
+    ADD CONSTRAINT units_code_key UNIQUE (code);
 
 
 --
@@ -3913,6 +3921,15 @@ INSERT INTO public.role_permissions VALUES ('eb3aeb04-3a05-4b12-bd3a-a57fea598dd
 -- Data for Name: units; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.units (code, name) VALUES
+  ('kg',   'Kilogram'),
+  ('g',    'Gram'),
+  ('L',    'Litre'),
+  ('ml',   'Millilitre'),
+  ('pc',   'Piece'),
+  ('pack', 'Pack'),
+  ('box',  'Box')
+ON CONFLICT (code) DO NOTHING;
 
 
 --
@@ -3925,6 +3942,9 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_role();
+
+-- Refresh PostgREST schema cache so new columns are visible immediately.
+NOTIFY pgrst, 'reload schema';
 
 COMMIT;
 

@@ -1,77 +1,94 @@
+## লক্ষ্য
 
-## নীতি
+সম্পূর্ণ প্রোজেক্টের জন্য **কোডবেসকে source of truth ধরে** নতুন `sql/00_baseline.sql` লিখব — যাতে ভবিষ্যতে কোনো টেবিল/কলাম mismatch না থাকে।
 
-কোডবেস = সোর্স অফ ট্রুথ। বর্তমান সেলফ-হোস্টেড DB-তে ডেটা আছে, তাই drop/reset নয় — শুধু ছোট ALTER দিয়ে স্কিমা কোডের সাথে মেলাব। বেসলাইন ফাইলও একই সাথে আপডেট করব যাতে ভবিষ্যতে fresh install-ও ঠিক থাকে।
+## Step 1 — Full codebase audit
 
-## Gap analysis (কোড grep অনুযায়ী)
+আমি নিচের সব ফাইল স্ক্যান করব এবং প্রতিটা টেবিলের **required columns + types** বের করব:
 
-| টেবিল | কোড যা চায় | DB-তে যা আছে | অ্যাকশন |
-|---|---|---|---|
-| `raw_materials` | `min_stock` | `threshold` | কলাম রিনেম |
-| `customer_groups` | `mode`, `selling_price_group_id` | নেই | কলাম যোগ |
-| বাকি সব | — | মিল আছে ✅ | কিছু না |
+- `src/lib/*-store.ts` — সব store ফাইল (~15টা)
+- `src/routes/_authenticated/*.tsx` — সব রুট (~50টা)
+- `src/hooks/*.ts` — permission, role, showroom hooks
+- `src/integrations/supabase/types.ts` — type reference
 
-## ধাপ ১ — নতুন migration ফাইল
+প্রতিটা `.from("table").select("...")`, `.insert({...})`, `.update({...})`, `.rpc("...")` call থেকে column list বের করব।
 
-`sql/03_align_with_code.sql` তৈরি করব — idempotent, safe to re-run:
+## Step 2 — Table inventory (প্রায় 47টা টেবিল)
 
-```sql
+**Auth & RBAC:** user_profiles, user_roles, app_roles, permissions, role_permissions, user_role_assignments
+
+**Catalog:** product_categories, units, products, selling_price_groups, product_selling_prices
+
+**Inventory:** product_stock, stock_ledger, raw_materials, raw_material_stock, raw_stock_ledger
+
+**Production:** recipe_categories, recipes, work_orders, qc_checks, wastage_log
+
+**Sales:** customers, customer_groups, customer_payments, sales, sale_items, sale_payments, sale_returns, sale_return_items, held_sales, orders
+
+**Purchasing:** suppliers, supplier_payments, purchase_categories, purchases, purchase_items, purchase_returns, purchase_return_items
+
+**Ops:** expense_categories, expenses, transfers, transfer_items, cash_registers, employees, showrooms
+
+**System:** company_settings, landing_content
+
+## Step 3 — নতুন `sql/00_baseline.sql`
+
+Structure:
+```
 BEGIN;
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- raw_materials: threshold → min_stock
-ALTER TABLE public.raw_materials
-  RENAME COLUMN threshold TO min_stock;
--- (যদি ইতিমধ্যে min_stock থাকে, উপরের লাইন error দেবে — সেক্ষেত্রে skip)
+-- enum: app_role
+-- functions: update_updated_at_column, has_role, handle_new_user_role,
+--            find_user_id_by_email, commit_stock_movement,
+--            commit_raw_stock_movement, commit_production_batch
+-- auth trigger: on_auth_user_created
 
--- customer_groups: mode + selling_price_group_id
-ALTER TABLE public.customer_groups
-  ADD COLUMN IF NOT EXISTS mode text NOT NULL DEFAULT 'percentage';
+-- প্রতি টেবিল (৪-step pattern):
+--   1) CREATE TABLE (কোডের সাথে exact match)
+--   2) GRANT
+--   3) ENABLE RLS
+--   4) CREATE POLICY
+--   5) updated_at trigger
 
-ALTER TABLE public.customer_groups
-  ADD COLUMN IF NOT EXISTS selling_price_group_id uuid
-  REFERENCES public.selling_price_groups(id) ON DELETE SET NULL;
+-- Seed (baseline data):
+--   permissions catalog (55 keys)
+--   default units (kg, g, L, ml, pc, pack, box)
+--   default categories
+--   default selling price group
+--   empty company_settings row
 
--- PostgREST schema cache refresh
 NOTIFY pgrst, 'reload schema';
-
 COMMIT;
 ```
 
-নোট: `RENAME COLUMN`-এ `IF EXISTS` নেই, তাই safe version:
-```sql
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns
-             WHERE table_schema='public' AND table_name='raw_materials' AND column_name='threshold')
-  AND NOT EXISTS (SELECT 1 FROM information_schema.columns
-                  WHERE table_schema='public' AND table_name='raw_materials' AND column_name='min_stock')
-  THEN
-    ALTER TABLE public.raw_materials RENAME COLUMN threshold TO min_stock;
-  END IF;
-END $$;
-```
-এটা রি-রান করলেও ভাঙবে না।
+## Step 4 — Cleanup
 
-## ধাপ ২ — বেসলাইন সিঙ্ক
+- মুছব: `sql/02_user_profiles_extend.sql`, `sql/03_align_with_code.sql` (সব কিছু baseline-এ চলে যাবে)
+- আপডেট: `sql/README.md`, `sql/applied.md` — এখন শুধু ১টা ফাইল
+- Verify: `sql/01_seed.sql`-এর column names মিলিয়ে ঠিক করব
 
-`sql/00_baseline.sql`-এও একই দুই টেবিলের definition আপডেট করব (fresh install-এর জন্য) — শুধু line ~755 (raw_materials) আর line ~383 (customer_groups)। ডেটা loss নেই কারণ এটা শুধু ফাইল edit।
+## তুমি যা করবে
 
-## ধাপ ৩ — তুমি যা করবে
+1. প্লান approve
+2. আমি সব ফাইল তৈরি করব (একটাই বড় baseline ফাইল হবে ~2000 lines)
+3. Supabase Studio → SQL Editor → new query → পুরো `sql/00_baseline.sql` paste → Run
+4. Login করলে auth trigger auto-assign করবে `owner` role
+5. (Optional) `sql/01_seed.sql` চালাবে demo data-র জন্য
 
-সেলফ-হোস্টেড Supabase SQL Editor-এ শুধু:
-```
-sql/03_align_with_code.sql
-```
-রান করবে। বাকি কিছু না। ডেটা অক্ষত থাকবে।
+## ভবিষ্যৎ workflow
 
-## Verify
-
-- Raw Materials page লোড হয়
-- Customer Groups page লোড হয় (WITHIN GROUP error যায়)
-- POS-এ customer group select করলে discount কাজ করে
+কোডে নতুন কলাম/টেবিল লাগলে:
+- baseline-এ সরাসরি update করব
+- সাথে ছোট incremental patch (`sql/NN_*.sql`) দেব যেন তোমার fresh reset না লাগে
 
 ## ডেলিভারেবলস
 
-- নতুন: `sql/03_align_with_code.sql`
-- আপডেটেড: `sql/00_baseline.sql` (দুই টেবিলে ছোট edit)
+- Rewritten: `sql/00_baseline.sql` (কোডের সাথে 1:1)
+- Deleted: `sql/02_user_profiles_extend.sql`, `sql/03_align_with_code.sql`
+- Updated: `sql/README.md`, `sql/applied.md`
+- Verified: `sql/01_seed.sql`
 - কোডে কোনো পরিবর্তন নেই
