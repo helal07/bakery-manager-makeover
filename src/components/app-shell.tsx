@@ -502,6 +502,7 @@ function ShowroomSwitcher() {
   );
 }
 
+let userMenuLoadedOnce = false;
 function UserMenu() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
