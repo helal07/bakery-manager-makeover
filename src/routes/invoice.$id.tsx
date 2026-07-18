@@ -55,7 +55,7 @@ function InvoiceView() {
 
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(`invoice:${id}`);
+      const raw = localStorage.getItem(`invoice:${id}`) ?? sessionStorage.getItem(`invoice:${id}`);
       if (raw) setStored(JSON.parse(raw) as StoredInvoice);
     } catch { /* ignore */ }
     getCompany().then(setCompany).catch(() => {});
