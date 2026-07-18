@@ -91,9 +91,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         icon: Package,
         permission: "products.view",
         children: [
-          { to: "/products/new", label: "Add Product", icon: Plus, permission: "products.create" },
           { to: "/products", label: "List Products", icon: List, permission: "products.view" },
-          { to: "/products/categories", label: "Add Category", icon: Plus, hash: "new", permission: "products.categories.manage" },
           { to: "/products/categories", label: "List Categories", icon: Tag, permission: "products.categories.manage" },
           { to: "/products/units", label: "Units", icon: Tag, permission: "products.units.manage" },
           { to: "/products/selling-price-groups", label: "Selling Price Groups", icon: Tag, permission: "products.selling_prices.manage" },
