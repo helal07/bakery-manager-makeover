@@ -205,7 +205,7 @@ function Landing() {
 
       <footer className="border-t border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-          <div>© {new Date().getFullYear()} {c.brand.name}. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} {brandName}. All rights reserved.</div>
           <Link to="/auth" className="hover:text-primary">Staff sign in</Link>
         </div>
       </footer>
