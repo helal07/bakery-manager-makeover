@@ -59,7 +59,7 @@ function CustomerGroupsPage() {
           name: r.name as string,
           discountPct: Number(r.discount_pct ?? 0),
           isDefault: Boolean(r.is_default),
-          mode: (r.mode ?? "percentage") as "percentage" | "price_group",
+          mode: (r.pricing_mode ?? r.mode ?? "percentage") as "percentage" | "price_group",
           sellingPriceGroupId: (r.selling_price_group_id ?? null) as string | null,
         })),
       );
