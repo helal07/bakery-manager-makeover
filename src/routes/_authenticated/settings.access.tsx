@@ -289,14 +289,14 @@ function MatrixTab() {
             <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">{module}</div>
             <div className="space-y-1.5">
               {list.map((p) => (
-                <label key={p.key} className="flex items-center gap-2 text-sm">
+                <label key={p.permission_key} className="flex items-center gap-2 text-sm">
                   <Checkbox
-                    checked={isSuperadminRole || checked.has(p.key)}
+                    checked={isSuperadminRole || checked.has(p.permission_key)}
                     disabled={isSuperadminRole}
-                    onCheckedChange={() => toggle(p.key)}
+                    onCheckedChange={() => toggle(p.permission_key)}
                   />
                   <span>{p.label}</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground font-mono">{p.key}</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground font-mono">{p.permission_key}</span>
                 </label>
               ))}
             </div>
