@@ -456,9 +456,23 @@ function PosPage() {
 
       // Stash invoice snapshot for the print window
       try {
+        const currentShowroom = showrooms.find((s) => s.id === loc) as any;
         const snapshot = {
           customer: { name: customerName.trim() || "Walk-in Customer", phone: customerPhone.trim() || undefined },
-          branch: "Main Branch",
+          branch: currentShowroom?.name ?? (loc ? "Showroom" : "Factory"),
+          showroom: currentShowroom
+            ? {
+                id: currentShowroom.id,
+                name: currentShowroom.name,
+                code: currentShowroom.code ?? null,
+                address: currentShowroom.address ?? null,
+                city: currentShowroom.city ?? null,
+                phone: currentShowroom.phone ?? null,
+                manager_name: currentShowroom.manager_name ?? null,
+              }
+            : null,
+          cashier: register ? { id: register.id } : null,
+          reference: externalRef,
           date: new Date().toISOString(),
           mode: paymentMode === "card" ? "cash" : (paymentMode as "cash" | "due" | "partial"),
           items: items.map(({ p, qty }) => ({ name: p.name, sku: p.sku ?? "", price: priceFor(p), qty })),
@@ -466,7 +480,8 @@ function PosPage() {
         };
         sessionStorage.setItem(`invoice:${sale.id}`, JSON.stringify(snapshot));
       } catch { /* ignore */ }
-      window.open(`/invoice/${sale.id}?ap=1`, "_blank", "noopener,width=420,height=720");
+      window.open(`/invoice/${sale.id}?ap=1`, "_blank", "noopener,width=520,height=800");
+
 
       toast.success(`Sale ${externalRef} completed · ৳${total.toFixed(2)}`);
       clearCart();
