@@ -187,7 +187,7 @@ function SaleList() {
   );
 }
 
-type Row = (typeof rows)[number];
+
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
