@@ -920,6 +920,7 @@ CREATE TABLE public.sales (
     subtotal numeric DEFAULT 0 NOT NULL,
     discount numeric DEFAULT 0 NOT NULL,
     tax numeric DEFAULT 0 NOT NULL,
+    shipping numeric DEFAULT 0 NOT NULL,
     total numeric DEFAULT 0 NOT NULL,
     paid numeric DEFAULT 0 NOT NULL,
     due numeric DEFAULT 0 NOT NULL,
