@@ -56,6 +56,16 @@ async function currentUserId(): Promise<string | null> {
   return data.user?.id ?? null;
 }
 
+const PROFILE_CACHE_KEY = "user-profile-cache-v1";
+
+export function getCachedProfile(): UserProfile | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as UserProfile) : null;
+  } catch { return null; }
+}
+
 export async function getProfile(): Promise<UserProfile> {
   const uid = await currentUserId();
   if (!uid) return defaultProfile;
@@ -65,7 +75,7 @@ export async function getProfile(): Promise<UserProfile> {
     .eq("user_id", uid)
     .maybeSingle();
   if (!data) return defaultProfile;
-  return {
+  const p: UserProfile = {
     name: data.name ?? "",
     email: data.email ?? "",
     phone: data.phone ?? "",
@@ -74,6 +84,8 @@ export async function getProfile(): Promise<UserProfile> {
     language: (data.language ?? "en") as UserProfile["language"],
     timezone: data.timezone ?? "Asia/Dhaka",
   };
+  try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+  return p;
 }
 
 export async function saveProfile(p: UserProfile): Promise<void> {

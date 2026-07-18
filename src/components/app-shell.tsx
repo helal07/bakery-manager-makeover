@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { usePermissions } from "@/hooks/use-permissions";
-import { getCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
-import { getProfile, type UserProfile } from "@/lib/profile-settings";
+import { getCompany, defaultCompany, getCachedCompany, type CompanySettings } from "@/lib/company-settings";
+import { getProfile, getCachedProfile, type UserProfile } from "@/lib/profile-settings";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -189,6 +189,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 
+let companyLoadedOnce = false;
+
 export function AppShell({ children, title, subtitle, actions }: {
   children: ReactNode;
   title: string;
@@ -199,7 +201,7 @@ export function AppShell({ children, title, subtitle, actions }: {
   const hash = useRouterState({ select: (s) => s.location.hash ?? "" });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [company, setCompany] = useState<CompanySettings>(defaultCompany);
+  const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
   const { loading: permLoading, isSuperadmin, permissions } = usePermissions();
 
   const can = (key?: string) => !key || isSuperadmin || permissions.has(key);
@@ -223,7 +225,7 @@ export function AppShell({ children, title, subtitle, actions }: {
   useEffect(() => {
     let mounted = true;
     const load = () => getCompany().then((c) => { if (mounted) setCompany(c); }).catch(() => {});
-    load();
+    if (!companyLoadedOnce) { companyLoadedOnce = true; load(); }
     const handler = () => load();
     window.addEventListener("company-settings-updated", handler);
     return () => { mounted = false; window.removeEventListener("company-settings-updated", handler); };
@@ -500,25 +502,37 @@ function ShowroomSwitcher() {
   );
 }
 
+let userMenuLoadedOnce = false;
 function UserMenu() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [email, setEmail] = useState<string>("");
-  const [role, setRole] = useState<string>("");
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [email, setEmail] = useState<string>(() => {
+    try { return localStorage.getItem("user-email-cache-v1") ?? ""; } catch { return ""; }
+  });
+  const [role, setRole] = useState<string>(() => {
+    try { return localStorage.getItem("user-role-cache-v1") ?? ""; } catch { return ""; }
+  });
+  const [profile, setProfile] = useState<UserProfile | null>(() => getCachedProfile());
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!mounted || !data.user) return;
-      setEmail(data.user.email ?? "");
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
-      if (mounted && roles && roles.length) setRole(roles[0].role);
-    })();
-    const loadProfile = () => getProfile().then((p) => { if (mounted) setProfile(p); }).catch(() => {});
-    loadProfile();
-    const handler = () => loadProfile();
+    if (!userMenuLoadedOnce) {
+      userMenuLoadedOnce = true;
+      (async () => {
+        const { data } = await supabase.auth.getUser();
+        if (!mounted || !data.user) return;
+        const em = data.user.email ?? "";
+        setEmail(em);
+        try { localStorage.setItem("user-email-cache-v1", em); } catch { /* ignore */ }
+        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+        if (mounted && roles && roles.length) {
+          setRole(roles[0].role);
+          try { localStorage.setItem("user-role-cache-v1", roles[0].role); } catch { /* ignore */ }
+        }
+      })();
+      getProfile().then((p) => { if (mounted) setProfile(p); }).catch(() => {});
+    }
+    const handler = () => getProfile().then((p) => { if (mounted) setProfile(p); }).catch(() => {});
     window.addEventListener("user-profile-updated", handler);
     return () => { mounted = false; window.removeEventListener("user-profile-updated", handler); };
   }, []);
@@ -526,6 +540,12 @@ function UserMenu() {
   const signOut = async () => {
     await queryClient.cancelQueries();
     queryClient.clear();
+    try {
+      localStorage.removeItem("user-profile-cache-v1");
+      localStorage.removeItem("user-email-cache-v1");
+      localStorage.removeItem("user-role-cache-v1");
+    } catch { /* ignore */ }
+    userMenuLoadedOnce = false;
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
