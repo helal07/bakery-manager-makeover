@@ -124,7 +124,7 @@ function Landing() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-28 text-center">
           <div className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest text-primary font-medium mb-4">
-            <Cake className="size-3.5" /> {c.brand.tagline}
+            <Cake className="size-3.5" /> {brandTagline}
           </div>
           <h1 className="text-3xl sm:text-5xl font-bold tracking-tight max-w-3xl mx-auto">
             {c.hero.headline}
