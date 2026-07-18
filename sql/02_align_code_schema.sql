@@ -14,9 +14,21 @@ SET search_path TO public;
 
 -- Units: old DB had short_name; current code expects code + is_active.
 ALTER TABLE public.units ADD COLUMN IF NOT EXISTS code text;
-UPDATE public.units
-SET code = COALESCE(NULLIF(code, ''), NULLIF(short_name, ''), NULLIF(name, ''), id::text)
-WHERE code IS NULL OR code = '';
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'units' AND column_name = 'short_name'
+  ) THEN
+    UPDATE public.units
+    SET code = COALESCE(NULLIF(code, ''), NULLIF(short_name, ''), NULLIF(name, ''), id::text)
+    WHERE code IS NULL OR code = '';
+  ELSE
+    UPDATE public.units
+    SET code = COALESCE(NULLIF(code, ''), NULLIF(name, ''), id::text)
+    WHERE code IS NULL OR code = '';
+  END IF;
+END $$;
 ALTER TABLE public.units ALTER COLUMN code SET NOT NULL;
 ALTER TABLE public.units ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL;
 DO $$
