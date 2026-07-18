@@ -1,7 +1,11 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Showroom = { id: string; name: string; code: string | null };
+export type Showroom = {
+  id: string; name: string; code: string | null;
+  address?: string | null; city?: string | null; phone?: string | null; manager_name?: string | null;
+};
+
 
 type ScopeState = {
   loading: boolean;
