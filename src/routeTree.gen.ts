@@ -13,7 +13,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
-import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRecipesRouteImport } from './routes/_authenticated/recipes'
@@ -34,6 +33,7 @@ import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedAiInsightsRouteImport } from './routes/_authenticated/ai-insights'
 import { Route as AuthenticatedAccountingRouteImport } from './routes/_authenticated/accounting'
+import { Route as AuthenticatedTransfersIndexRouteImport } from './routes/_authenticated/transfers.index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports.index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
@@ -94,11 +94,6 @@ const InvoiceIdRoute = InvoiceIdRouteImport.update({
   id: '/invoice/$id',
   path: '/invoice/$id',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedTransfersRoute = AuthenticatedTransfersRouteImport.update({
-  id: '/transfers',
-  path: '/transfers',
-  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
   id: '/suppliers',
@@ -204,6 +199,12 @@ const AuthenticatedAccountingRoute = AuthenticatedAccountingRouteImport.update({
   path: '/accounting',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTransfersIndexRoute =
+  AuthenticatedTransfersIndexRouteImport.update({
+    id: '/transfers/',
+    path: '/transfers/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -235,9 +236,9 @@ const ApiPublicSupabaseProxyRoute = ApiPublicSupabaseProxyRouteImport.update({
 } as any)
 const AuthenticatedTransfersNewRoute =
   AuthenticatedTransfersNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AuthenticatedTransfersRoute,
+    id: '/transfers/new',
+    path: '/transfers/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedSettingsShowroomsRoute =
   AuthenticatedSettingsShowroomsRouteImport.update({
@@ -471,7 +472,6 @@ export interface FileRoutesByFullPath {
   '/recipes': typeof AuthenticatedRecipesRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/suppliers': typeof AuthenticatedSuppliersRoute
-  '/transfers': typeof AuthenticatedTransfersRouteWithChildren
   '/invoice/$id': typeof InvoiceIdRoute
   '/crm/$id': typeof AuthenticatedCrmIdRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
@@ -512,6 +512,7 @@ export interface FileRoutesByFullPath {
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/transfers/': typeof AuthenticatedTransfersIndexRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
 }
@@ -536,7 +537,6 @@ export interface FileRoutesByTo {
   '/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/recipes': typeof AuthenticatedRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
-  '/transfers': typeof AuthenticatedTransfersRouteWithChildren
   '/invoice/$id': typeof InvoiceIdRoute
   '/crm/$id': typeof AuthenticatedCrmIdRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
@@ -577,6 +577,7 @@ export interface FileRoutesByTo {
   '/products': typeof AuthenticatedProductsIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/transfers': typeof AuthenticatedTransfersIndexRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
 }
@@ -605,7 +606,6 @@ export interface FileRoutesById {
   '/_authenticated/recipes': typeof AuthenticatedRecipesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
-  '/_authenticated/transfers': typeof AuthenticatedTransfersRouteWithChildren
   '/invoice/$id': typeof InvoiceIdRoute
   '/_authenticated/crm/$id': typeof AuthenticatedCrmIdRoute
   '/_authenticated/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
@@ -646,6 +646,7 @@ export interface FileRoutesById {
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/_authenticated/transfers/': typeof AuthenticatedTransfersIndexRoute
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
 }
@@ -674,7 +675,6 @@ export interface FileRouteTypes {
     | '/recipes'
     | '/reports'
     | '/suppliers'
-    | '/transfers'
     | '/invoice/$id'
     | '/crm/$id'
     | '/expenses/categories'
@@ -715,6 +715,7 @@ export interface FileRouteTypes {
     | '/products/'
     | '/reports/'
     | '/settings/'
+    | '/transfers/'
     | '/products/edit/$id'
     | '/sales/edit/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -739,7 +740,6 @@ export interface FileRouteTypes {
     | '/raw-materials'
     | '/recipes'
     | '/suppliers'
-    | '/transfers'
     | '/invoice/$id'
     | '/crm/$id'
     | '/expenses/categories'
@@ -780,6 +780,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/reports'
     | '/settings'
+    | '/transfers'
     | '/products/edit/$id'
     | '/sales/edit/$id'
   id:
@@ -807,7 +808,6 @@ export interface FileRouteTypes {
     | '/_authenticated/recipes'
     | '/_authenticated/reports'
     | '/_authenticated/suppliers'
-    | '/_authenticated/transfers'
     | '/invoice/$id'
     | '/_authenticated/crm/$id'
     | '/_authenticated/expenses/categories'
@@ -848,6 +848,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/'
     | '/_authenticated/reports/'
     | '/_authenticated/settings/'
+    | '/_authenticated/transfers/'
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/sales/edit/$id'
   fileRoutesById: FileRoutesById
@@ -889,13 +890,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/invoice/$id'
       preLoaderRoute: typeof InvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/transfers': {
-      id: '/_authenticated/transfers'
-      path: '/transfers'
-      fullPath: '/transfers'
-      preLoaderRoute: typeof AuthenticatedTransfersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/suppliers': {
       id: '/_authenticated/suppliers'
@@ -1037,6 +1031,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/transfers/': {
+      id: '/_authenticated/transfers/'
+      path: '/transfers'
+      fullPath: '/transfers/'
+      preLoaderRoute: typeof AuthenticatedTransfersIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
       path: '/settings'
@@ -1074,10 +1075,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/transfers/new': {
       id: '/_authenticated/transfers/new'
-      path: '/new'
+      path: '/transfers/new'
       fullPath: '/transfers/new'
       preLoaderRoute: typeof AuthenticatedTransfersNewRouteImport
-      parentRoute: typeof AuthenticatedTransfersRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings/showrooms': {
       id: '/_authenticated/settings/showrooms'
@@ -1410,20 +1411,6 @@ const AuthenticatedReportsRouteChildren: AuthenticatedReportsRouteChildren = {
 const AuthenticatedReportsRouteWithChildren =
   AuthenticatedReportsRoute._addFileChildren(AuthenticatedReportsRouteChildren)
 
-interface AuthenticatedTransfersRouteChildren {
-  AuthenticatedTransfersNewRoute: typeof AuthenticatedTransfersNewRoute
-}
-
-const AuthenticatedTransfersRouteChildren: AuthenticatedTransfersRouteChildren =
-  {
-    AuthenticatedTransfersNewRoute: AuthenticatedTransfersNewRoute,
-  }
-
-const AuthenticatedTransfersRouteWithChildren =
-  AuthenticatedTransfersRoute._addFileChildren(
-    AuthenticatedTransfersRouteChildren,
-  )
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountingRoute: typeof AuthenticatedAccountingRoute
   AuthenticatedAiInsightsRoute: typeof AuthenticatedAiInsightsRoute
@@ -1445,7 +1432,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRecipesRoute: typeof AuthenticatedRecipesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
-  AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRouteWithChildren
   AuthenticatedProductsCategoriesRoute: typeof AuthenticatedProductsCategoriesRoute
   AuthenticatedProductsNewRoute: typeof AuthenticatedProductsNewRoute
   AuthenticatedProductsSellingPriceGroupsRoute: typeof AuthenticatedProductsSellingPriceGroupsRoute
@@ -1462,8 +1448,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsAccessRoute: typeof AuthenticatedSettingsAccessRoute
   AuthenticatedSettingsLandingRoute: typeof AuthenticatedSettingsLandingRoute
   AuthenticatedSettingsShowroomsRoute: typeof AuthenticatedSettingsShowroomsRoute
+  AuthenticatedTransfersNewRoute: typeof AuthenticatedTransfersNewRoute
   AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
+  AuthenticatedTransfersIndexRoute: typeof AuthenticatedTransfersIndexRoute
   AuthenticatedProductsEditIdRoute: typeof AuthenticatedProductsEditIdRoute
   AuthenticatedSalesEditIdRoute: typeof AuthenticatedSalesEditIdRoute
 }
@@ -1489,7 +1477,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRecipesRoute: AuthenticatedRecipesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
-  AuthenticatedTransfersRoute: AuthenticatedTransfersRouteWithChildren,
   AuthenticatedProductsCategoriesRoute: AuthenticatedProductsCategoriesRoute,
   AuthenticatedProductsNewRoute: AuthenticatedProductsNewRoute,
   AuthenticatedProductsSellingPriceGroupsRoute:
@@ -1508,8 +1495,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsAccessRoute: AuthenticatedSettingsAccessRoute,
   AuthenticatedSettingsLandingRoute: AuthenticatedSettingsLandingRoute,
   AuthenticatedSettingsShowroomsRoute: AuthenticatedSettingsShowroomsRoute,
+  AuthenticatedTransfersNewRoute: AuthenticatedTransfersNewRoute,
   AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
+  AuthenticatedTransfersIndexRoute: AuthenticatedTransfersIndexRoute,
   AuthenticatedProductsEditIdRoute: AuthenticatedProductsEditIdRoute,
   AuthenticatedSalesEditIdRoute: AuthenticatedSalesEditIdRoute,
 }

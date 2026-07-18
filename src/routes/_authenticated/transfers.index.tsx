@@ -11,7 +11,7 @@ import { Plus, Send, PackageCheck, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 
-export const Route = createFileRoute("/_authenticated/transfers")({
+export const Route = createFileRoute("/_authenticated/transfers/")({
   head: () => ({ meta: [{ title: "Transfers · Muzahid Food" }] }),
   component: TransfersPage,
 });
