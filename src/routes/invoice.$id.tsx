@@ -11,7 +11,9 @@ const invoiceSearchSchema = z.object({
   i: z.coerce.number().optional(),
   t: z.coerce.number().optional(),
   p: z.coerce.number().optional(),
+  ap: z.coerce.number().optional(),
 });
+
 
 export const Route = createFileRoute("/invoice/$id")({
   head: ({ params }) => ({ meta: [{ title: `Invoice #${params.id} · Crumb & Co.` }] }),
