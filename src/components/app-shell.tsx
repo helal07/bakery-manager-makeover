@@ -199,7 +199,7 @@ export function AppShell({ children, title, subtitle, actions }: {
   const hash = useRouterState({ select: (s) => s.location.hash ?? "" });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [company, setCompany] = useState<CompanySettings>(defaultCompany);
+  const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
   const { loading: permLoading, isSuperadmin, permissions } = usePermissions();
 
   const can = (key?: string) => !key || isSuperadmin || permissions.has(key);
