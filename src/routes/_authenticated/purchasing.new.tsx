@@ -364,16 +364,16 @@ function AddPurchase() {
               <Input id="ns-name" value={supForm.name} onChange={(e) => setSupForm({ ...supForm, name: e.target.value })} required />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ns-contact">Contact person</Label>
-              <Input id="ns-contact" value={supForm.contact} onChange={(e) => setSupForm({ ...supForm, contact: e.target.value })} />
+              <Label htmlFor="ns-email">Email</Label>
+              <Input id="ns-email" value={supForm.email} onChange={(e) => setSupForm({ ...supForm, email: e.target.value })} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ns-phone">Phone</Label>
               <Input id="ns-phone" value={supForm.phone} onChange={(e) => setSupForm({ ...supForm, phone: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ns-cat">Category</Label>
-              <Input id="ns-cat" value={supForm.category} onChange={(e) => setSupForm({ ...supForm, category: e.target.value })} placeholder="Flour, Dairy, ..." />
+              <Label htmlFor="ns-addr">Address</Label>
+              <Input id="ns-addr" value={supForm.address} onChange={(e) => setSupForm({ ...supForm, address: e.target.value })} />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setSupOpen(false)}>Cancel</Button>
