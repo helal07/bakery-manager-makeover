@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/settings/access")({
   component: AccessControlPage,
 });
 
-type Permission = { key: string; module: string; label: string; description: string | null };
+type Permission = { permission_key: string; module: string; label: string; description: string | null };
 type AppRole = { id: string; name: string; description: string | null; is_system: boolean; is_active: boolean };
 type RolePerm = { role_id: string; permission_key: string };
 type Assignment = { id: string; user_id: string; role_id: string; showroom_id: string | null };
