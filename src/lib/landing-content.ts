@@ -46,7 +46,9 @@ export async function fetchLandingContent(): Promise<LandingContent> {
   const { data, error } = await sb
     .from("landing_content")
     .select("content")
-    .eq("id", true)
+    .eq("is_current", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   if (error || !data) return defaultLanding;
   return { ...defaultLanding, ...(data.content as Partial<LandingContent>) } as LandingContent;
@@ -54,8 +56,27 @@ export async function fetchLandingContent(): Promise<LandingContent> {
 
 export async function saveLandingContent(content: LandingContent) {
   const { data: userRes } = await supabase.auth.getUser();
-  const { error } = await sb
+  // Find existing current row
+  const { data: existing } = await sb
     .from("landing_content")
-    .upsert({ id: true, content, updated_by: userRes.user?.id ?? null });
-  if (error) throw error;
+    .select("id")
+    .eq("is_current", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const payload: Record<string, unknown> = {
+    content,
+    is_current: true,
+    updated_by: userRes.user?.id ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existing?.id) {
+    const { error } = await sb.from("landing_content").update(payload).eq("id", existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await sb.from("landing_content").insert(payload);
+    if (error) throw error;
+  }
 }
