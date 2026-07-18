@@ -189,6 +189,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 
+let companyLoadedOnce = false;
+
 export function AppShell({ children, title, subtitle, actions }: {
   children: ReactNode;
   title: string;
