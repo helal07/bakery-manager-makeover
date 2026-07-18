@@ -51,7 +51,7 @@ function AddPurchase() {
 
   // Supplier dialog
   const [supOpen, setSupOpen] = useState(false);
-  const [supForm, setSupForm] = useState({ name: "", contact: "", phone: "", category: "" });
+  const [supForm, setSupForm] = useState({ name: "", email: "", phone: "", address: "" });
 
   // Raw material dialog
   const [matOpen, setMatOpen] = useState(false);
