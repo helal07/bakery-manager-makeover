@@ -118,7 +118,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         ],
       },
       { to: "/transfers", label: "Transfers", icon: ArrowRightLeft, permission: "inventory.transfer" },
-      { to: "/sales/history", label: "Sales History", icon: Receipt, permission: "sales.view" },
     ],
   },
   {
