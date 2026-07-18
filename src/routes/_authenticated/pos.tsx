@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart,
-  X, Keyboard, ArrowLeft, User, Users, Pause, PlayCircle, DollarSign,
+  X, Keyboard, ArrowLeft, User, UserPlus, Users, Pause, PlayCircle, DollarSign,
   Lock, Unlock, Receipt, Calendar, Calculator, Maximize2, Briefcase,
   CircleX, RotateCcw, CreditCard, FileText, History, Info,
 } from "lucide-react";
