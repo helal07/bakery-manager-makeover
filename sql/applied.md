@@ -15,4 +15,4 @@
 - [ ] sql/NN_slug.sql — সংক্ষিপ্ত বর্ণনা
 -->
 
-- [ ] _(নতুন patch এখানে যোগ করুন)_
+- [ ] `sql/02_align_code_schema.sql` — existing DB-তে codebase expected columns যোগ/rename করে schema mismatch ঠিক করবে

@@ -411,6 +411,7 @@ CREATE TABLE public.customer_payments (
     reference text,
     note text,
     paid_on date DEFAULT CURRENT_DATE NOT NULL,
+    created_by uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -461,6 +462,7 @@ CREATE TABLE public.employees (
 CREATE TABLE public.expense_categories (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -581,7 +583,7 @@ CREATE TABLE public.product_categories (
 CREATE TABLE public.product_selling_prices (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     product_id uuid NOT NULL,
-    price_group_id uuid,
+    selling_price_group_id uuid,
     price numeric DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -636,6 +638,7 @@ CREATE TABLE public.products (
 CREATE TABLE public.purchase_categories (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -685,10 +688,13 @@ CREATE TABLE public.purchase_returns (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     code text,
     purchase_id uuid,
+    invoice_ref text,
     supplier_id uuid,
     showroom_id uuid,
     amount numeric DEFAULT 0 NOT NULL,
     reason text,
+    note text,
+    created_by uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -890,7 +896,9 @@ CREATE TABLE public.sale_returns (
     customer_name text,
     amount numeric DEFAULT 0 NOT NULL,
     reason text,
+    note text,
     showroom_id uuid,
+    created_by uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -985,6 +993,7 @@ CREATE TABLE public.supplier_payments (
     reference text,
     note text,
     paid_on date DEFAULT CURRENT_DATE NOT NULL,
+    created_by uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -1028,11 +1037,13 @@ CREATE TABLE public.transfer_items (
 CREATE TABLE public.transfers (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     code text,
-    from_showroom_id uuid,
-    to_showroom_id uuid,
-    status text DEFAULT 'pending'::text NOT NULL,
+    source_showroom_id uuid,
+    dest_showroom_id uuid,
+    status text DEFAULT 'draft'::text NOT NULL,
     note text,
     created_by uuid,
+    sent_at timestamp with time zone,
+    received_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -1268,11 +1279,11 @@ ALTER TABLE ONLY public.product_selling_prices
 
 
 --
--- Name: product_selling_prices product_selling_prices_product_id_price_group_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: product_selling_prices product_selling_prices_product_id_selling_price_group_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.product_selling_prices
-    ADD CONSTRAINT product_selling_prices_product_id_price_group_id_key UNIQUE (product_id, price_group_id);
+    ADD CONSTRAINT product_selling_prices_product_id_selling_price_group_id_key UNIQUE (product_id, selling_price_group_id);
 
 
 --
@@ -2024,11 +2035,11 @@ ALTER TABLE ONLY public.orders
 
 
 --
--- Name: product_selling_prices product_selling_prices_price_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: product_selling_prices product_selling_prices_selling_price_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.product_selling_prices
-    ADD CONSTRAINT product_selling_prices_price_group_id_fkey FOREIGN KEY (price_group_id) REFERENCES public.selling_price_groups(id) ON DELETE CASCADE;
+    ADD CONSTRAINT product_selling_prices_selling_price_group_id_fkey FOREIGN KEY (selling_price_group_id) REFERENCES public.selling_price_groups(id) ON DELETE CASCADE;
 
 
 --
@@ -2392,19 +2403,19 @@ ALTER TABLE ONLY public.transfer_items
 
 
 --
--- Name: transfers transfers_from_showroom_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: transfers transfers_source_showroom_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.transfers
-    ADD CONSTRAINT transfers_from_showroom_id_fkey FOREIGN KEY (from_showroom_id) REFERENCES public.showrooms(id) ON DELETE SET NULL;
+    ADD CONSTRAINT transfers_source_showroom_id_fkey FOREIGN KEY (source_showroom_id) REFERENCES public.showrooms(id) ON DELETE SET NULL;
 
 
 --
--- Name: transfers transfers_to_showroom_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: transfers transfers_dest_showroom_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.transfers
-    ADD CONSTRAINT transfers_to_showroom_id_fkey FOREIGN KEY (to_showroom_id) REFERENCES public.showrooms(id) ON DELETE SET NULL;
+    ADD CONSTRAINT transfers_dest_showroom_id_fkey FOREIGN KEY (dest_showroom_id) REFERENCES public.showrooms(id) ON DELETE SET NULL;
 
 
 --

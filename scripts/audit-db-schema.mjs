@@ -150,6 +150,33 @@ function findMatchingBrace(text, openIndex) {
   return -1;
 }
 
+function findStatementEnd(text, startIndex) {
+  let parens = 0;
+  let braces = 0;
+  let brackets = 0;
+  let quote = null;
+  for (let i = startIndex; i < text.length; i += 1) {
+    const ch = text[i];
+    const prev = text[i - 1];
+    if (quote) {
+      if (ch === quote && prev !== "\\") quote = null;
+      continue;
+    }
+    if (["'", '"', "`"].includes(ch)) {
+      quote = ch;
+      continue;
+    }
+    if (ch === "(") parens += 1;
+    if (ch === ")") parens = Math.max(0, parens - 1);
+    if (ch === "{") braces += 1;
+    if (ch === "}") braces = Math.max(0, braces - 1);
+    if (ch === "[") brackets += 1;
+    if (ch === "]") brackets = Math.max(0, brackets - 1);
+    if (ch === ";" && parens === 0 && braces === 0 && brackets === 0) return i + 1;
+  }
+  return Math.min(text.length, startIndex + 3500);
+}
+
 function parseObjectKeys(objectText) {
   const keys = [];
   for (const part of splitTopLevel(objectText)) {
@@ -173,6 +200,7 @@ function collectExpectedColumns() {
   for (const file of files) {
     const rel = path.relative(root, file).replaceAll(path.sep, "/");
     const content = readFileSync(file, "utf8");
+    const tableVars = new Map();
     const fromMatches = [...content.matchAll(/\.from\(\s*["']([^"']+)["']\s*\)/g)].filter(
       (m) => !isStorageFrom(content, m.index ?? 0),
     );
@@ -183,10 +211,17 @@ function collectExpectedColumns() {
       if (ignoredTables.has(table) || table.includes("-")) continue;
 
       const start = match.index ?? 0;
-      const nextStart = fromMatches[i + 1]?.index ?? content.length;
-      const chain = content.slice(start, Math.min(nextStart, start + 3500));
+      const statementEnd = findStatementEnd(content, start);
+      const chain = content.slice(start, statementEnd);
       const line = content.slice(0, start).split(/\r?\n/).length;
       const ref = `${rel}:${line}`;
+
+      const prefix = content.slice(Math.max(0, start - 140), start);
+      const variableMatch = prefix.match(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:await\s+)?[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*\s*$/);
+      if (variableMatch) {
+        if (!tableVars.has(variableMatch[1])) tableVars.set(variableMatch[1], new Set());
+        tableVars.get(variableMatch[1]).add(table);
+      }
 
       for (const selectMatch of chain.matchAll(/\.select\(\s*([`"'])([\s\S]*?)\1/g)) {
         for (const column of parseSelectColumns(selectMatch[2])) addExpected(expected, table, column, ref);
@@ -203,6 +238,21 @@ function collectExpectedColumns() {
         if (closeIndex === -1) continue;
         const objectText = chain.slice(openIndex + 1, closeIndex);
         for (const key of parseObjectKeys(objectText)) addExpected(expected, table, key, ref);
+      }
+    }
+
+    for (const [variable, tables] of tableVars.entries()) {
+      if (tables.size !== 1) continue;
+      const [table] = [...tables];
+      const escaped = variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const variableFilterRegex = new RegExp(
+        `\\b${escaped}\\s*=\\s*${escaped}\\s*\\.\\s*(?:${filterMethods.join("|")})\\(\\s*[\"']([^\"']+)[\"']|\\b${escaped}\\s*\\.\\s*(?:${filterMethods.join("|")})\\(\\s*[\"']([^\"']+)[\"']`,
+        "g",
+      );
+      for (const variableFilterMatch of content.matchAll(variableFilterRegex)) {
+        const column = variableFilterMatch[1] ?? variableFilterMatch[2];
+        const line = content.slice(0, variableFilterMatch.index ?? 0).split(/\r?\n/).length;
+        addExpected(expected, table, column, `${rel}:${line}`);
       }
     }
   }
