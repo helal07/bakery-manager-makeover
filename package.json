@@ -7,6 +7,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "db:audit": "node scripts/audit-db-schema.mjs",
+    "build:checked": "bun run db:audit && bun run build",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
