@@ -29,6 +29,47 @@ function SaleList() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [payment, setPayment] = useState<"All" | "Due" | "Advance" | "Paid" | "Partial">("All");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const q1 = loc === null
+        ? sb.from("sales").select("id,external_ref,customer_name,customer_phone,total,paid,due,created_at,showroom_id").is("showroom_id", null)
+        : sb.from("sales").select("id,external_ref,customer_name,customer_phone,total,paid,due,created_at,showroom_id").eq("showroom_id", loc);
+      const { data: sales } = await q1.order("created_at", { ascending: false }).limit(500);
+      const ids = (sales ?? []).map((s: any) => s.id);
+      let counts: Record<string, number> = {};
+      let showroomNames: Record<string, string> = {};
+      if (ids.length) {
+        const { data: si } = await sb.from("sale_items").select("sale_id,qty").in("sale_id", ids);
+        for (const l of si ?? []) counts[l.sale_id] = (counts[l.sale_id] ?? 0) + Number(l.qty || 0);
+        const shIds = Array.from(new Set((sales ?? []).map((s: any) => s.showroom_id).filter(Boolean)));
+        if (shIds.length) {
+          const { data: sh } = await sb.from("showrooms").select("id,name").in("id", shIds);
+          for (const r of sh ?? []) showroomNames[r.id] = r.name;
+        }
+      }
+      const mapped: Row[] = (sales ?? []).map((s: any) => {
+        const total = Number(s.total || 0);
+        const paidN = Number(s.paid || 0);
+        const status: Status = paidN <= 0 ? "Due" : paidN >= total ? "Paid" : "Partial";
+        return {
+          id: s.external_ref ?? s.id.slice(0, 8),
+          date: new Date(s.created_at).toLocaleString(),
+          customer: s.customer_name ?? "Walk-in Customer",
+          phone: s.customer_phone ?? "",
+          items: counts[s.id] ?? 0,
+          total, paid: paidN, status,
+          addedBy: "—",
+          branch: s.showroom_id ? (showroomNames[s.showroom_id] ?? "—") : "Factory",
+        };
+      });
+      if (!cancelled) { setRows(mapped); setLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [loc]);
+
   const users = Array.from(new Set(rows.map((r) => r.addedBy)));
   const branches = Array.from(new Set(rows.map((r) => r.branch)));
 
@@ -55,16 +96,17 @@ function SaleList() {
       }
       return true;
     });
-  }, [q, addedBy, branch, from, to, payment]);
+  }, [rows, q, addedBy, branch, from, to, payment]);
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const navigate = useNavigate();
   type ActionType = "View" | "Payment" | "Invoice" | "Return sale" | "Notify";
-  const [action, setAction] = useState<{ type: ActionType; row: (typeof rows)[number] } | null>(null);
-  const runAction = (type: ActionType, row: (typeof rows)[number]) => {
+  const [action, setAction] = useState<{ type: ActionType; row: Row } | null>(null);
+  const runAction = (type: ActionType, row: Row) => {
     setOpenMenu(null);
     setAction({ type, row });
   };
+
 
   return (
     <AppShell title="Sale List" subtitle="All completed sales">
