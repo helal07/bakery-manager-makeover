@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppShell, Card, Badge } from "@/components/app-shell";
+import { AppShell, Card } from "@/components/app-shell";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { addSupplier, loadSuppliers, type Supplier } from "@/lib/supplier-store";
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/suppliers")({
 function Suppliers() {
   const [open, setOpen] = useState(false);
   const [list, setList] = useState<Supplier[]>([]);
-  const [form, setForm] = useState({ name: "", contact: "", phone: "", category: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", address: "" });
 
   useEffect(() => {
     loadSuppliers()
@@ -37,13 +37,13 @@ function Suppliers() {
     try {
       const s = await addSupplier({
         name: form.name.trim(),
-        contact: form.contact.trim(),
+        email: form.email.trim(),
         phone: form.phone.trim(),
-        category: form.category.trim() || "General",
+        address: form.address.trim(),
       });
       setList((l) => [s, ...l]);
       toast.success("Supplier added");
-      setForm({ name: "", contact: "", phone: "", category: "" });
+      setForm({ name: "", email: "", phone: "", address: "" });
       setOpen(false);
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to add supplier");
@@ -73,18 +73,18 @@ function Suppliers() {
           <thead className="text-xs text-muted-foreground bg-muted/40">
             <tr>
               <th className="text-left font-medium px-5 py-3">Supplier</th>
-              <th className="text-left font-medium px-5 py-3">Contact</th>
+              <th className="text-left font-medium px-5 py-3">Email</th>
               <th className="text-left font-medium px-5 py-3">Phone</th>
-              <th className="text-left font-medium px-5 py-3">Category</th>
+              <th className="text-left font-medium px-5 py-3">Address</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {list.map((s) => (
               <tr key={s.id} className="hover:bg-muted/30">
                 <td className="px-5 py-3 font-medium">{s.name}</td>
-                <td className="px-5 py-3">{s.contact}</td>
+                <td className="px-5 py-3">{s.email}</td>
                 <td className="px-5 py-3 text-muted-foreground">{s.phone}</td>
-                <td className="px-5 py-3"><Badge tone="neutral">{s.category}</Badge></td>
+                <td className="px-5 py-3 text-muted-foreground">{s.address}</td>
               </tr>
             ))}
             {list.length === 0 && (
@@ -105,16 +105,16 @@ function Suppliers() {
               <Input id="s-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="s-contact">Contact person</Label>
-              <Input id="s-contact" value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} />
+              <Label htmlFor="s-email">Email</Label>
+              <Input id="s-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="s-phone">Phone</Label>
               <Input id="s-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="s-cat">Category</Label>
-              <Input id="s-cat" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Flour, Dairy, ..." />
+              <Label htmlFor="s-addr">Address</Label>
+              <Input id="s-addr" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
