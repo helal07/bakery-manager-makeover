@@ -1,7 +1,11 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Showroom = { id: string; name: string; code: string | null };
+export type Showroom = {
+  id: string; name: string; code: string | null;
+  address?: string | null; city?: string | null; phone?: string | null; manager_name?: string | null;
+};
+
 
 type ScopeState = {
   loading: boolean;
@@ -57,9 +61,10 @@ export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
     // for global users this returns all active rows.
     const { data: rooms } = await supabase
       .from("showrooms")
-      .select("id, name, code")
+      .select("id, name, code, address, city, phone, manager_name")
       .eq("is_active", true)
       .order("name");
+
 
     const list = (rooms ?? []) as Showroom[];
     setShowrooms(list);
