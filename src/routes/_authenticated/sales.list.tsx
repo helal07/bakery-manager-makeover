@@ -1,7 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Eye, Pencil, CreditCard, FileText, Undo2, Bell, ChevronDown, UserRound, Store, Download, Printer, Share2, MessageCircle, Phone } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useShowroomScope } from "@/hooks/use-showroom-scope";
+
+const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/sales/list")({
   head: () => ({ meta: [{ title: "Sale List · Crumb & Co." }] }),
@@ -9,12 +13,17 @@ export const Route = createFileRoute("/_authenticated/sales/list")({
 });
 
 type Status = "Paid" | "Due" | "Partial";
-const rows: { id: string; date: string; customer: string; phone: string; items: number; total: number; paid: number; status: Status; addedBy: string; branch: string }[] = [];
+type Row = { id: string; date: string; customer: string; phone: string; items: number; total: number; paid: number; status: Status; addedBy: string; branch: string };
 
 const tone: Record<Status, "success" | "danger" | "warning"> = { Paid: "success", Due: "danger", Partial: "warning" };
 
 function SaleList() {
+  const { currentShowroomId } = useShowroomScope();
+  const loc = currentShowroomId;
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+
   const [addedBy, setAddedBy] = useState("All");
   const [branch, setBranch] = useState("All");
   const [from, setFrom] = useState("");
