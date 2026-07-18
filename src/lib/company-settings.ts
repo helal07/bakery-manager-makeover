@@ -43,6 +43,8 @@ export async function getCompany(): Promise<CompanySettings> {
     .from("company_settings")
     .select("name, tagline, address, phone, email, vat_reg, logo_url, footer_note")
     .eq("is_current", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   if (error || !data) return defaultCompany;
   const merged: CompanySettings = { ...defaultCompany, ...fromRow(data) };
@@ -63,12 +65,10 @@ export async function saveCompany(c: CompanySettings) {
     phone: c.phone || null,
     email: c.email || null,
     vat_reg: c.vatReg || null,
-    // Prefer storing the storage path so URLs can be re-signed on load
     logo_url: c.logoPath || c.logoDataUrl || null,
     footer_note: c.footerNote || null,
     is_current: true,
   };
-  // Find existing current row; update it, otherwise insert a new one.
   const { data: existing } = await supabase
     .from("company_settings")
     .select("id")
@@ -77,10 +77,27 @@ export async function saveCompany(c: CompanySettings) {
     .limit(1)
     .maybeSingle();
   if (existing?.id) {
-    const { error } = await supabase.from("company_settings").update(payload).eq("id", existing.id);
+    // Demote any other stale "current" rows so getCompany always resolves one.
+    await supabase
+      .from("company_settings")
+      .update({ is_current: false })
+      .eq("is_current", true)
+      .neq("id", existing.id);
+    const { data, error } = await supabase
+      .from("company_settings")
+      .update(payload)
+      .eq("id", existing.id)
+      .select()
+      .single();
     if (error) throw error;
+    if (!data) throw new Error("Save blocked — check that you are signed in (RLS)");
   } else {
-    const { error } = await supabase.from("company_settings").insert(payload);
+    const { data, error } = await supabase
+      .from("company_settings")
+      .insert(payload)
+      .select()
+      .single();
     if (error) throw error;
+    if (!data) throw new Error("Save blocked — check that you are signed in (RLS)");
   }
 }
