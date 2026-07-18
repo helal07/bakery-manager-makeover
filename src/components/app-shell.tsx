@@ -540,6 +540,12 @@ function UserMenu() {
   const signOut = async () => {
     await queryClient.cancelQueries();
     queryClient.clear();
+    try {
+      localStorage.removeItem("user-profile-cache-v1");
+      localStorage.removeItem("user-email-cache-v1");
+      localStorage.removeItem("user-role-cache-v1");
+    } catch { /* ignore */ }
+    userMenuLoadedOnce = false;
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
