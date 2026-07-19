@@ -372,7 +372,7 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
           <span>Today's Bill</span><span>{money(snapshot.total)}</span>
         </div>
-        {previousDue > 0 && (
+        {s.showPreviousDue && (
           <div style={{ display: "flex", justifyContent: "space-between" }}><span>Previous Due</span><span>+ {money(previousDue)}</span></div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 12, borderTop: "1px dashed #000", paddingTop: 2, marginTop: 2 }}>
@@ -389,10 +389,12 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
                 <span>{money(p.amount)}</span>
               </div>
             ))}
-            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
-              <span>Today Payment</span><span>- {money(snapshot.paid)}</span>
-            </div>
           </>
+        )}
+        {s.showPaid && (
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+            <span>Today Payment</span><span>- {money(snapshot.paid)}</span>
+          </div>
         )}
 
         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 12, borderTop: "1px dashed #000", paddingTop: 2, marginTop: 2 }}>
