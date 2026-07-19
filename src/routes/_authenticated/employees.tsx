@@ -25,28 +25,14 @@ type Employee = {
 
 type Showroom = { id: string; name: string };
 
-type Draft = Omit<Employee, "id"> & { id?: string };
-
-const empty: Draft = {
-  name: "",
-  role: "",
-  showroom_id: null,
-  email: "",
-  phone: "",
-  salary: 0,
-  attendance: 100,
-  is_active: true,
-};
-
 function EmployeesPage() {
+  const navigate = useNavigate();
   const { isAdmin, loading: roleLoading } = useIsAdmin();
   const [list, setList] = useState<Employee[]>([]);
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<Draft>(empty);
 
   const guard = () => {
     if (roleLoading) {
@@ -115,35 +101,11 @@ function EmployeesPage() {
 
   const openAdd = () => {
     if (!guard()) return;
-    setDraft(empty);
-    setOpen(true);
+    navigate({ to: "/employees/new" });
   };
   const openEdit = (e: Employee) => {
     if (!guard()) return;
-    setDraft(e);
-    setOpen(true);
-  };
-
-  const save = async () => {
-    if (!guard()) return;
-    if (!draft.name.trim()) return toast.error("Name required");
-    const payload = {
-      name: draft.name.trim(),
-      role: draft.role.trim(),
-      showroom_id: draft.showroom_id,
-      email: draft.email?.trim() || null,
-      phone: draft.phone?.trim() || null,
-      salary: Number(draft.salary) || 0,
-      attendance: Number(draft.attendance) || 0,
-      is_active: draft.is_active,
-    };
-    const { error } = draft.id
-      ? await supabase.from("employees").update(payload).eq("id", draft.id)
-      : await supabase.from("employees").insert(payload);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-    setOpen(false);
-    refresh();
+    navigate({ to: "/employees/edit/$id", params: { id: e.id } });
   };
 
   const remove = async (id: string) => {
