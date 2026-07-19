@@ -156,22 +156,43 @@ function PosPage() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  // Fetch outstanding due for the selected customer (sum of sales.due)
+  // Fetch live outstanding due for the selected customer:
+  // sum(sales.due) matched by customer_id OR normalized phone,
+  // minus standalone customer_payments (sale_id IS NULL) for this customer.
   useEffect(() => {
     if (!customerId) { setCustomerDue(0); return; }
     let cancelled = false;
+    const digits = (customerPhone ?? "").replace(/\D/g, "");
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("sales")
-        .select("due")
-        .eq("customer_id", customerId);
+      const sb = supabase as any;
+      const salesQ = digits
+        ? sb.from("sales").select("due,customer_id,customer_phone")
+        : sb.from("sales").select("due,customer_id,customer_phone").eq("customer_id", customerId);
+      const paysQ = digits
+        ? sb.from("customer_payments").select("amount,sale_id,customer_id,customer_phone").is("sale_id", null)
+        : sb.from("customer_payments").select("amount,sale_id,customer_id,customer_phone").is("sale_id", null).eq("customer_id", customerId);
+
+      const [sRes, pRes] = await Promise.all([salesQ, paysQ]);
       if (cancelled) return;
-      if (error) { setCustomerDue(0); return; }
-      const total = (data ?? []).reduce((s: number, r: any) => s + Number(r.due || 0), 0);
-      setCustomerDue(+total.toFixed(2));
+      if (sRes.error || pRes.error) { setCustomerDue(0); return; }
+
+      const matchesCust = (row: any) => {
+        if (row.customer_id && row.customer_id === customerId) return true;
+        if (!digits) return false;
+        const rd = String(row.customer_phone ?? "").replace(/\D/g, "");
+        return rd && rd === digits;
+      };
+
+      const salesDue = (sRes.data ?? []).filter(matchesCust)
+        .reduce((s: number, r: any) => s + Number(r.due || 0), 0);
+      const extraPaid = (pRes.data ?? []).filter(matchesCust)
+        .reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
+
+      const outstanding = Math.max(0, salesDue - extraPaid);
+      setCustomerDue(+outstanding.toFixed(2));
     })();
     return () => { cancelled = true; };
-  }, [customerId]);
+  }, [customerId, customerPhone]);
 
   const pickCustomer = (c: CustomerLite) => {
     setCustomerId(c.id);
