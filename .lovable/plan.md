@@ -1,86 +1,51 @@
-# Customizable Invoice from Backend
 
-Right now `src/routes/invoice.$id.tsx` hardcodes layout, colors, labels, badge text, footer, signature captions and thermal widths. Goal: move all of that into an **Invoice Settings** panel saved in `company_settings.settings` (jsonb — already exists, no migration needed), with a live preview like Ultimate POS.
+## Problem
 
-## What the user configures (Settings → Invoice)
+Two invoice surfaces render differently even though they share `/invoice/$id` and `<InvoicePreview />`:
 
-**Header**
-- Show/hide: logo, business name, tagline, VAT reg, address, phone, email
-- Header style: `gradient` | `solid` | `minimal` | `bordered`
-- Header color (uses design tokens; stored as HSL string)
-- Invoice title label (e.g. "Invoice", "Tax Invoice", "Cash Memo", "চালান")
-- Invoice number prefix + padding (e.g. `INV-` / 6 digits) — replaces current `INV-<id-slice>`
+- **POS → F9 → auto-open**: opens `window.open("/invoice/${sale.id}", ...)` with a local snapshot stashed in `localStorage:invoice:<saleId>`. That snapshot is missing `discount`, `shipping`, `previousDue`, and `payments`, so the preview shows no "Discount" line and the *Today's Bill + Previous Due = Total − Today Payment = Due Till Today* block collapses (rows are conditional on non-zero values).
+- **Sales List → Print**: no local snapshot, so `fetchSaleSnapshot()` runs and pulls `sale.discount`, computes `previousDue`, loads `sale_payments` → full breakdown → looks like "a different invoice".
 
-**Outlet & Customer blocks**
-- Toggle: show outlet block, show customer block, show "Served by"
-- Custom labels (Outlet / Billed to / Details) — supports Bengali
+Confirmed:
+- `src/routes/_authenticated/pos.tsx` (~L481) snapshot omits `discount`, `shipping`, `previousDue`, `payments`.
+- `src/routes/invoice.$id.tsx` eagerly renders the localStorage snapshot; DB fetch overwrites, but auto-print can fire on the partial version.
+- `src/components/invoice-preview.tsx` — breakdown rows exist but are conditionally hidden when values are 0.
+- DB: `sales.discount` exists, `sales.shipping` does **not**. `sale_items` already has `discount_amount` (from legacy part 9) — no new column needed.
 
-**Items table**
-- Column toggles: `#`, SKU, Qty, Unit, Price, Discount, Tax, Amount
-- Show item notes row
-- Zebra rows on/off
+## Fix (data parity + breakdown rows + wire per-line discount storage)
 
-**Totals**
-- Toggle: Subtotal, Discount, VAT, Shipping, Round-off, Grand Total, Paid, Due, Change
-- Custom labels + currency symbol (default ৳) + decimal places
-- Amount-in-words on/off (Bangla/English)
+### 1. `src/routes/_authenticated/pos.tsx` — enrich the invoice snapshot before opening the print window
 
-**Footer**
-- Multi-line footer note (rich text: bold/italic/line-breaks)
-- Terms & conditions block (separate)
-- Signature captions (Customer / Authorized) — editable, or hide entirely
-- Show "Powered by …" line on/off
+In the sale-completion block, include on the snapshot:
+- `discount` (sale-level, already in state),
+- `shipping` (already in state),
+- `previousDue`: reuse the `customerDue` already computed in the header,
+- `payments`: mirror the `payRows` we just inserted (`{ method, amount, reference }`),
+- `customer.address` when a saved customer is selected.
 
-**Print / paper**
-- Default paper size: A4 / 80mm / 58mm
-- Thermal: font size, monospace font on/off, show logo on/off, dashed vs solid separators
-- Auto-print after sale: on/off (currently always on via `ap=1`)
-- QR code: none | invoice link | UPI/bKash payload (text template)
-- Barcode of invoice number: on/off
+Also persist per-line discount when inserting `sale_items`: add `discount_amount: Number(line.discount || 0)` to each row (column already exists). If the current POS UI has no per-line discount input, pass 0 for now — the storage path is wired so future UI changes just flow through.
 
-**Branding**
-- Accent color (drives header + badges + total row)
-- Watermark text (e.g. "PAID" / "DUPLICATE")
-- Duplicate-copy label ("Original / Customer Copy / Merchant Copy")
+### 2. `src/routes/invoice.$id.tsx` — always prefer fresh DB data before printing
 
-## Data model (no migration required)
+- Keep the localStorage read as a fallback only; don't set `stored` from it eagerly. Instead, await `fetchSaleSnapshot()` and only fall back to the localStorage snapshot if the DB fetch returns nothing.
+- Include `sale_items.discount_amount` in the select and map it to `discount` on each `InvoiceLine`.
+- Coerce `sale.shipping` safely with `Number(sale.shipping ?? 0)` (schema currently lacks the column; treat as 0).
+- Auto-print already waits for `ready`; keep that gate — this ensures the DB-hydrated snapshot is what prints.
 
-Store everything under `company_settings.settings.invoice` as a typed JSON blob. Add helpers in `src/lib/company-settings.ts`:
+### 3. `src/components/invoice-preview.tsx` — always render the breakdown skeleton
 
-- `InvoiceSettings` type + `defaultInvoiceSettings`
-- `getInvoiceSettings()` / `saveInvoiceSettings(patch)` — reads/writes `settings.invoice`, merges with defaults, updates the same cache used by `getCompany()` so navigating stays instant
-- Per-showroom override: `showrooms.settings jsonb` (add later if requested) — v1 uses global only
+The block *Today's Bill + Previous Due = Total − Today Payment = Due Till Today* currently hides rows when their values are 0, breaking the equation visually. Change so:
+- "Previous Due" row renders whenever a new `showPreviousDue` toggle is on (default true), even when 0.
+- "Today Payment" row renders whenever `s.showPaid` is on, regardless of amount.
+- Mirror the same three-row structure into the thermal (58/80mm) layout for parity.
 
-## UI changes
+No visual redesign — only unhiding rows and adding the missing per-line `discount` column value already supported by the type.
 
-1. `src/routes/_authenticated/settings.index.tsx` — new **Invoice** tab with three panels: *Content*, *Style*, *Print*. Right-side sticky **Live Preview** iframe pointing to `/invoice/preview?draft=1` reading unsaved values from `sessionStorage`.
-2. New `src/components/invoice-preview.tsx` — extracts the render logic from `invoice.$id.tsx` and takes `(snapshot, invoiceSettings, company, paper)` as props. Both the settings preview and the real invoice route render through it — single source of truth.
-3. Refactor `src/routes/invoice.$id.tsx` to:
-   - Load `invoiceSettings` alongside `company`
-   - Delegate rendering to `<InvoicePreview />`
-   - Replace hardcoded labels/badges/columns/footers with settings values
-4. `src/routes/_authenticated/pos.tsx` — respect `invoiceSettings.autoPrint` (drop forced `ap=1` when off), and use `invoiceSettings.numbering` to generate the reference stored in the snapshot.
+### 4. `src/lib/company-settings.ts` — add `showPreviousDue` toggle
 
-## Behavior details
+Add `showPreviousDue: boolean` to `InvoiceSettings` (default `true`) and expose it as a checkbox in the Invoice tab of `src/routes/_authenticated/settings.index.tsx` under existing Totals toggles.
 
-- Number generator: `${prefix}${String(seq).padStart(pad, "0")}` where `seq` comes from a monotonic counter per showroom stored in `company_settings.settings.invoice.counters` (updated in same POS transaction that saves the sale).
-- Toggling a column also hides its total column and adjusts the thermal template widths.
-- All colors go through CSS variables set on the invoice root; no hex in components — keeps dark-mode/theme rules intact.
-- Bengali labels supported since values are user-entered strings.
+## Out of scope
 
-## Out of scope for v1 (call out for next round)
-
-- Multiple named templates + assign per showroom/customer group
-- Email/WhatsApp send from invoice screen
-- Custom HTML template editor
-- Per-showroom invoice override (structure supports it; UI later)
-
-## Files to touch
-
-- `src/lib/company-settings.ts` — add `InvoiceSettings` type, defaults, `getInvoiceSettings`, `saveInvoiceSettings`
-- `src/components/invoice-preview.tsx` — new, shared renderer
-- `src/routes/invoice.$id.tsx` — thin wrapper over `<InvoicePreview />`
-- `src/routes/_authenticated/settings.index.tsx` — new Invoice tab + live preview
-- `src/routes/_authenticated/pos.tsx` — apply numbering + autoPrint settings
-
-No SQL migration. If later we want per-showroom overrides, we'll add `sql/09_showroom_settings.sql`.
+- Restyling the invoice — only data parity and the missing breakdown rows.
+- Adding a per-line discount input to the POS cart UI — storage path is wired; UI stays as-is unless requested next.
