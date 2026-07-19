@@ -40,10 +40,8 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
   }
   if (!sale) return null;
 
-  const { data: items } = await sb
-    .from("sale_items")
-    .select("qty, unit_price, line_total, product_id, product_name, product_sku, products(name, sku)")
-    .eq("sale_id", sale.id);
+  const { data: items } = await tryItemSelects(sale.id);
+
 
   const { data: pays } = await sb
     .from("sale_payments")
