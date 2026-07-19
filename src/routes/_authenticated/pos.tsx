@@ -966,7 +966,7 @@ function PosPage() {
 
 
         {/* Right panel: category + product grid */}
-        <aside className="overflow-y-auto p-2 bg-[oklch(0.97_0.005_240)] dark:bg-background">
+        <aside className={`${mobileTab === "products" ? "block" : "hidden"} lg:block overflow-y-auto p-2 bg-[oklch(0.97_0.005_240)] dark:bg-background`}>
           <div className="grid grid-cols-2 gap-1.5 mb-2">
             <button onClick={() => setRightTab("category")} className={`h-9 rounded-md border text-xs font-semibold inline-flex items-center justify-center gap-2 ${rightTab === "category" ? "bg-primary/10 border-primary text-primary" : "bg-card border-border hover:bg-accent"}`}>
               Category <span className="text-[10px] font-bold opacity-70">({categories.length})</span>
