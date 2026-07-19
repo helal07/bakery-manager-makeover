@@ -48,7 +48,7 @@ type LedgerRow = {
   balance: number;
 };
 
-export const Route = createFileRoute("/_authenticated/crm/$id")({
+export const Route = createFileRoute("/_authenticated/crm/$id/")({
   head: () => ({ meta: [{ title: "Customer · Muzahid Food" }] }),
   component: CustomerDetail,
   errorComponent: ({ error }) => (

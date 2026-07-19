@@ -30,7 +30,6 @@ import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomerGroupsRouteImport } from './routes/_authenticated/customer-groups'
-import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedAiInsightsRouteImport } from './routes/_authenticated/ai-insights'
@@ -40,6 +39,7 @@ import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports.index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedProductionIndexRouteImport } from './routes/_authenticated/production.index'
+import { Route as AuthenticatedCrmIndexRouteImport } from './routes/_authenticated/crm.index'
 import { Route as ApiPublicSupabaseProxyRouteImport } from './routes/api/public/supabase-proxy'
 import { Route as AuthenticatedTransfersNewRouteImport } from './routes/_authenticated/transfers.new'
 import { Route as AuthenticatedSettingsShowroomsRouteImport } from './routes/_authenticated/settings.showrooms'
@@ -76,7 +76,7 @@ import { Route as AuthenticatedExpensesNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authenticated/expenses.list'
 import { Route as AuthenticatedExpensesCategoriesRouteImport } from './routes/_authenticated/expenses.categories'
 import { Route as AuthenticatedEmployeesNewRouteImport } from './routes/_authenticated/employees.new'
-import { Route as AuthenticatedCrmIdRouteImport } from './routes/_authenticated/crm.$id'
+import { Route as AuthenticatedCrmIdIndexRouteImport } from './routes/_authenticated/crm.$id.index'
 import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
 import { Route as AuthenticatedSalesEditIdRouteImport } from './routes/_authenticated/sales.edit.$id'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
@@ -191,11 +191,6 @@ const AuthenticatedCustomerGroupsRoute =
     path: '/customer-groups',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
-  id: '/crm',
-  path: '/crm',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedCatalogRoute = AuthenticatedCatalogRouteImport.update({
   id: '/catalog',
   path: '/catalog',
@@ -246,6 +241,11 @@ const AuthenticatedProductionIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedProductionRoute,
   } as any)
+const AuthenticatedCrmIndexRoute = AuthenticatedCrmIndexRouteImport.update({
+  id: '/crm/',
+  path: '/crm/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicSupabaseProxyRoute = ApiPublicSupabaseProxyRouteImport.update({
   id: '/api/public/supabase-proxy',
   path: '/api/public/supabase-proxy',
@@ -460,10 +460,10 @@ const AuthenticatedEmployeesNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedEmployeesRoute,
   } as any)
-const AuthenticatedCrmIdRoute = AuthenticatedCrmIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedCrmRoute,
+const AuthenticatedCrmIdIndexRoute = AuthenticatedCrmIdIndexRouteImport.update({
+  id: '/crm/$id/',
+  path: '/crm/$id/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTransfersDamagedNewRoute =
   AuthenticatedTransfersDamagedNewRouteImport.update({
@@ -491,9 +491,9 @@ const AuthenticatedEmployeesEditIdRoute =
   } as any)
 const AuthenticatedCrmIdLedgerRoute =
   AuthenticatedCrmIdLedgerRouteImport.update({
-    id: '/ledger',
-    path: '/ledger',
-    getParentRoute: () => AuthenticatedCrmIdRoute,
+    id: '/crm/$id/ledger',
+    path: '/crm/$id/ledger',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -505,7 +505,6 @@ export interface FileRoutesByFullPath {
   '/ai-insights': typeof AuthenticatedAiInsightsRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/catalog': typeof AuthenticatedCatalogRoute
-  '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRouteWithChildren
@@ -522,7 +521,6 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
-  '/crm/$id': typeof AuthenticatedCrmIdRouteWithChildren
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
@@ -559,6 +557,7 @@ export interface FileRoutesByFullPath {
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
+  '/crm/': typeof AuthenticatedCrmIndexRoute
   '/production/': typeof AuthenticatedProductionIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
@@ -569,6 +568,7 @@ export interface FileRoutesByFullPath {
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
+  '/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -579,7 +579,6 @@ export interface FileRoutesByTo {
   '/ai-insights': typeof AuthenticatedAiInsightsRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/catalog': typeof AuthenticatedCatalogRoute
-  '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRouteWithChildren
@@ -594,7 +593,6 @@ export interface FileRoutesByTo {
   '/recipes': typeof AuthenticatedRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
-  '/crm/$id': typeof AuthenticatedCrmIdRouteWithChildren
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
@@ -631,6 +629,7 @@ export interface FileRoutesByTo {
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
+  '/crm': typeof AuthenticatedCrmIndexRoute
   '/production': typeof AuthenticatedProductionIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
@@ -641,6 +640,7 @@ export interface FileRoutesByTo {
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
+  '/crm/$id': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -653,7 +653,6 @@ export interface FileRoutesById {
   '/_authenticated/ai-insights': typeof AuthenticatedAiInsightsRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/catalog': typeof AuthenticatedCatalogRoute
-  '/_authenticated/crm': typeof AuthenticatedCrmRouteWithChildren
   '/_authenticated/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRouteWithChildren
@@ -670,7 +669,6 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
-  '/_authenticated/crm/$id': typeof AuthenticatedCrmIdRouteWithChildren
   '/_authenticated/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/_authenticated/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/_authenticated/expenses/list': typeof AuthenticatedExpensesListRoute
@@ -707,6 +705,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/_authenticated/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
+  '/_authenticated/crm/': typeof AuthenticatedCrmIndexRoute
   '/_authenticated/production/': typeof AuthenticatedProductionIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
@@ -717,6 +716,7 @@ export interface FileRoutesById {
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
   '/_authenticated/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
+  '/_authenticated/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -729,7 +729,6 @@ export interface FileRouteTypes {
     | '/ai-insights'
     | '/branches'
     | '/catalog'
-    | '/crm'
     | '/customer-groups'
     | '/dashboard'
     | '/employees'
@@ -746,7 +745,6 @@ export interface FileRouteTypes {
     | '/reports'
     | '/suppliers'
     | '/invoice/$id'
-    | '/crm/$id'
     | '/employees/new'
     | '/expenses/categories'
     | '/expenses/list'
@@ -783,6 +781,7 @@ export interface FileRouteTypes {
     | '/settings/showrooms'
     | '/transfers/new'
     | '/api/public/supabase-proxy'
+    | '/crm/'
     | '/production/'
     | '/products/'
     | '/reports/'
@@ -793,6 +792,7 @@ export interface FileRouteTypes {
     | '/products/edit/$id'
     | '/sales/edit/$id'
     | '/transfers/damaged/new'
+    | '/crm/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -803,7 +803,6 @@ export interface FileRouteTypes {
     | '/ai-insights'
     | '/branches'
     | '/catalog'
-    | '/crm'
     | '/customer-groups'
     | '/dashboard'
     | '/employees'
@@ -818,7 +817,6 @@ export interface FileRouteTypes {
     | '/recipes'
     | '/suppliers'
     | '/invoice/$id'
-    | '/crm/$id'
     | '/employees/new'
     | '/expenses/categories'
     | '/expenses/list'
@@ -855,6 +853,7 @@ export interface FileRouteTypes {
     | '/settings/showrooms'
     | '/transfers/new'
     | '/api/public/supabase-proxy'
+    | '/crm'
     | '/production'
     | '/products'
     | '/reports'
@@ -865,6 +864,7 @@ export interface FileRouteTypes {
     | '/products/edit/$id'
     | '/sales/edit/$id'
     | '/transfers/damaged/new'
+    | '/crm/$id'
   id:
     | '__root__'
     | '/'
@@ -876,7 +876,6 @@ export interface FileRouteTypes {
     | '/_authenticated/ai-insights'
     | '/_authenticated/branches'
     | '/_authenticated/catalog'
-    | '/_authenticated/crm'
     | '/_authenticated/customer-groups'
     | '/_authenticated/dashboard'
     | '/_authenticated/employees'
@@ -893,7 +892,6 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/suppliers'
     | '/invoice/$id'
-    | '/_authenticated/crm/$id'
     | '/_authenticated/employees/new'
     | '/_authenticated/expenses/categories'
     | '/_authenticated/expenses/list'
@@ -930,6 +928,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/showrooms'
     | '/_authenticated/transfers/new'
     | '/api/public/supabase-proxy'
+    | '/_authenticated/crm/'
     | '/_authenticated/production/'
     | '/_authenticated/products/'
     | '/_authenticated/reports/'
@@ -940,6 +939,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/sales/edit/$id'
     | '/_authenticated/transfers/damaged/new'
+    | '/_authenticated/crm/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1101,13 +1101,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCustomerGroupsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/crm': {
-      id: '/_authenticated/crm'
-      path: '/crm'
-      fullPath: '/crm'
-      preLoaderRoute: typeof AuthenticatedCrmRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/catalog': {
       id: '/_authenticated/catalog'
       path: '/catalog'
@@ -1170,6 +1163,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/production/'
       preLoaderRoute: typeof AuthenticatedProductionIndexRouteImport
       parentRoute: typeof AuthenticatedProductionRoute
+    }
+    '/_authenticated/crm/': {
+      id: '/_authenticated/crm/'
+      path: '/crm'
+      fullPath: '/crm/'
+      preLoaderRoute: typeof AuthenticatedCrmIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/supabase-proxy': {
       id: '/api/public/supabase-proxy'
@@ -1423,12 +1423,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmployeesNewRouteImport
       parentRoute: typeof AuthenticatedEmployeesRoute
     }
-    '/_authenticated/crm/$id': {
-      id: '/_authenticated/crm/$id'
-      path: '/$id'
-      fullPath: '/crm/$id'
-      preLoaderRoute: typeof AuthenticatedCrmIdRouteImport
-      parentRoute: typeof AuthenticatedCrmRoute
+    '/_authenticated/crm/$id/': {
+      id: '/_authenticated/crm/$id/'
+      path: '/crm/$id'
+      fullPath: '/crm/$id/'
+      preLoaderRoute: typeof AuthenticatedCrmIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/transfers/damaged/new': {
       id: '/_authenticated/transfers/damaged/new'
@@ -1460,35 +1460,13 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/crm/$id/ledger': {
       id: '/_authenticated/crm/$id/ledger'
-      path: '/ledger'
+      path: '/crm/$id/ledger'
       fullPath: '/crm/$id/ledger'
       preLoaderRoute: typeof AuthenticatedCrmIdLedgerRouteImport
-      parentRoute: typeof AuthenticatedCrmIdRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
-
-interface AuthenticatedCrmIdRouteChildren {
-  AuthenticatedCrmIdLedgerRoute: typeof AuthenticatedCrmIdLedgerRoute
-}
-
-const AuthenticatedCrmIdRouteChildren: AuthenticatedCrmIdRouteChildren = {
-  AuthenticatedCrmIdLedgerRoute: AuthenticatedCrmIdLedgerRoute,
-}
-
-const AuthenticatedCrmIdRouteWithChildren =
-  AuthenticatedCrmIdRoute._addFileChildren(AuthenticatedCrmIdRouteChildren)
-
-interface AuthenticatedCrmRouteChildren {
-  AuthenticatedCrmIdRoute: typeof AuthenticatedCrmIdRouteWithChildren
-}
-
-const AuthenticatedCrmRouteChildren: AuthenticatedCrmRouteChildren = {
-  AuthenticatedCrmIdRoute: AuthenticatedCrmIdRouteWithChildren,
-}
-
-const AuthenticatedCrmRouteWithChildren =
-  AuthenticatedCrmRoute._addFileChildren(AuthenticatedCrmRouteChildren)
 
 interface AuthenticatedEmployeesRouteChildren {
   AuthenticatedEmployeesNewRoute: typeof AuthenticatedEmployeesNewRoute
@@ -1586,7 +1564,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAiInsightsRoute: typeof AuthenticatedAiInsightsRoute
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRoute
-  AuthenticatedCrmRoute: typeof AuthenticatedCrmRouteWithChildren
   AuthenticatedCustomerGroupsRoute: typeof AuthenticatedCustomerGroupsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRouteWithChildren
@@ -1619,12 +1596,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsLandingRoute: typeof AuthenticatedSettingsLandingRoute
   AuthenticatedSettingsShowroomsRoute: typeof AuthenticatedSettingsShowroomsRoute
   AuthenticatedTransfersNewRoute: typeof AuthenticatedTransfersNewRoute
+  AuthenticatedCrmIndexRoute: typeof AuthenticatedCrmIndexRoute
   AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
   AuthenticatedTransfersIndexRoute: typeof AuthenticatedTransfersIndexRoute
+  AuthenticatedCrmIdLedgerRoute: typeof AuthenticatedCrmIdLedgerRoute
   AuthenticatedProductsEditIdRoute: typeof AuthenticatedProductsEditIdRoute
   AuthenticatedSalesEditIdRoute: typeof AuthenticatedSalesEditIdRoute
   AuthenticatedTransfersDamagedNewRoute: typeof AuthenticatedTransfersDamagedNewRoute
+  AuthenticatedCrmIdIndexRoute: typeof AuthenticatedCrmIdIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1632,7 +1612,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAiInsightsRoute: AuthenticatedAiInsightsRoute,
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCatalogRoute: AuthenticatedCatalogRoute,
-  AuthenticatedCrmRoute: AuthenticatedCrmRouteWithChildren,
   AuthenticatedCustomerGroupsRoute: AuthenticatedCustomerGroupsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRouteWithChildren,
@@ -1667,12 +1646,15 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsLandingRoute: AuthenticatedSettingsLandingRoute,
   AuthenticatedSettingsShowroomsRoute: AuthenticatedSettingsShowroomsRoute,
   AuthenticatedTransfersNewRoute: AuthenticatedTransfersNewRoute,
+  AuthenticatedCrmIndexRoute: AuthenticatedCrmIndexRoute,
   AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   AuthenticatedTransfersIndexRoute: AuthenticatedTransfersIndexRoute,
+  AuthenticatedCrmIdLedgerRoute: AuthenticatedCrmIdLedgerRoute,
   AuthenticatedProductsEditIdRoute: AuthenticatedProductsEditIdRoute,
   AuthenticatedSalesEditIdRoute: AuthenticatedSalesEditIdRoute,
   AuthenticatedTransfersDamagedNewRoute: AuthenticatedTransfersDamagedNewRoute,
+  AuthenticatedCrmIdIndexRoute: AuthenticatedCrmIdIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
