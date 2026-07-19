@@ -1655,6 +1655,7 @@ export type Database = {
           paid: number
           payment_mode: string | null
           register_id: string | null
+          shipping: number
           showroom_id: string | null
           subtotal: number
           tax: number
@@ -1674,6 +1675,7 @@ export type Database = {
           paid?: number
           payment_mode?: string | null
           register_id?: string | null
+          shipping?: number
           showroom_id?: string | null
           subtotal?: number
           tax?: number
@@ -1693,6 +1695,7 @@ export type Database = {
           paid?: number
           payment_mode?: string | null
           register_id?: string | null
+          shipping?: number
           showroom_id?: string | null
           subtotal?: number
           tax?: number
