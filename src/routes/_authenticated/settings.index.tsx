@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import {
   getCompany, saveCompany, defaultCompany, type CompanySettings,
-  getInvoiceSettings, saveInvoiceSettings, defaultInvoiceSettings, type InvoiceSettings, type PaperSize,, pageTitle } from "@/lib/company-settings";
+  getInvoiceSettings, saveInvoiceSettings, defaultInvoiceSettings, type InvoiceSettings, type PaperSize, pageTitle } from "@/lib/company-settings";
 import { InvoicePreview, sampleInvoice } from "@/components/invoice-preview";
 import {
   getProfile, saveProfile, getSoftware, saveSoftware,
