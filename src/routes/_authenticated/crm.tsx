@@ -346,8 +346,11 @@ function CRM() {
                       <DropdownMenuItem onClick={() => navigate({ to: "/crm/$id", params: { id: c.id } })}>
                         <Eye className="size-4 mr-2" /> View
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate({ to: "/crm/$id", params: { id: c.id } })}>
+                      <DropdownMenuItem onClick={() => navigate({ to: "/crm/$id/ledger", params: { id: c.id } })}>
                         <BookOpen className="size-4 mr-2" /> Ledger
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setPayFor(c)}>
+                        <Wallet className="size-4 mr-2" /> Receive Payment
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => startEdit(c)}>
                         <Pencil className="size-4 mr-2" /> Edit
