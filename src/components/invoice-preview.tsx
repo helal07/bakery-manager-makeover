@@ -2,7 +2,13 @@ import { useMemo } from "react";
 import { MapPin, Phone, User2 } from "lucide-react";
 import type { CompanySettings, InvoiceSettings, PaperSize } from "@/lib/company-settings";
 
-export type InvoiceLine = { name: string; sku: string; price: number; qty: number };
+export type InvoiceLine = {
+  name: string;
+  sku: string;
+  price: number;
+  qty: number;
+  discount?: number; // per-line discount amount (total, not per unit)
+};
 export type InvoiceShowroom = {
   id?: string;
   name?: string;
@@ -12,8 +18,9 @@ export type InvoiceShowroom = {
   phone?: string | null;
   manager_name?: string | null;
 };
+export type InvoicePayment = { method: string; amount: number; reference?: string | null };
 export type InvoiceSnapshot = {
-  customer: { name: string; phone?: string };
+  customer: { name: string; phone?: string; address?: string };
   branch?: string;
   showroom?: InvoiceShowroom | null;
   reference?: string;
@@ -21,11 +28,14 @@ export type InvoiceSnapshot = {
   mode: "cash" | "due" | "partial";
   items: InvoiceLine[];
   subtotal: number;
+  discount?: number;    // sale-level discount
   tax: number;
   shipping?: number;
-  total: number;
-  paid: number;
-  due: number;
+  total: number;        // today's bill (after discount, before previous due)
+  paid: number;         // today's payment
+  due: number;          // today's remaining
+  previousDue?: number; // customer's outstanding before this sale
+  payments?: InvoicePayment[];
 };
 
 type Props = {
@@ -33,12 +43,21 @@ type Props = {
   settings: InvoiceSettings;
   company: CompanySettings;
   paper: PaperSize;
-  scale?: number; // for previews
+  scale?: number;
+};
+
+const methodLabel: Record<string, string> = {
+  cash: "Cash",
+  card: "Card",
+  mobile: "Mobile Banking",
+  bank: "Bank Transfer",
+  cheque: "Cheque",
+  other: "Other",
 };
 
 export function InvoicePreview({ snapshot, settings, company, paper, scale }: Props) {
   const s = settings;
-  const money = (n: number) => `${s.currencySymbol}${Number(n).toFixed(s.decimals)}`;
+  const money = (n: number) => `${s.currencySymbol}${Number(n || 0).toFixed(s.decimals)}`;
 
   const showroom = snapshot.showroom ?? null;
   const branch = showroom?.name ?? snapshot.branch ?? "Main Branch";
@@ -47,7 +66,15 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
   const outletCity = showroom?.city || "";
   const outletPhone = showroom?.phone || company.phone || "";
   const manager = showroom?.manager_name || "";
-  const shipping = snapshot.shipping ?? 0;
+
+  const saleDiscount = Number(snapshot.discount || 0);
+  const shipping = Number(snapshot.shipping || 0);
+  const previousDue = Number(snapshot.previousDue || 0);
+  const grandWithPrev = Number(snapshot.total || 0) + previousDue;
+  const dueTillToday = Math.max(0, grandWithPrev - Number(snapshot.paid || 0));
+  const payments = snapshot.payments && snapshot.payments.length
+    ? snapshot.payments
+    : (snapshot.paid > 0 ? [{ method: "cash", amount: snapshot.paid }] : []);
 
   const badge = useMemo(() => {
     if (snapshot.mode === "cash") return { label: s.badgePaid, cls: "bg-emerald-100 text-emerald-800 border-emerald-200" };
@@ -64,18 +91,19 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
       ? { background: "transparent", color: "inherit", borderBottom: `3px solid ${s.accentColor}` }
       : { background: "transparent", color: "inherit" };
 
-  const colCount = [s.colIndex, true, s.colQty, s.colPrice, s.colAmount].filter(Boolean).length;
-
   const wrapStyle: React.CSSProperties = scale
     ? { transform: `scale(${scale})`, transformOrigin: "top left", width: `${100 / scale}%` }
     : {};
+
+  const lineAmount = (it: InvoiceLine) => it.price * it.qty - Number(it.discount || 0);
 
   // ============ A4 layout ============
   if (paper === "A4") {
     return (
       <div style={wrapStyle}>
         <div className="a4-invoice max-w-3xl mx-auto bg-background rounded-xl border border-border shadow-sm overflow-hidden">
-          <div className="relative px-8 pt-8 pb-6" style={headerBg}>
+          {/* Header: showroom identity + invoice meta */}
+          <div className="relative px-8 pt-6 pb-5" style={headerBg}>
             <div className="flex items-start justify-between gap-6">
               <div className="flex items-center gap-4 min-w-0">
                 {s.showLogo && (
@@ -87,14 +115,26 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
                   </div>
                 )}
                 <div className="min-w-0">
-                  {s.showBusinessName && <h1 className="text-2xl font-bold leading-tight truncate">{company.name}</h1>}
-                  {s.showTagline && company.tagline && <p className="text-xs opacity-85 mt-0.5">{company.tagline}</p>}
-                  {s.showVatReg && company.vatReg && <p className="text-[11px] opacity-75 mt-0.5">VAT Reg. {company.vatReg}</p>}
+                  <div className="text-[10px] uppercase tracking-wider opacity-80">{s.labelOutlet}</div>
+                  <h1 className="text-2xl font-bold leading-tight truncate">{branch}</h1>
+                  {outletAddress && (
+                    <div className="text-xs opacity-90 mt-1 flex items-start gap-1">
+                      <MapPin className="size-3 mt-0.5 shrink-0" />
+                      <span>{outletAddress}{outletCity ? `, ${outletCity}` : ""}</span>
+                    </div>
+                  )}
+                  {outletPhone && (
+                    <div className="text-xs opacity-90 flex items-center gap-1">
+                      <Phone className="size-3" /> {outletPhone}
+                    </div>
+                  )}
+                  {s.showVatReg && company.vatReg && <div className="text-[11px] opacity-75 mt-0.5">VAT Reg. {company.vatReg}</div>}
                 </div>
               </div>
               <div className="text-right shrink-0">
                 <div className="text-[10px] uppercase tracking-[0.15em] opacity-80">{s.invoiceTitle}</div>
                 <div className="text-2xl font-bold tabular-nums">{snapshot.reference}</div>
+                <div className="text-[11px] opacity-90 mt-1">{new Date(snapshot.date).toLocaleString()}</div>
                 <div className={`mt-1.5 inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badge.cls}`}>
                   {badge.label}
                 </div>
@@ -102,77 +142,123 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-4 px-8 py-5 bg-muted/40 border-b border-border text-xs">
-            {s.showOutletBlock && (
-              <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{s.labelOutlet}</div>
-                <div className="font-semibold text-sm">{branch}</div>
-                {showroom?.code && <div className="text-muted-foreground">Code: {showroom.code}</div>}
-                {outletAddress && <div className="flex items-start gap-1 text-muted-foreground mt-1"><MapPin className="size-3 mt-0.5 shrink-0" /><span>{outletAddress}{outletCity ? `, ${outletCity}` : ""}</span></div>}
-                {outletPhone && <div className="flex items-center gap-1 text-muted-foreground"><Phone className="size-3" /> {outletPhone}</div>}
-                {s.showServedBy && manager && <div className="flex items-center gap-1 text-muted-foreground"><User2 className="size-3" /> {manager}</div>}
-              </div>
-            )}
+          {/* Customer / Meta strip */}
+          <div className="grid sm:grid-cols-2 gap-4 px-8 py-4 bg-muted/40 border-b border-border text-xs">
             {s.showCustomerBlock && (
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{s.labelBilledTo}</div>
                 <div className="font-semibold text-sm">{snapshot.customer.name}</div>
-                {snapshot.customer.phone && <div className="text-muted-foreground">{snapshot.customer.phone}</div>}
+                {snapshot.customer.phone && (
+                  <div className="text-muted-foreground flex items-center gap-1">
+                    <Phone className="size-3" /> {snapshot.customer.phone}
+                  </div>
+                )}
+                {snapshot.customer.address && (
+                  <div className="text-muted-foreground flex items-start gap-1">
+                    <MapPin className="size-3 mt-0.5 shrink-0" /> <span>{snapshot.customer.address}</span>
+                  </div>
+                )}
               </div>
             )}
-            <div className="sm:text-right">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{s.labelDetails}</div>
-              <div><span className="text-muted-foreground">Date: </span><span className="font-medium">{new Date(snapshot.date).toLocaleString()}</span></div>
-              <div><span className="text-muted-foreground">Payment: </span><span className="font-medium capitalize">{snapshot.mode}</span></div>
+            <div className="sm:text-right space-y-0.5">
               <div><span className="text-muted-foreground">Items: </span><span className="font-medium">{items.reduce((n, i) => n + i.qty, 0)}</span></div>
+              <div><span className="text-muted-foreground">Payment: </span><span className="font-medium capitalize">{snapshot.mode}</span></div>
+              {s.showServedBy && manager && (
+                <div className="text-muted-foreground flex items-center gap-1 sm:justify-end">
+                  <User2 className="size-3" /> Served by {manager}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="px-8 py-6">
-            <table className="w-full text-sm">
+          {/* Items table with visible row separators */}
+          <div className="px-8 py-5">
+            <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
-                  {s.colIndex && <th className="py-2 text-left font-medium w-8">#</th>}
-                  <th className="py-2 text-left font-medium">Item</th>
-                  {s.colQty && <th className="py-2 text-right font-medium w-16">Qty</th>}
-                  {s.colPrice && <th className="py-2 text-right font-medium w-24">Price</th>}
-                  {s.colAmount && <th className="py-2 text-right font-medium w-28">Amount</th>}
+                <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-y-2 border-foreground/70">
+                  {s.colIndex && <th className="py-2 px-2 text-left font-semibold w-8">#</th>}
+                  <th className="py-2 px-2 text-left font-semibold">Product</th>
+                  {s.colPrice && <th className="py-2 px-2 text-right font-semibold w-24">Unit Price</th>}
+                  {s.colQty && <th className="py-2 px-2 text-right font-semibold w-16">Qty</th>}
+                  <th className="py-2 px-2 text-right font-semibold w-24">Discount</th>
+                  {s.colAmount && <th className="py-2 px-2 text-right font-semibold w-28">Amount</th>}
                 </tr>
               </thead>
               <tbody>
                 {items.length > 0 ? items.map((it, idx) => (
-                  <tr key={idx} className={`border-b border-border/60 align-top ${s.zebraRows && idx % 2 === 1 ? "bg-muted/30" : ""}`}>
-                    {s.colIndex && <td className="py-3 text-muted-foreground tabular-nums">{idx + 1}</td>}
-                    <td className="py-3">
+                  <tr key={idx} className={`border-b border-border align-top ${s.zebraRows && idx % 2 === 1 ? "bg-muted/30" : ""}`}>
+                    {s.colIndex && <td className="py-3 px-2 text-muted-foreground tabular-nums">{idx + 1}</td>}
+                    <td className="py-3 px-2">
                       <div className="font-medium">{it.name}</div>
                       {s.colSku && it.sku && <div className="text-[11px] text-muted-foreground">SKU: {it.sku}</div>}
                     </td>
-                    {s.colQty && <td className="py-3 text-right tabular-nums">{it.qty}</td>}
-                    {s.colPrice && <td className="py-3 text-right tabular-nums">{money(it.price)}</td>}
-                    {s.colAmount && <td className="py-3 text-right tabular-nums font-medium">{money(it.price * it.qty)}</td>}
+                    {s.colPrice && <td className="py-3 px-2 text-right tabular-nums">{money(it.price)}</td>}
+                    {s.colQty && <td className="py-3 px-2 text-right tabular-nums">{it.qty}</td>}
+                    <td className="py-3 px-2 text-right tabular-nums">{it.discount ? `- ${money(it.discount)}` : "—"}</td>
+                    {s.colAmount && <td className="py-3 px-2 text-right tabular-nums font-medium">{money(lineAmount(it))}</td>}
                   </tr>
                 )) : (
-                  <tr><td colSpan={colCount} className="py-6 text-center text-muted-foreground">No items</td></tr>
+                  <tr><td colSpan={8} className="py-6 text-center text-muted-foreground">No items</td></tr>
                 )}
               </tbody>
             </table>
 
-            <div className="mt-6 flex justify-end">
-              <div className="w-full sm:w-80 space-y-1.5 text-sm">
-                {s.showSubtotal && <div className="flex justify-between"><span className="text-muted-foreground">{s.labelSubtotal}</span><span className="tabular-nums">{money(snapshot.subtotal)}</span></div>}
-                {s.showTax && snapshot.tax > 0 && <div className="flex justify-between"><span className="text-muted-foreground">{s.labelTax}</span><span className="tabular-nums">{money(snapshot.tax)}</span></div>}
-                {s.showShipping && shipping > 0 && <div className="flex justify-between"><span className="text-muted-foreground">{s.labelShipping}</span><span className="tabular-nums">{money(shipping)}</span></div>}
-                {s.showGrandTotal && (
-                  <div className="flex justify-between text-base font-bold pt-2 mt-1 border-t border-border">
-                    <span>{s.labelGrandTotal}</span><span className="tabular-nums">{money(snapshot.total)}</span>
+            {/* Summary: payments left, totals right */}
+            <div className="mt-6 grid sm:grid-cols-2 gap-6">
+              <div className="text-sm">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Payment Received Today</div>
+                {payments.length > 0 ? (
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <tr>
+                          <th className="text-left py-1.5 px-2 font-semibold">Method</th>
+                          <th className="text-left py-1.5 px-2 font-semibold">Ref</th>
+                          <th className="text-right py-1.5 px-2 font-semibold">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payments.map((p, i) => (
+                          <tr key={i} className="border-t border-border">
+                            <td className="py-1.5 px-2 capitalize">{methodLabel[p.method] ?? p.method}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{p.reference || "—"}</td>
+                            <td className="py-1.5 px-2 text-right tabular-nums">{money(p.amount)}</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t border-border bg-muted/30 font-semibold">
+                          <td className="py-1.5 px-2" colSpan={2}>Total Paid</td>
+                          <td className="py-1.5 px-2 text-right tabular-nums">{money(snapshot.paid)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
+                ) : (
+                  <div className="text-muted-foreground text-sm">No payment received today.</div>
                 )}
-                {s.showPaid && <div className="flex justify-between"><span className="text-muted-foreground">{s.labelPaid}</span><span className="tabular-nums">{money(snapshot.paid)}</span></div>}
-                {s.showDue && (
-                  <div className={`flex justify-between font-semibold ${snapshot.due > 0 ? "text-destructive" : "text-emerald-700"}`}>
-                    <span>{s.labelDue}</span><span className="tabular-nums">{money(snapshot.due)}</span>
+              </div>
+
+              <div className="text-sm">
+                <div className="space-y-1.5">
+                  {s.showSubtotal && <div className="flex justify-between"><span className="text-muted-foreground">{s.labelSubtotal}</span><span className="tabular-nums">{money(snapshot.subtotal)}</span></div>}
+                  {saleDiscount > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span className="tabular-nums">- {money(saleDiscount)}</span></div>}
+                  {s.showTax && snapshot.tax > 0 && <div className="flex justify-between"><span className="text-muted-foreground">{s.labelTax}</span><span className="tabular-nums">{money(snapshot.tax)}</span></div>}
+                  {s.showShipping && shipping > 0 && <div className="flex justify-between"><span className="text-muted-foreground">{s.labelShipping}</span><span className="tabular-nums">{money(shipping)}</span></div>}
+                  <div className="flex justify-between font-semibold pt-1.5 mt-1 border-t border-border">
+                    <span>Today's Bill</span><span className="tabular-nums">{money(snapshot.total)}</span>
                   </div>
-                )}
+                  {previousDue > 0 && (
+                    <div className="flex justify-between text-amber-800">
+                      <span>Previous Due</span><span className="tabular-nums">+ {money(previousDue)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-base font-bold pt-2 mt-1 border-t-2 border-foreground/70" style={{ color: s.accentColor }}>
+                    <span>{s.labelGrandTotal}</span><span className="tabular-nums">{money(grandWithPrev)}</span>
+                  </div>
+                  {s.showPaid && <div className="flex justify-between"><span className="text-muted-foreground">Today Payment</span><span className="tabular-nums">- {money(snapshot.paid)}</span></div>}
+                  <div className={`flex justify-between font-bold pt-1.5 border-t border-border ${dueTillToday > 0 ? "text-destructive" : "text-emerald-700"}`}>
+                    <span>Due Till Today</span><span className="tabular-nums">{money(dueTillToday)}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -222,20 +308,11 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
           {s.thermalShowLogo && company.logoDataUrl && (
             <img src={company.logoDataUrl} alt="" style={{ maxHeight: "12mm", maxWidth: "36mm", margin: "0 auto 3px", display: "block" }} />
           )}
-          {s.showBusinessName && <div style={{ fontSize: 14, fontWeight: 800 }}>{company.name}</div>}
-          {s.showTagline && company.tagline && <div style={{ fontSize: 10 }}>{company.tagline}</div>}
+          <div style={{ fontSize: 14, fontWeight: 800 }}>{branch}</div>
+          {outletAddress && <div style={{ fontSize: 10 }}>{outletAddress}{outletCity ? `, ${outletCity}` : ""}</div>}
+          {outletPhone && <div style={{ fontSize: 10 }}>Tel: {outletPhone}</div>}
+          {s.showVatReg && company.vatReg && <div style={{ fontSize: 10 }}>VAT: {company.vatReg}</div>}
         </div>
-
-        <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
-
-        {s.showOutletBlock && (
-          <div style={{ textAlign: "center", fontSize: 10 }}>
-            <div style={{ fontWeight: 700 }}>{branch}{showroom?.code ? ` · ${showroom.code}` : ""}</div>
-            {outletAddress && <div>{outletAddress}{outletCity ? `, ${outletCity}` : ""}</div>}
-            {outletPhone && <div>Tel: {outletPhone}</div>}
-            {s.showVatReg && company.vatReg && <div>VAT: {company.vatReg}</div>}
-          </div>
-        )}
 
         <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
 
@@ -243,9 +320,16 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
           <span>{snapshot.reference}</span>
           <span style={{ textTransform: "uppercase" }}>{badge.label}</span>
         </div>
-        <div>{new Date(snapshot.date).toLocaleString()}</div>
-        {s.showCustomerBlock && <div>Customer: {snapshot.customer.name}{snapshot.customer.phone ? ` · ${snapshot.customer.phone}` : ""}</div>}
-        {s.showServedBy && manager && <div>Served by: {manager}</div>}
+        <div style={{ fontSize: 10 }}>{new Date(snapshot.date).toLocaleString()}</div>
+
+        {s.showCustomerBlock && (
+          <>
+            <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
+            <div style={{ fontWeight: 700 }}>{snapshot.customer.name}</div>
+            {snapshot.customer.phone && <div style={{ fontSize: 10 }}>{snapshot.customer.phone}</div>}
+            {snapshot.customer.address && <div style={{ fontSize: 10 }}>{snapshot.customer.address}</div>}
+          </>
+        )}
 
         <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
 
@@ -253,19 +337,19 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
           <thead>
             <tr style={{ borderBottom: "1px dashed #000" }}>
               <th style={{ textAlign: "left", paddingBottom: 2 }}>Item</th>
-              {s.colQty && s.colPrice && <th style={{ textAlign: "right", width: "22%", paddingBottom: 2 }}>Qty×Rate</th>}
-              {s.colAmount && <th style={{ textAlign: "right", width: "26%", paddingBottom: 2 }}>Amt</th>}
+              <th style={{ textAlign: "right", width: "26%", paddingBottom: 2 }}>Qty×Rate</th>
+              <th style={{ textAlign: "right", width: "26%", paddingBottom: 2 }}>Amt</th>
             </tr>
           </thead>
           <tbody>
             {items.map((it, i) => (
-              <tr key={i}>
-                <td style={{ verticalAlign: "top", paddingTop: 3 }}>
+              <tr key={i} style={{ borderBottom: "1px dashed #999" }}>
+                <td style={{ verticalAlign: "top", paddingTop: 3, paddingBottom: 3 }}>
                   <div>{it.name}</div>
-                  {s.colSku && it.sku && <div style={{ fontSize: 9, opacity: 0.75 }}>{it.sku}</div>}
+                  {it.discount ? <div style={{ fontSize: 9 }}>disc -{it.discount.toFixed(s.decimals)}</div> : null}
                 </td>
-                {s.colQty && s.colPrice && <td style={{ textAlign: "right", paddingTop: 3 }}>{it.qty}×{it.price.toFixed(s.decimals)}</td>}
-                {s.colAmount && <td style={{ textAlign: "right", paddingTop: 3 }}>{(it.qty * it.price).toFixed(s.decimals)}</td>}
+                <td style={{ textAlign: "right", paddingTop: 3 }}>{it.qty}×{it.price.toFixed(s.decimals)}</td>
+                <td style={{ textAlign: "right", paddingTop: 3 }}>{lineAmount(it).toFixed(s.decimals)}</td>
               </tr>
             ))}
           </tbody>
@@ -273,22 +357,47 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
 
         <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
 
-        {[
-          s.showSubtotal ? [s.labelSubtotal, snapshot.subtotal, false] as const : null,
-          s.showTax && snapshot.tax > 0 ? [s.labelTax, snapshot.tax, false] as const : null,
-          s.showShipping && shipping > 0 ? [s.labelShipping, shipping, false] as const : null,
-          s.showGrandTotal ? [s.labelGrandTotal.toUpperCase(), snapshot.total, true] as const : null,
-          s.showPaid ? [s.labelPaid, snapshot.paid, false] as const : null,
-          s.showDue ? [s.labelDue, snapshot.due, true] as const : null,
-        ].filter(Boolean).map((row) => {
-          const [label, val, bold] = row as readonly [string, number, boolean];
-          return (
-            <div key={label} style={{ display: "flex", justifyContent: "space-between", fontWeight: bold ? 800 : 400, fontSize: bold ? 12 : 11 }}>
-              <span>{label}</span>
-              <span>{money(val)}</span>
+        {s.showSubtotal && (
+          <div style={{ display: "flex", justifyContent: "space-between" }}><span>{s.labelSubtotal}</span><span>{money(snapshot.subtotal)}</span></div>
+        )}
+        {saleDiscount > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between" }}><span>Discount</span><span>- {money(saleDiscount)}</span></div>
+        )}
+        {s.showTax && snapshot.tax > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between" }}><span>{s.labelTax}</span><span>{money(snapshot.tax)}</span></div>
+        )}
+        {shipping > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between" }}><span>{s.labelShipping}</span><span>{money(shipping)}</span></div>
+        )}
+        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+          <span>Today's Bill</span><span>{money(snapshot.total)}</span>
+        </div>
+        {previousDue > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between" }}><span>Previous Due</span><span>+ {money(previousDue)}</span></div>
+        )}
+        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 12, borderTop: "1px dashed #000", paddingTop: 2, marginTop: 2 }}>
+          <span>TOTAL</span><span>{money(grandWithPrev)}</span>
+        </div>
+
+        {payments.length > 0 && (
+          <>
+            <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
+            <div style={{ fontWeight: 700, fontSize: 10 }}>Payments</div>
+            {payments.map((p, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}>
+                <span style={{ textTransform: "capitalize" }}>{methodLabel[p.method] ?? p.method}{p.reference ? ` · ${p.reference}` : ""}</span>
+                <span>{money(p.amount)}</span>
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+              <span>Today Payment</span><span>- {money(snapshot.paid)}</span>
             </div>
-          );
-        })}
+          </>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 12, borderTop: "1px dashed #000", paddingTop: 2, marginTop: 2 }}>
+          <span>Due Till Today</span><span>{money(dueTillToday)}</span>
+        </div>
 
         <div style={{ borderTop: "1px dashed #000", margin: "6px 0" }} />
         {s.footerNote && <div style={{ textAlign: "center", fontSize: 10, whiteSpace: "pre-wrap" }}>{s.footerNote}</div>}
@@ -302,21 +411,24 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
 }
 
 export const sampleInvoice: InvoiceSnapshot = {
-  customer: { name: "Rahim Uddin", phone: "01711-000000" },
+  customer: { name: "Rahim Uddin", phone: "01711-000000", address: "House 12, Road 5, Dhanmondi, Dhaka" },
   branch: "Main Branch",
   showroom: { name: "Main Branch", code: "MB-01", address: "123 Main Rd", city: "Dhaka", phone: "01711-111111", manager_name: "Karim" },
   reference: "INV-000123",
   date: new Date().toISOString(),
-  mode: "cash",
+  mode: "partial",
   items: [
-    { name: "Butter Croissant", sku: "BC-001", price: 60, qty: 4 },
+    { name: "Butter Croissant", sku: "BC-001", price: 60, qty: 4, discount: 10 },
     { name: "Chocolate Muffin", sku: "CM-002", price: 80, qty: 2 },
     { name: "White Bread Loaf", sku: "WB-003", price: 120, qty: 1 },
   ],
   subtotal: 520,
-  tax: 26,
-  shipping: 30,
-  total: 576,
-  paid: 576,
-  due: 0,
+  discount: 20,
+  tax: 0,
+  shipping: 0,
+  total: 500,
+  paid: 400,
+  due: 100,
+  previousDue: 150,
+  payments: [{ method: "cash", amount: 300 }, { method: "mobile", amount: 100, reference: "bKash 9821" }],
 };
