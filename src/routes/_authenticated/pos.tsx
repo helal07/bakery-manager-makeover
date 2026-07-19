@@ -620,9 +620,6 @@ function PosPage() {
                     No customer found — click <span className="font-semibold">+</span> to add a new customer.
                   </div>
                 )}
-                {customerId && customerDue > 0 && (
-                  <div className="mt-0.5 text-[10px] text-destructive font-semibold">Due: ৳{customerDue.toFixed(2)}</div>
-                )}
               </div>
               <button
                 type="button"
