@@ -746,7 +746,19 @@ function PosPage() {
           {showrooms.length === 0 && <option value="">No showroom</option>}
         </select>
 
+        <div className="relative">
+          <Calendar className="size-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <input
+            type="date"
+            value={invoiceDate}
+            onChange={(e) => setInvoiceDate(e.target.value)}
+            title="Invoice date"
+            className="h-8 pl-7 pr-1.5 rounded-md border border-border bg-background text-xs font-semibold outline-none focus:border-primary"
+          />
+        </div>
+
         <LiveClock register={register} />
+
 
         {customerId && customerDue > 0 && (
           <div
@@ -795,7 +807,7 @@ function PosPage() {
         {/* Cart column (60%) — full width on mobile (Ultimate POS style) */}
         <section className={`${mobileTab === "cart" ? "flex" : "hidden"} lg:flex flex-col overflow-hidden bg-card border-r border-border`}>
           {/* Toolbar inside 60% split: Customer | Price Group | Invoice Date */}
-          <div className="shrink-0 border-b border-border px-2 py-1.5 grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+          <div className="shrink-0 border-b border-border px-2 py-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             <div className="flex gap-1.5">
               <div className="relative flex-1" ref={custWrapRef}>
                 <User className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -859,17 +871,8 @@ function PosPage() {
                 {groups.map((g) => (<option key={g.id} value={g.id}>{g.name}</option>))}
               </select>
             </div>
-
-            <div className="relative">
-              <Calendar className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              <input
-                type="date"
-                value={invoiceDate}
-                onChange={(e) => setInvoiceDate(e.target.value)}
-                className="w-full h-9 pl-8 pr-2 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
-              />
-            </div>
           </div>
+
 
 
           {/* Product search inside 60% split */}
