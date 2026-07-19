@@ -228,6 +228,149 @@ function SettingsPage() {
             </Panel>
           )}
 
+          {tab === "software" && section === "invoice" && (
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5">
+              <div className="space-y-5">
+                <Panel title="Header" desc="Logo, business identity and invoice title">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Fld label="Invoice title"><Text value={invoice.invoiceTitle} onChange={v => patchInvoice({ invoiceTitle: v })} /></Fld>
+                    <Fld label="Header style">
+                      <Select value={invoice.headerStyle} onChange={v => patchInvoice({ headerStyle: v as InvoiceSettings["headerStyle"] })}
+                        options={[["gradient","Gradient"],["solid","Solid"],["bordered","Bordered"],["minimal","Minimal"]]} />
+                    </Fld>
+                    <Fld label="Accent colour (CSS)"><Text value={invoice.accentColor} onChange={v => patchInvoice({ accentColor: v })} /></Fld>
+                    <Fld label="Number prefix"><Text value={invoice.numberPrefix} onChange={v => patchInvoice({ numberPrefix: v })} /></Fld>
+                    <Fld label="Number padding (digits)">
+                      <Text value={String(invoice.numberPadding)} onChange={v => patchInvoice({ numberPadding: Math.max(1, Math.min(12, Number(v) || 6)) })} />
+                    </Fld>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-1">
+                    <Toggle label="Show logo" checked={invoice.showLogo} onChange={v => patchInvoice({ showLogo: v })} />
+                    <Toggle label="Show business name" checked={invoice.showBusinessName} onChange={v => patchInvoice({ showBusinessName: v })} />
+                    <Toggle label="Show tagline" checked={invoice.showTagline} onChange={v => patchInvoice({ showTagline: v })} />
+                    <Toggle label="Show VAT registration" checked={invoice.showVatReg} onChange={v => patchInvoice({ showVatReg: v })} />
+                  </div>
+                </Panel>
+
+                <Panel title="Outlet & customer" desc="Labels and visibility of info blocks">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Fld label="Outlet label"><Text value={invoice.labelOutlet} onChange={v => patchInvoice({ labelOutlet: v })} /></Fld>
+                    <Fld label="Billed-to label"><Text value={invoice.labelBilledTo} onChange={v => patchInvoice({ labelBilledTo: v })} /></Fld>
+                    <Fld label="Details label"><Text value={invoice.labelDetails} onChange={v => patchInvoice({ labelDetails: v })} /></Fld>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-1">
+                    <Toggle label="Show outlet block" checked={invoice.showOutletBlock} onChange={v => patchInvoice({ showOutletBlock: v })} />
+                    <Toggle label="Show customer block" checked={invoice.showCustomerBlock} onChange={v => patchInvoice({ showCustomerBlock: v })} />
+                    <Toggle label="Show 'Served by'" checked={invoice.showServedBy} onChange={v => patchInvoice({ showServedBy: v })} />
+                  </div>
+                </Panel>
+
+                <Panel title="Items table" desc="Columns to include on the invoice">
+                  <div className="grid grid-cols-2 gap-1">
+                    <Toggle label="Row number (#)" checked={invoice.colIndex} onChange={v => patchInvoice({ colIndex: v })} />
+                    <Toggle label="SKU under item name" checked={invoice.colSku} onChange={v => patchInvoice({ colSku: v })} />
+                    <Toggle label="Quantity" checked={invoice.colQty} onChange={v => patchInvoice({ colQty: v })} />
+                    <Toggle label="Unit price" checked={invoice.colPrice} onChange={v => patchInvoice({ colPrice: v })} />
+                    <Toggle label="Line amount" checked={invoice.colAmount} onChange={v => patchInvoice({ colAmount: v })} />
+                    <Toggle label="Zebra rows (A4)" checked={invoice.zebraRows} onChange={v => patchInvoice({ zebraRows: v })} />
+                  </div>
+                </Panel>
+
+                <Panel title="Totals" desc="Rows shown in the totals block">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Fld label="Currency symbol"><Text value={invoice.currencySymbol} onChange={v => patchInvoice({ currencySymbol: v })} /></Fld>
+                    <Fld label="Decimal places">
+                      <Text value={String(invoice.decimals)} onChange={v => patchInvoice({ decimals: Math.max(0, Math.min(4, Number(v) || 0)) })} />
+                    </Fld>
+                    <Fld label="Subtotal label"><Text value={invoice.labelSubtotal} onChange={v => patchInvoice({ labelSubtotal: v })} /></Fld>
+                    <Fld label="Tax label"><Text value={invoice.labelTax} onChange={v => patchInvoice({ labelTax: v })} /></Fld>
+                    <Fld label="Shipping label"><Text value={invoice.labelShipping} onChange={v => patchInvoice({ labelShipping: v })} /></Fld>
+                    <Fld label="Grand total label"><Text value={invoice.labelGrandTotal} onChange={v => patchInvoice({ labelGrandTotal: v })} /></Fld>
+                    <Fld label="Paid label"><Text value={invoice.labelPaid} onChange={v => patchInvoice({ labelPaid: v })} /></Fld>
+                    <Fld label="Due label"><Text value={invoice.labelDue} onChange={v => patchInvoice({ labelDue: v })} /></Fld>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-1">
+                    <Toggle label="Show subtotal" checked={invoice.showSubtotal} onChange={v => patchInvoice({ showSubtotal: v })} />
+                    <Toggle label="Show tax" checked={invoice.showTax} onChange={v => patchInvoice({ showTax: v })} />
+                    <Toggle label="Show shipping" checked={invoice.showShipping} onChange={v => patchInvoice({ showShipping: v })} />
+                    <Toggle label="Show grand total" checked={invoice.showGrandTotal} onChange={v => patchInvoice({ showGrandTotal: v })} />
+                    <Toggle label="Show paid" checked={invoice.showPaid} onChange={v => patchInvoice({ showPaid: v })} />
+                    <Toggle label="Show due" checked={invoice.showDue} onChange={v => patchInvoice({ showDue: v })} />
+                  </div>
+                </Panel>
+
+                <Panel title="Footer" desc="Notes, terms and signature lines">
+                  <Fld label="Footer note" full>
+                    <textarea rows={2} value={invoice.footerNote} onChange={e => patchInvoice({ footerNote: e.target.value })}
+                      className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm" />
+                  </Fld>
+                  <div className="mt-3">
+                    <Fld label="Terms & conditions" full>
+                      <textarea rows={3} value={invoice.termsText} onChange={e => patchInvoice({ termsText: e.target.value })}
+                        className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm" />
+                    </Fld>
+                  </div>
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Fld label="Customer signature caption"><Text value={invoice.sigCustomer} onChange={v => patchInvoice({ sigCustomer: v })} /></Fld>
+                    <Fld label="Authorised signature caption"><Text value={invoice.sigAuthorized} onChange={v => patchInvoice({ sigAuthorized: v })} /></Fld>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-1">
+                    <Toggle label="Show signatures (A4)" checked={invoice.showSignatures} onChange={v => patchInvoice({ showSignatures: v })} />
+                    <Toggle label="Show 'Powered by' line" checked={invoice.showPoweredBy} onChange={v => patchInvoice({ showPoweredBy: v })} />
+                  </div>
+                </Panel>
+
+                <Panel title="Print & badges" desc="Paper size, thermal styling and status badges">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Fld label="Default paper">
+                      <Select value={invoice.defaultPaper} onChange={v => patchInvoice({ defaultPaper: v as PaperSize })}
+                        options={[["A4","A4"],["80mm","Thermal 80mm"],["58mm","Thermal 58mm"]]} />
+                    </Fld>
+                    <Fld label="Paid badge text"><Text value={invoice.badgePaid} onChange={v => patchInvoice({ badgePaid: v })} /></Fld>
+                    <Fld label="Partial badge text"><Text value={invoice.badgePartial} onChange={v => patchInvoice({ badgePartial: v })} /></Fld>
+                    <Fld label="Credit badge text"><Text value={invoice.badgeCredit} onChange={v => patchInvoice({ badgeCredit: v })} /></Fld>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-1">
+                    <Toggle label="Auto-print after sale" checked={invoice.autoPrint} onChange={v => patchInvoice({ autoPrint: v })} />
+                    <Toggle label="Show logo on thermal" checked={invoice.thermalShowLogo} onChange={v => patchInvoice({ thermalShowLogo: v })} />
+                    <Toggle label="Monospace thermal font" checked={invoice.thermalMonospace} onChange={v => patchInvoice({ thermalMonospace: v })} />
+                  </div>
+                </Panel>
+
+                <div className="flex justify-between gap-2">
+                  <button onClick={resetInvoice} className="px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted">
+                    Reset to defaults
+                  </button>
+                  <button onClick={saveInvoiceAll} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90">
+                    <Save className="size-3.5" />Save invoice settings
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Card className="p-4 xl:sticky xl:top-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h2 className="text-sm font-semibold">Live preview</h2>
+                      <p className="text-xs text-muted-foreground">Reflects unsaved changes</p>
+                    </div>
+                    <div className="flex gap-1 text-xs">
+                      {(["A4","80mm","58mm"] as const).map(p => (
+                        <button key={p} onClick={() => setInvoicePaper(p)}
+                          className={`px-2 py-1 rounded-md border ${invoicePaper === p ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}>
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-border bg-muted/30 p-3 overflow-auto max-h-[80vh]">
+                    <InvoicePreview snapshot={sampleInvoice} settings={invoice} company={company} paper={invoicePaper} />
+                  </div>
+                </Card>
+              </div>
+            </div>
+          )}
+
           {tab === "software" && section === "appearance" && (
             <Panel title="Appearance" desc="Theme and layout density">
               <Fld label="Theme">
