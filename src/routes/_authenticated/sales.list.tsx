@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Eye, Pencil, CreditCard, FileText, Undo2, Bell, ChevronDown, UserRound, Store, Download, Printer, Share2, MessageCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
-import { pageTitle } from "@/lib/company-settings";
+import { pageTitle, getCachedCompany, defaultCompany } from "@/lib/company-settings";
 
 const sb = supabase as any;
 
