@@ -66,13 +66,14 @@ function fmt(n: number) {
 function CustomerDetail() {
   const { id } = Route.useParams();
   const router = useRouter();
+  const navigate = useNavigate();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [payOpen, setPayOpen] = useState(false);
 
-  useEffect(() => {
-    (async () => {
+  const doLoad = async () => {
       try {
         const cRes = await sb
           .from("customers")
