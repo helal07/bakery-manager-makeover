@@ -28,7 +28,6 @@ export const Route = createFileRoute("/invoice/$id")({
 });
 
 async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise<InvoiceSnapshot | null> {
-  // Try external_ref match first, then uuid prefix
   let sale: any = null;
   const byRef = await sb.from("sales").select("*").eq("external_ref", id).maybeSingle();
   if (byRef?.data) sale = byRef.data;
@@ -40,8 +39,14 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
 
   const { data: items } = await sb
     .from("sale_items")
-    .select("qty, unit_price, product_id, products(name, sku)")
+    .select("qty, unit_price, line_total, product_id, products(name, sku)")
     .eq("sale_id", sale.id);
+
+  const { data: pays } = await sb
+    .from("sale_payments")
+    .select("method, amount, reference")
+    .eq("sale_id", sale.id)
+    .order("created_at", { ascending: true });
 
   let showroom: any = null;
   if (sale.showroom_id) {
@@ -51,6 +56,21 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
     showroom = sh ?? null;
   }
 
+  let customerAddress: string | undefined;
+  let previousDue = 0;
+  if (sale.customer_id) {
+    const { data: cust } = await sb.from("customers")
+      .select("address").eq("id", sale.customer_id).maybeSingle();
+    customerAddress = cust?.address ?? undefined;
+    const { data: otherSales } = await sb
+      .from("sales").select("due").eq("customer_id", sale.customer_id).neq("id", sale.id);
+    const outstanding = (otherSales ?? []).reduce((n: number, r: any) => n + Number(r.due || 0), 0);
+    const { data: standalonePays } = await sb
+      .from("customer_payments").select("amount").eq("customer_id", sale.customer_id).is("sale_id", null);
+    const paidStandalone = (standalonePays ?? []).reduce((n: number, r: any) => n + Number(r.amount || 0), 0);
+    previousDue = Math.max(0, outstanding - paidStandalone);
+  }
+
   const total = Number(sale.total || 0);
   const paid = Number(sale.paid || 0);
   const due = Math.max(0, total - paid);
@@ -58,12 +78,17 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
   const subtotal = Number(sale.subtotal ?? total);
   const tax = Number(sale.tax ?? 0);
   const shipping = Number(sale.shipping ?? 0);
+  const discount = Number(sale.discount ?? 0);
 
   const ref = sale.external_ref
     ?? `${settings.numberPrefix}${String(sale.id).slice(0, settings.numberPadding).toUpperCase()}`;
 
   return {
-    customer: { name: sale.customer_name ?? "Walk-in Customer", phone: sale.customer_phone ?? "" },
+    customer: {
+      name: sale.customer_name ?? "Walk-in Customer",
+      phone: sale.customer_phone ?? "",
+      address: customerAddress,
+    },
     branch: showroom?.name ?? "Factory",
     showroom,
     reference: ref,
@@ -75,7 +100,13 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
       price: Number(it.unit_price || 0),
       qty: Number(it.qty || 0),
     })),
-    subtotal, tax, shipping, total, paid, due,
+    subtotal, discount, tax, shipping, total, paid, due,
+    previousDue,
+    payments: (pays ?? []).map((p: any) => ({
+      method: p.method ?? "cash",
+      amount: Number(p.amount || 0),
+      reference: p.reference ?? null,
+    })),
   };
 }
 
