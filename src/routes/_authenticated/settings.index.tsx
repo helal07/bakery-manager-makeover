@@ -281,6 +281,21 @@ function SettingsPage() {
                     <Fld label="Decimal places">
                       <Text value={String(invoice.decimals)} onChange={v => patchInvoice({ decimals: Math.max(0, Math.min(4, Number(v) || 0)) })} />
                     </Fld>
+                    <Fld label="Date format">
+                      <select
+                        value={invoice.dateFormat}
+                        onChange={e => patchInvoice({ dateFormat: e.target.value as typeof invoice.dateFormat })}
+                        className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+                      >
+                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                        <option value="DD MMM YYYY">DD MMM YYYY</option>
+                        <option value="DD/MM/YYYY HH:mm">DD/MM/YYYY HH:mm</option>
+                        <option value="MM/DD/YYYY HH:mm">MM/DD/YYYY HH:mm</option>
+                      </select>
+                    </Fld>
+
                     <Fld label="Subtotal label"><Text value={invoice.labelSubtotal} onChange={v => patchInvoice({ labelSubtotal: v })} /></Fld>
                     <Fld label="Tax label"><Text value={invoice.labelTax} onChange={v => patchInvoice({ labelTax: v })} /></Fld>
                     <Fld label="Shipping label"><Text value={invoice.labelShipping} onChange={v => patchInvoice({ labelShipping: v })} /></Fld>

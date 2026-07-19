@@ -29,11 +29,14 @@ export const Route = createFileRoute("/invoice/$id")({
 
 async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise<InvoiceSnapshot | null> {
   let sale: any = null;
-  const byRef = await sb.from("sales").select("*").eq("external_ref", id).maybeSingle();
-  if (byRef?.data) sale = byRef.data;
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRe.test(id)) {
+    const byUuid = await sb.from("sales").select("*").eq("id", id).maybeSingle();
+    if (byUuid?.data) sale = byUuid.data;
+  }
   if (!sale) {
-    const byId = await sb.from("sales").select("*").ilike("id", `${id}%`).limit(1);
-    if (byId?.data?.[0]) sale = byId.data[0];
+    const byRef = await sb.from("sales").select("*").eq("external_ref", id).maybeSingle();
+    if (byRef?.data) sale = byRef.data;
   }
   if (!sale) return null;
 
