@@ -48,7 +48,7 @@ type Customer = {
 
 type Group = { id: string; name: string };
 
-export const Route = createFileRoute("/_authenticated/crm")({
+export const Route = createFileRoute("/_authenticated/crm/")({
   head: () => ({ meta: [{ title: pageTitle("Customers") }] }),
   component: CRM,
 });
