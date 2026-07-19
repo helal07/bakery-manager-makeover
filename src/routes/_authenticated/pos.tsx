@@ -1109,6 +1109,18 @@ function PosPage() {
       {/* Mobile: quick access to Recent (Browse is now inline with product search) */}
       <div className="lg:hidden fixed bottom-20 right-3 z-[65] flex flex-col gap-2">
         <button
+          onClick={() => setMoreOpen(true)}
+          className="relative size-11 grid place-items-center rounded-full bg-card border border-border text-foreground shadow-lg"
+          title="More options"
+        >
+          <Menu className="size-4" />
+          {(held.length > 0 || items.length > 0) && (
+            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">
+              {held.length + (items.length > 0 ? 1 : 0)}
+            </span>
+          )}
+        </button>
+        <button
           onClick={() => { setRecentOpen(true); void loadRecentSales(); }}
           className="size-11 grid place-items-center rounded-full bg-primary text-primary-foreground shadow-lg"
           title="Recent transactions"
