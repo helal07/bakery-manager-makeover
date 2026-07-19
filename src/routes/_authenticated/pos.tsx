@@ -480,7 +480,7 @@ function PosPage() {
         };
         localStorage.setItem(`invoice:${sale.id}`, JSON.stringify(snapshot));
       } catch { /* ignore */ }
-      window.open(`/invoice/${sale.id}?ap=1`, "_blank", "noopener,width=520,height=800");
+      window.open(`/invoice/${sale.id}`, "_blank", "noopener,width=520,height=800");
 
 
       toast.success(`Sale ${externalRef} completed · ৳${total.toFixed(2)}`);
