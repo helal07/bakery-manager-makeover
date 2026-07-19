@@ -5,7 +5,9 @@ import { Share2, Printer } from "lucide-react";
 import {
   getCompany, defaultCompany, type CompanySettings,
   getInvoiceSettings, defaultInvoiceSettings, type InvoiceSettings, type PaperSize,
+  getCachedCompany, getCachedInvoiceSettings,
 } from "@/lib/company-settings";
+
 import { InvoicePreview, type InvoiceSnapshot } from "@/components/invoice-preview";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,19 +30,10 @@ export const Route = createFileRoute("/invoice/$id")({
 });
 
 async function tryItemSelects(saleId: string): Promise<{ data: any[] }> {
-  // Single unembedded query — resilient to schema-cache / FK visibility issues.
   const res = await sb.from("sale_items").select("*").eq("sale_id", saleId);
-  if (res.error) {
-    console.warn("[invoice] sale_items query failed", { saleId, error: res.error });
-    return { data: [] };
-  }
+  if (res.error) return { data: [] };
   const rows: any[] = res.data ?? [];
-  if (rows.length === 0) {
-    console.warn("[invoice] sale_items empty for sale", { saleId });
-    return { data: [] };
-  }
-
-  // Optional product enrichment (name/sku fallback) — safe if it fails.
+  if (rows.length === 0) return { data: [] };
   const ids = Array.from(new Set(rows.map((r: any) => r.product_id).filter(Boolean)));
   if (ids.length) {
     const prodRes = await sb.from("products").select("id,name,sku").in("id", ids);
@@ -66,55 +59,79 @@ function sameCustomer(row: any, sale: any, salePhoneDigits: string): boolean {
   return Boolean(rowPhoneDigits && rowPhoneDigits === salePhoneDigits);
 }
 
-async function calculatePreviousDue(sale: any): Promise<number> {
+async function calculatePreviousDueFrom(sale: any, priorSales: any[], standalonePays: any[]): Promise<number> {
   const salePhone = phoneDigits(sale.customer_phone);
   if (!sale.customer_id && !salePhone) return 0;
-
-  let priorQuery = sb
-    .from("sales")
-    .select("id,due,customer_id,customer_phone,created_at")
-    .neq("id", sale.id)
-    .lt("created_at", sale.created_at);
-
-  if (sale.customer_id) {
-    priorQuery = salePhone
-      ? priorQuery.or(`customer_id.eq.${sale.customer_id},customer_phone.eq.${sale.customer_phone}`)
-      : priorQuery.eq("customer_id", sale.customer_id);
-  } else if (salePhone) {
-    priorQuery = priorQuery.eq("customer_phone", sale.customer_phone);
-  }
-
-  const { data: priorSales } = await priorQuery;
-  const outstanding = (priorSales ?? [])
+  const outstanding = priorSales
     .filter((row: any) => sameCustomer(row, sale, salePhone))
     .reduce((n: number, row: any) => n + Number(row.due || 0), 0);
-
-  let paymentQuery = sb
-    .from("customer_payments")
-    .select("amount,customer_id,customer_phone,sale_id,created_at")
-    .is("sale_id", null)
-    .lt("created_at", sale.created_at);
-
-  if (sale.customer_id) {
-    paymentQuery = salePhone
-      ? paymentQuery.or(`customer_id.eq.${sale.customer_id},customer_phone.eq.${sale.customer_phone}`)
-      : paymentQuery.eq("customer_id", sale.customer_id);
-  } else if (salePhone) {
-    paymentQuery = paymentQuery.eq("customer_phone", sale.customer_phone);
-  }
-
-  const { data: standalonePays } = await paymentQuery;
-  const paidStandalone = (standalonePays ?? [])
+  const paid = standalonePays
     .filter((row: any) => sameCustomer(row, sale, salePhone))
     .reduce((n: number, row: any) => n + Number(row.amount || 0), 0);
+  return Math.max(0, +(outstanding - paid).toFixed(2));
+}
 
-  return Math.max(0, +(outstanding - paidStandalone).toFixed(2));
+function buildSnapshotFromBundle(bundle: any, settings: InvoiceSettings): InvoiceSnapshot | null {
+  const sale = bundle?.sale;
+  if (!sale) return null;
+  const items: any[] = bundle.items ?? [];
+  const pays: any[] = bundle.payments ?? [];
+  const showroom = bundle.showroom ?? null;
+  const total = Number(sale.total || 0);
+  const paid = Number(sale.paid || 0);
+  const due = Math.max(0, total - paid);
+  const mode: "cash" | "due" | "partial" = paid <= 0 ? "due" : paid >= total ? "cash" : "partial";
+  const ref = sale.external_ref
+    ?? `${settings.numberPrefix}${String(sale.id).slice(0, settings.numberPadding).toUpperCase()}`;
+  return {
+    customer: {
+      name: sale.customer_name ?? "Walk-in Customer",
+      phone: sale.customer_phone ?? "",
+      address: bundle.customer_address ?? undefined,
+    },
+    branch: showroom?.name ?? "Factory",
+    showroom,
+    reference: ref,
+    date: sale.created_at ?? new Date().toISOString(),
+    mode,
+    items: items.map((it: any) => ({
+      name: it._p_name ?? it.product_name ?? "Item",
+      sku: it._p_sku ?? it.product_sku ?? "",
+      price: Number(it.unit_price || 0),
+      qty: Number(it.qty || 0),
+      discount: 0,
+    })),
+    subtotal: Number(sale.subtotal ?? total),
+    discount: Number(sale.discount ?? 0),
+    tax: Number(sale.tax ?? 0),
+    shipping: Number(sale.shipping ?? 0),
+    total,
+    paid,
+    due,
+    previousDue: Number(bundle.previous_due ?? 0),
+    payments: pays.map((p: any) => ({
+      method: p.method ?? "cash",
+      amount: Number(p.amount || 0),
+      reference: p.reference ?? null,
+    })),
+  };
 }
 
 async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise<InvoiceSnapshot | null> {
-
-  let sale: any = null;
+  // Fast path: single RPC round-trip.
   const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRe.test(id)) {
+    try {
+      const { data, error } = await sb.rpc("get_invoice_bundle", { _sale_id: id });
+      if (!error && data) {
+        const snap = buildSnapshotFromBundle(data, settings);
+        if (snap) return snap;
+      }
+    } catch { /* fall through to legacy path */ }
+  }
+
+  // Legacy fallback: resolve sale, then run all reads in parallel.
+  let sale: any = null;
   if (uuidRe.test(id)) {
     const byUuid = await sb.from("sales").select("*").eq("id", id).maybeSingle();
     if (byUuid?.data) sale = byUuid.data;
@@ -125,53 +142,59 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
   }
   if (!sale) return null;
 
-  const { data: items } = await tryItemSelects(sale.id);
+  const salePhone = phoneDigits(sale.customer_phone);
+  const custByIdP = sale.customer_id
+    ? sb.from("customers").select("address").eq("id", sale.customer_id).maybeSingle()
+    : Promise.resolve({ data: null });
+  const custByPhoneP = sale.customer_phone
+    ? sb.from("customers").select("address").eq("phone", sale.customer_phone).maybeSingle()
+    : Promise.resolve({ data: null });
+  const showroomP = sale.showroom_id
+    ? sb.from("showrooms").select("id,name,code,address,city,phone,manager_name").eq("id", sale.showroom_id).maybeSingle()
+    : Promise.resolve({ data: null });
 
-
-  const { data: pays } = await sb
-    .from("sale_payments")
-    .select("method, amount, reference")
-    .eq("sale_id", sale.id)
-    .order("created_at", { ascending: true });
-
-  let showroom: any = null;
-  if (sale.showroom_id) {
-    const { data: sh } = await sb.from("showrooms")
-      .select("id,name,code,address,city,phone,manager_name")
-      .eq("id", sale.showroom_id).maybeSingle();
-    showroom = sh ?? null;
+  let priorSalesQ = sb.from("sales")
+    .select("id,due,customer_id,customer_phone,created_at")
+    .neq("id", sale.id).lt("created_at", sale.created_at);
+  let priorPaysQ = sb.from("customer_payments")
+    .select("amount,customer_id,customer_phone,sale_id,created_at")
+    .is("sale_id", null).lt("created_at", sale.created_at);
+  if (sale.customer_id) {
+    priorSalesQ = salePhone
+      ? priorSalesQ.or(`customer_id.eq.${sale.customer_id},customer_phone.eq.${sale.customer_phone}`)
+      : priorSalesQ.eq("customer_id", sale.customer_id);
+    priorPaysQ = salePhone
+      ? priorPaysQ.or(`customer_id.eq.${sale.customer_id},customer_phone.eq.${sale.customer_phone}`)
+      : priorPaysQ.eq("customer_id", sale.customer_id);
+  } else if (salePhone) {
+    priorSalesQ = priorSalesQ.eq("customer_phone", sale.customer_phone);
+    priorPaysQ = priorPaysQ.eq("customer_phone", sale.customer_phone);
   }
 
-  let customerAddress: string | undefined;
-  let previousDue = 0;
-  if (sale.customer_id || sale.customer_phone) {
-    let cust: any = null;
-    if (sale.customer_id) {
-      const { data } = await sb.from("customers")
-        .select("address").eq("id", sale.customer_id).maybeSingle();
-      cust = data;
-    }
-    if (!cust && sale.customer_phone) {
-      const { data } = await sb.from("customers")
-        .select("address,phone").eq("phone", sale.customer_phone).maybeSingle();
-      cust = data;
-    }
-    customerAddress = cust?.address ?? undefined;
-    // Prior sales/payments only (strictly before this sale) — excludes current + future.
-    // POS history may have customer_id missing, so match by saved customer_id OR exact phone.
-    previousDue = await calculatePreviousDue(sale);
-  }
+  const [itemsRes, paysRes, showroomRes, custIdRes, custPhoneRes, priorSalesRes, priorPaysRes] = await Promise.all([
+    tryItemSelects(sale.id),
+    sb.from("sale_payments").select("method, amount, reference").eq("sale_id", sale.id).order("created_at", { ascending: true }),
+    showroomP,
+    custByIdP,
+    custByPhoneP,
+    (sale.customer_id || salePhone) ? priorSalesQ : Promise.resolve({ data: [] }),
+    (sale.customer_id || salePhone) ? priorPaysQ : Promise.resolve({ data: [] }),
+  ]);
 
+  const items = itemsRes.data ?? [];
+  const pays = (paysRes as any)?.data ?? [];
+  const showroom = (showroomRes as any)?.data ?? null;
+  const customerAddress = ((custIdRes as any)?.data?.address ?? (custPhoneRes as any)?.data?.address) ?? undefined;
+  const previousDue = await calculatePreviousDueFrom(
+    sale,
+    (priorSalesRes as any)?.data ?? [],
+    (priorPaysRes as any)?.data ?? [],
+  );
 
   const total = Number(sale.total || 0);
   const paid = Number(sale.paid || 0);
   const due = Math.max(0, total - paid);
   const mode: "cash" | "due" | "partial" = paid <= 0 ? "due" : paid >= total ? "cash" : "partial";
-  const subtotal = Number(sale.subtotal ?? total);
-  const tax = Number(sale.tax ?? 0);
-  const shipping = Number(sale.shipping ?? 0);
-  const discount = Number(sale.discount ?? 0);
-
   const ref = sale.external_ref
     ?? `${settings.numberPrefix}${String(sale.id).slice(0, settings.numberPadding).toUpperCase()}`;
 
@@ -186,16 +209,19 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
     reference: ref,
     date: sale.created_at ?? new Date().toISOString(),
     mode,
-    items: (items ?? []).map((it: any) => ({
+    items: items.map((it: any) => ({
       name: it.products?.name ?? it.product_name ?? "Item",
       sku: it.products?.sku ?? it.product_sku ?? "",
       price: Number(it.unit_price || 0),
       qty: Number(it.qty || 0),
       discount: 0,
     })),
-    subtotal, discount, tax, shipping, total, paid, due,
-    previousDue,
-    payments: (pays ?? []).map((p: any) => ({
+    subtotal: Number(sale.subtotal ?? total),
+    discount: Number(sale.discount ?? 0),
+    tax: Number(sale.tax ?? 0),
+    shipping: Number(sale.shipping ?? 0),
+    total, paid, due, previousDue,
+    payments: pays.map((p: any) => ({
       method: p.method ?? "cash",
       amount: Number(p.amount || 0),
       reference: p.reference ?? null,
@@ -203,46 +229,58 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
   };
 }
 
+
+function readLocalSnapshot(id: string): InvoiceSnapshot | null {
+  try {
+    const raw = localStorage.getItem(`invoice:${id}`) ?? sessionStorage.getItem(`invoice:${id}`);
+    return raw ? (JSON.parse(raw) as InvoiceSnapshot) : null;
+  } catch { return null; }
+}
+
 function InvoiceView() {
   const { id } = useParams({ from: "/invoice/$id" });
   const s = useSearch({ from: "/invoice/$id" });
 
-  const [stored, setStored] = useState<InvoiceSnapshot | null>(null);
-  const [company, setCompany] = useState<CompanySettings>(defaultCompany);
-  const [settings, setSettings] = useState<InvoiceSettings>(defaultInvoiceSettings);
-  const [paper, setPaper] = useState<PaperSize>("80mm");
-  const [ready, setReady] = useState(false);
+  // Seed synchronously from local caches so the first paint is instant.
+  const cachedCompany = getCachedCompany();
+  const cachedInvoice = getCachedInvoiceSettings();
+  const localSnap = typeof window !== "undefined" ? readLocalSnapshot(id) : null;
+
+  const [stored, setStored] = useState<InvoiceSnapshot | null>(localSnap);
+  const [company, setCompany] = useState<CompanySettings>(cachedCompany ?? defaultCompany);
+  const [settings, setSettings] = useState<InvoiceSettings>(cachedInvoice ?? defaultInvoiceSettings);
+  const [paper, setPaper] = useState<PaperSize>((cachedInvoice ?? defaultInvoiceSettings).defaultPaper);
+  // "Ready to print" the moment we have *anything* renderable (snapshot or query fallback).
+  const [ready, setReady] = useState<boolean>(Boolean(localSnap));
 
   useEffect(() => {
-    Promise.all([getCompany(), getInvoiceSettings()]).then(async ([c, inv]) => {
-      setCompany(c);
-      setSettings(inv);
-      setPaper(inv.defaultPaper);
-      // Prefer fresh DB data; fall back to local snapshot only if DB has nothing
-      let snap: InvoiceSnapshot | null = null;
+    // Reconcile settings + fresh DB data in the background — never blocks the paint.
+    let cancelled = false;
+    (async () => {
       try {
-        snap = await fetchSaleSnapshot(id, inv);
-      } catch { /* ignore */ }
-      if (!snap) {
-        try {
-          const raw = localStorage.getItem(`invoice:${id}`) ?? sessionStorage.getItem(`invoice:${id}`);
-          if (raw) snap = JSON.parse(raw) as InvoiceSnapshot;
-        } catch { /* ignore */ }
+        const [c, inv] = await Promise.all([getCompany(), getInvoiceSettings()]);
+        if (cancelled) return;
+        setCompany(c);
+        setSettings(inv);
+        if (!localSnap) setPaper(inv.defaultPaper);
+        const snap = await fetchSaleSnapshot(id, inv).catch(() => null);
+        if (cancelled) return;
+        if (snap) setStored(snap);
+      } finally {
+        if (!cancelled) setReady(true);
       }
-      if (snap) setStored(snap);
-      setReady(true);
-    }).catch(() => setReady(true));
+    })();
+    return () => { cancelled = true; };
   }, [id]);
-
 
   useEffect(() => {
     if (!ready) return;
-    // Auto-print only when explicitly requested via ?ap=1 (e.g. from POS after sale).
-    // Plain reference clicks (from ledger, sales list) just view.
     if (s.ap !== 1) return;
-    const t = setTimeout(() => { try { window.print(); } catch { /* ignore */ } }, 500);
+    // Snapshot-first: fire print as soon as we have something on screen.
+    const t = setTimeout(() => { try { window.print(); } catch { /* ignore */ } }, 250);
     return () => clearTimeout(t);
   }, [ready, s.ap]);
+
 
   // Build a snapshot even when localStorage is empty (falls back to query params)
   const snapshot: InvoiceSnapshot = stored ?? {
