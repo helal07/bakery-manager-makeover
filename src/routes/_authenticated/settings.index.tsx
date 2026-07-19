@@ -34,6 +34,7 @@ const NAV: { tab: Tab; groups: { label: string; items: { id: Section; label: str
       label: "System",
       items: [
         { id: "company", label: "Company", icon: Building2 },
+        { id: "invoice", label: "Invoice", icon: FileText },
         { id: "appearance", label: "Appearance", icon: Palette },
         { id: "notifications", label: "Notifications", icon: Bell },
         { id: "printing", label: "Printing", icon: Printer },
