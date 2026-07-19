@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { UserPlus, Star, Search, MoreHorizontal, Eye, Pencil, Trash2, BookOpen, Users } from "lucide-react";
+import { UserPlus, Star, Search, MoreHorizontal, Eye, Pencil, Trash2, BookOpen, Users, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImage } from "@/lib/storage";
