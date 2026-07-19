@@ -24,6 +24,8 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [brandName, setBrandName] = useState<string>(() => getCompanyName());
+  useEffect(() => { getCompany().then((c) => setBrandName(c.name || getCompanyName())).catch(() => {}); }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
