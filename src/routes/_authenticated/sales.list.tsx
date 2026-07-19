@@ -310,59 +310,31 @@ function PaymentBody({ row, onClose }: { row: Row; onClose: () => void }) {
   );
 }
 
-function invoiceHtml(row: Row) {
-  return `<!doctype html><html><head><meta charset="utf-8"/><title>Invoice ${row.id}</title>
-  <style>body{font-family:system-ui,sans-serif;padding:32px;color:#111}h1{margin:0 0 4px}small{color:#666}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{padding:8px;border-bottom:1px solid #eee;text-align:left}.r{text-align:right}.tot{font-weight:600}</style></head>
-  <body><h1>Crumb &amp; Co.</h1><small>Invoice</small>
-  <div style="margin-top:16px"><b>Invoice:</b> #${row.id}<br/><b>Date:</b> ${row.date}<br/><b>Customer:</b> ${row.customer}<br/><b>Branch:</b> ${row.branch}</div>
-  <table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Amount</th></tr></thead>
-  <tbody><tr><td>Sale items</td><td class="r">${row.items}</td><td class="r">৳${row.total.toFixed(2)}</td></tr></tbody>
-  <tfoot><tr class="tot"><td colspan="2" class="r">Total</td><td class="r">৳${row.total.toFixed(2)}</td></tr>
-  <tr><td colspan="2" class="r">Paid</td><td class="r">৳${row.paid.toFixed(2)}</td></tr>
-  <tr class="tot"><td colspan="2" class="r">Due</td><td class="r">৳${(row.total - row.paid).toFixed(2)}</td></tr></tfoot></table>
-  <p style="margin-top:24px;color:#666">Thank you for your purchase.</p></body></html>`;
+function buildInvoiceUrl(row: Row, autoPrint: boolean) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const params = new URLSearchParams({
+    c: row.customer,
+    d: row.date,
+    b: row.branch,
+    i: String(row.items),
+    t: String(row.total),
+    p: String(row.paid),
+  });
+  if (autoPrint) params.set("ap", "1");
+  return `${origin}/invoice/${row.id}?${params.toString()}`;
 }
 
 function InvoiceBody({ row, onClose }: { row: Row; onClose: () => void }) {
-  const html = invoiceHtml(row);
-  const download = () => {
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `invoice-${row.id}.html`; a.click();
-    URL.revokeObjectURL(url);
-  };
-  const print = () => {
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-    document.body.appendChild(iframe);
-    const frameDocument = iframe.contentDocument;
-    const frameWindow = iframe.contentWindow;
-    if (!frameDocument || !frameWindow) {
-      iframe.remove();
-      return;
-    }
-    frameDocument.open();
-    frameDocument.write(html);
-    frameDocument.close();
-    frameWindow.focus();
-    setTimeout(() => {
-      frameWindow.print();
-      setTimeout(() => iframe.remove(), 1000);
-    }, 300);
-  };
+  const open = () => window.open(buildInvoiceUrl(row, false), "_blank", "noopener");
+  const print = () => window.open(buildInvoiceUrl(row, true), "_blank", "noopener");
   const share = async () => {
-    const text = `Invoice #${row.id} — ${row.customer} — ৳${row.total.toFixed(2)}`;
+    const url = buildInvoiceUrl(row, false);
+    const text = `Invoice #${row.id} — ${row.customer} — ৳${row.total.toFixed(2)}\n${url}`;
     if (navigator.share) {
-      try { await navigator.share({ title: `Invoice #${row.id}`, text }); return; } catch {}
+      try { await navigator.share({ title: `Invoice #${row.id}`, text, url }); return; } catch { /* cancelled */ }
     }
-    await navigator.clipboard?.writeText(text);
-    alert("Invoice summary copied to clipboard");
+    await navigator.clipboard?.writeText(url);
+    alert("Invoice link copied to clipboard");
   };
   return (
     <div className="space-y-3 text-sm">
@@ -374,8 +346,8 @@ function InvoiceBody({ row, onClose }: { row: Row; onClose: () => void }) {
         <div className="flex justify-between font-medium"><span>Due</span><span>৳{(row.total - row.paid).toFixed(2)}</span></div>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <button onClick={download} className="inline-flex flex-col items-center gap-1 p-3 rounded-md border border-border hover:bg-accent">
-          <Download className="size-5" /><span className="text-xs">Download</span>
+        <button onClick={open} className="inline-flex flex-col items-center gap-1 p-3 rounded-md border border-border hover:bg-accent">
+          <Download className="size-5" /><span className="text-xs">Open</span>
         </button>
         <button onClick={print} className="inline-flex flex-col items-center gap-1 p-3 rounded-md border border-border hover:bg-accent">
           <Printer className="size-5" /><span className="text-xs">Print</span>
@@ -388,6 +360,7 @@ function InvoiceBody({ row, onClose }: { row: Row; onClose: () => void }) {
     </div>
   );
 }
+
 
 function ReturnBody({ row, onClose }: { row: Row; onClose: () => void }) {
   const [qty, setQty] = useState(1);
