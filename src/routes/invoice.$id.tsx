@@ -42,7 +42,7 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
 
   const { data: items } = await sb
     .from("sale_items")
-    .select("qty, unit_price, line_total, discount_amount, product_id, products(name, sku)")
+    .select("qty, unit_price, line_total, product_id, product_name, product_sku, products(name, sku)")
     .eq("sale_id", sale.id);
 
   const { data: pays } = await sb
@@ -98,11 +98,11 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
     date: sale.created_at ?? new Date().toISOString(),
     mode,
     items: (items ?? []).map((it: any) => ({
-      name: it.products?.name ?? "Item",
-      sku: it.products?.sku ?? "",
+      name: it.products?.name ?? it.product_name ?? "Item",
+      sku: it.products?.sku ?? it.product_sku ?? "",
       price: Number(it.unit_price || 0),
       qty: Number(it.qty || 0),
-      discount: Number(it.discount_amount || 0),
+      discount: 0,
     })),
     subtotal, discount, tax, shipping, total, paid, due,
     previousDue,
@@ -148,11 +148,12 @@ function InvoiceView() {
 
   useEffect(() => {
     if (!ready) return;
-    const shouldAuto = s.ap ? s.ap === 1 : settings.autoPrint;
-    if (!shouldAuto) return;
+    // Auto-print only when explicitly requested via ?ap=1 (e.g. from POS after sale).
+    // Plain reference clicks (from ledger, sales list) just view.
+    if (s.ap !== 1) return;
     const t = setTimeout(() => { try { window.print(); } catch { /* ignore */ } }, 500);
     return () => clearTimeout(t);
-  }, [ready, s.ap, settings.autoPrint]);
+  }, [ready, s.ap]);
 
   // Build a snapshot even when localStorage is empty (falls back to query params)
   const snapshot: InvoiceSnapshot = stored ?? {
