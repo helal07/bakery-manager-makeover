@@ -339,6 +339,71 @@ function PosPage() {
   const [shipping, setShipping] = useState(0);
   const total = +(subtotal - discount + shipping).toFixed(2);
 
+  // Hydrate POS from an existing sale when ?edit=<id> is present
+  useEffect(() => {
+    if (!editId || editHydrated || products.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let row: any = null;
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(editId);
+        if (isUuid) {
+          const { data } = await sb.from("sales").select("*").eq("id", editId).maybeSingle();
+          row = data;
+        }
+        if (!row) {
+          const { data } = await sb.from("sales").select("*").eq("external_ref", editId).maybeSingle();
+          row = data;
+        }
+        if (!row) { toast.error(`Sale not found: ${editId}`); return; }
+        if (cancelled) return;
+
+        // Match sale's showroom scope so stock ops target the right location
+        if (row.showroom_id && row.showroom_id !== loc) {
+          try { setCurrentShowroomId(row.showroom_id); } catch { /* ignore */ }
+        }
+
+        const { data: items } = await sb.from("sale_items").select("*").eq("sale_id", row.id);
+        const cartMap: Record<string, number> = {};
+        const originals: Array<{ product_id: string; qty: number }> = [];
+        for (const it of items ?? []) {
+          if (!it.product_id) continue;
+          cartMap[it.product_id] = (cartMap[it.product_id] || 0) + Number(it.qty);
+          originals.push({ product_id: it.product_id, qty: Number(it.qty) });
+        }
+        if (cancelled) return;
+        setCart(cartMap);
+        setEditOriginalItems(originals);
+        setEditOriginalPaid(Number(row.paid || 0));
+        setEditShowroomId(row.showroom_id ?? null);
+        setEditingSaleId(row.id);
+        setEditingRef(row.external_ref ?? null);
+        setDiscount(Number(row.discount || 0));
+        setShipping(Number(row.shipping || 0));
+        setCustomerId(row.customer_id ?? null);
+        setCustomerName(row.customer_name || "Walk-in Customer");
+        setCustomerPhone(row.customer_phone || "");
+        if (row.customer_name) setCustQuery(`${row.customer_name}${row.customer_phone ? " · " + row.customer_phone : ""}`);
+        setMode((row.payment_mode === "due" ? "credit" : row.payment_mode === "partial" ? "multi" : (row.payment_mode || "cash")) as Mode);
+        setEditHydrated(true);
+        toast.info(`Editing sale ${row.external_ref ?? "#" + String(row.id).slice(0, 8)}`);
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to load sale for edit");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editId, editHydrated, products.length, loc, setCurrentShowroomId]);
+
+  const exitEditMode = () => {
+    setEditingSaleId(null);
+    setEditingRef(null);
+    setEditOriginalItems([]);
+    setEditOriginalPaid(0);
+    setEditShowroomId(null);
+    setEditHydrated(false);
+  };
+
+
   // Payment computation per Ultimate-POS logic
   const multiPaid = tenders.reduce((s, t) => s + (Number(t.amount) || 0), 0);
   const paid =
