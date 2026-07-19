@@ -4,7 +4,7 @@ import {
   ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart,
   X, Keyboard, ArrowLeft, User, UserPlus, Users, Pause, PlayCircle, DollarSign,
   Lock, Unlock, Receipt, Calendar, Calculator, Maximize2, Briefcase,
-  CircleX, RotateCcw, CreditCard, FileText, History, Info, Pencil,
+  CircleX, RotateCcw, CreditCard, FileText, History, Info, Pencil, Menu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
