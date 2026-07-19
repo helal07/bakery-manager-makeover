@@ -90,6 +90,7 @@ function PosPage() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [closeRegOpen, setCloseRegOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [recentSales, setRecentSales] = useState<Array<{ id: string; external_ref: string | null; total: number; paid: number; due: number; created_at: string; customer_name: string | null }>>([]);
   const [recentLoading, setRecentLoading] = useState(false);
 
