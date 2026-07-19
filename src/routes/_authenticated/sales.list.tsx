@@ -419,7 +419,8 @@ function NotifyBody({ row, onClose }: { row: Row; onClose: () => void }) {
   const savedPhone = row.phone && row.phone !== "—" ? normalizeBangladeshNumber(row.phone, true) : "";
   const [phone, setPhone] = useState(savedPhone);
   const [error, setError] = useState("");
-  const company = { name: "Crumb & Co.", address: "12 Gulshan Ave, Dhaka" };
+  const cachedCo = getCachedCompany();
+  const company = { name: cachedCo?.name || defaultCompany.name, address: cachedCo?.address || defaultCompany.address };
   const product = `${row.items} item${row.items > 1 ? "s" : ""}`;
   const invoiceUrl = (() => {
     const origin = typeof window !== "undefined" ? window.location.origin : "https://crumb.co";
