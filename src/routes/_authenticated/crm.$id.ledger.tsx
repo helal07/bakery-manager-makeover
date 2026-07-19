@@ -250,7 +250,7 @@ function CustomerLedger() {
                     <td className="px-4 py-2 text-muted-foreground text-xs">{new Date(r.date).toLocaleDateString()}</td>
                     <td className="px-4 py-2 text-xs">
                       {r.type === "Sale"
-                        ? <Badge tone="info">Sale</Badge>
+                        ? <Badge tone="primary">Sale</Badge>
                         : <Badge tone="success">Payment</Badge>}
                     </td>
                     <td className="px-4 py-2 text-xs">

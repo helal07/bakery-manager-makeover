@@ -81,6 +81,7 @@ import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_
 import { Route as AuthenticatedSalesEditIdRouteImport } from './routes/_authenticated/sales.edit.$id'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
 import { Route as AuthenticatedEmployeesEditIdRouteImport } from './routes/_authenticated/employees.edit.$id'
+import { Route as AuthenticatedCrmIdLedgerRouteImport } from './routes/_authenticated/crm.$id.ledger'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -488,6 +489,12 @@ const AuthenticatedEmployeesEditIdRoute =
     path: '/edit/$id',
     getParentRoute: () => AuthenticatedEmployeesRoute,
   } as any)
+const AuthenticatedCrmIdLedgerRoute =
+  AuthenticatedCrmIdLedgerRouteImport.update({
+    id: '/ledger',
+    path: '/ledger',
+    getParentRoute: () => AuthenticatedCrmIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -515,7 +522,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
-  '/crm/$id': typeof AuthenticatedCrmIdRoute
+  '/crm/$id': typeof AuthenticatedCrmIdRouteWithChildren
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
@@ -557,6 +564,7 @@ export interface FileRoutesByFullPath {
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/transfers/': typeof AuthenticatedTransfersIndexRoute
+  '/crm/$id/ledger': typeof AuthenticatedCrmIdLedgerRoute
   '/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
@@ -586,7 +594,7 @@ export interface FileRoutesByTo {
   '/recipes': typeof AuthenticatedRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
-  '/crm/$id': typeof AuthenticatedCrmIdRoute
+  '/crm/$id': typeof AuthenticatedCrmIdRouteWithChildren
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
@@ -628,6 +636,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/transfers': typeof AuthenticatedTransfersIndexRoute
+  '/crm/$id/ledger': typeof AuthenticatedCrmIdLedgerRoute
   '/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
@@ -661,7 +670,7 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
-  '/_authenticated/crm/$id': typeof AuthenticatedCrmIdRoute
+  '/_authenticated/crm/$id': typeof AuthenticatedCrmIdRouteWithChildren
   '/_authenticated/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/_authenticated/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/_authenticated/expenses/list': typeof AuthenticatedExpensesListRoute
@@ -703,6 +712,7 @@ export interface FileRoutesById {
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/transfers/': typeof AuthenticatedTransfersIndexRoute
+  '/_authenticated/crm/$id/ledger': typeof AuthenticatedCrmIdLedgerRoute
   '/_authenticated/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
@@ -778,6 +788,7 @@ export interface FileRouteTypes {
     | '/reports/'
     | '/settings/'
     | '/transfers/'
+    | '/crm/$id/ledger'
     | '/employees/edit/$id'
     | '/products/edit/$id'
     | '/sales/edit/$id'
@@ -849,6 +860,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/transfers'
+    | '/crm/$id/ledger'
     | '/employees/edit/$id'
     | '/products/edit/$id'
     | '/sales/edit/$id'
@@ -923,6 +935,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/'
     | '/_authenticated/settings/'
     | '/_authenticated/transfers/'
+    | '/_authenticated/crm/$id/ledger'
     | '/_authenticated/employees/edit/$id'
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/sales/edit/$id'
@@ -1445,15 +1458,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmployeesEditIdRouteImport
       parentRoute: typeof AuthenticatedEmployeesRoute
     }
+    '/_authenticated/crm/$id/ledger': {
+      id: '/_authenticated/crm/$id/ledger'
+      path: '/ledger'
+      fullPath: '/crm/$id/ledger'
+      preLoaderRoute: typeof AuthenticatedCrmIdLedgerRouteImport
+      parentRoute: typeof AuthenticatedCrmIdRoute
+    }
   }
 }
 
+interface AuthenticatedCrmIdRouteChildren {
+  AuthenticatedCrmIdLedgerRoute: typeof AuthenticatedCrmIdLedgerRoute
+}
+
+const AuthenticatedCrmIdRouteChildren: AuthenticatedCrmIdRouteChildren = {
+  AuthenticatedCrmIdLedgerRoute: AuthenticatedCrmIdLedgerRoute,
+}
+
+const AuthenticatedCrmIdRouteWithChildren =
+  AuthenticatedCrmIdRoute._addFileChildren(AuthenticatedCrmIdRouteChildren)
+
 interface AuthenticatedCrmRouteChildren {
-  AuthenticatedCrmIdRoute: typeof AuthenticatedCrmIdRoute
+  AuthenticatedCrmIdRoute: typeof AuthenticatedCrmIdRouteWithChildren
 }
 
 const AuthenticatedCrmRouteChildren: AuthenticatedCrmRouteChildren = {
-  AuthenticatedCrmIdRoute: AuthenticatedCrmIdRoute,
+  AuthenticatedCrmIdRoute: AuthenticatedCrmIdRouteWithChildren,
 }
 
 const AuthenticatedCrmRouteWithChildren =
