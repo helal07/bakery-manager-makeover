@@ -514,6 +514,8 @@ function PosPage() {
       setTenders([]);
       resetCustomer();
       setMode("cash");
+      setDiscount(0);
+      setShipping(0);
       scanRef.current?.focus();
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save sale");
