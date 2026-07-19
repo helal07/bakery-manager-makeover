@@ -1186,7 +1186,48 @@ function PosPage() {
           </div>
         </div>
       )}
+
+      {/* Mobile More drawer — parks secondary menus like a breadcrumb */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-[85] bg-black/50 sm:hidden" onClick={() => setMoreOpen(false)}>
+          <div className="absolute right-0 top-0 bottom-0 w-72 max-w-[85vw] bg-card border-l border-border shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border">
+              <div className="text-sm font-semibold">More</div>
+              <button onClick={() => setMoreOpen(false)} className="p-1.5 rounded hover:bg-accent"><X className="size-4" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              <div>
+                <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1.5">Register</div>
+                <RegisterPill register={register} onOpen={() => { setMoreOpen(false); setRegisterOpen(true); }} onClose={() => { setMoreOpen(false); setCloseRegOpen(true); }} />
+              </div>
+              <div>
+                <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1.5">Invoice date</div>
+                <div className="relative">
+                  <Calendar className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="date" value={invoiceDate}
+                    onChange={(e) => setInvoiceDate(e.target.value)}
+                    className="w-full h-9 pl-8 pr-2 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <DrawerBtn onClick={() => { setMoreOpen(false); setRecentOpen(true); void loadRecentSales(); }} icon={<History className="size-4" />} label="Recent Sales" />
+                <DrawerBtn onClick={() => { setMoreOpen(false); setRecallOpen(true); }} icon={<Briefcase className="size-4" />} label={`Recall${held.length ? ` (${held.length})` : ""}`} />
+                <DrawerBtn onClick={() => { setMoreOpen(false); if (items.length) void handleHold(); }} disabled={items.length === 0} icon={<Pause className="size-4" />} label="Hold (F7)" />
+                <DrawerBtn onClick={() => { setMoreOpen(false); invalidate("pos:"); location.reload(); }} icon={<RotateCcw className="size-4" />} label="Refresh" />
+                <DrawerBtn onClick={() => { setMoreOpen(false); toggleFullscreen(); }} icon={<Maximize2 className="size-4" />} label="Fullscreen" />
+                <DrawerBtn onClick={() => { setMoreOpen(false); clearCart(); }} icon={<CircleX className="size-4" />} label="Cancel Sale" danger />
+              </div>
+              <div className="text-[10px] text-muted-foreground pt-2 border-t border-border">
+                Shortcuts: F2 Scan · F4 Search · F7 Hold · F8 Recall · F9 Complete · Esc Cancel
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
 
