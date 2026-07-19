@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { Plus, Pencil, Trash2, Users, ShieldCheck, X, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, ShieldCheck, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { toast } from "sonner";
@@ -25,28 +25,14 @@ type Employee = {
 
 type Showroom = { id: string; name: string };
 
-type Draft = Omit<Employee, "id"> & { id?: string };
-
-const empty: Draft = {
-  name: "",
-  role: "",
-  showroom_id: null,
-  email: "",
-  phone: "",
-  salary: 0,
-  attendance: 100,
-  is_active: true,
-};
-
 function EmployeesPage() {
+  const navigate = useNavigate();
   const { isAdmin, loading: roleLoading } = useIsAdmin();
   const [list, setList] = useState<Employee[]>([]);
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<Draft>(empty);
 
   const guard = () => {
     if (roleLoading) {
@@ -115,35 +101,11 @@ function EmployeesPage() {
 
   const openAdd = () => {
     if (!guard()) return;
-    setDraft(empty);
-    setOpen(true);
+    navigate({ to: "/employees/new" });
   };
   const openEdit = (e: Employee) => {
     if (!guard()) return;
-    setDraft(e);
-    setOpen(true);
-  };
-
-  const save = async () => {
-    if (!guard()) return;
-    if (!draft.name.trim()) return toast.error("Name required");
-    const payload = {
-      name: draft.name.trim(),
-      role: draft.role.trim(),
-      showroom_id: draft.showroom_id,
-      email: draft.email?.trim() || null,
-      phone: draft.phone?.trim() || null,
-      salary: Number(draft.salary) || 0,
-      attendance: Number(draft.attendance) || 0,
-      is_active: draft.is_active,
-    };
-    const { error } = draft.id
-      ? await supabase.from("employees").update(payload).eq("id", draft.id)
-      : await supabase.from("employees").insert(payload);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-    setOpen(false);
-    refresh();
+    navigate({ to: "/employees/edit/$id", params: { id: e.id } });
   };
 
   const remove = async (id: string) => {
@@ -269,77 +231,6 @@ function EmployeesPage() {
         </div>
       </Card>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
-          onClick={() => setOpen(false)}
-        >
-          <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <Card className="p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold">{draft.id ? "Edit Employee" : "Add Employee"}</h2>
-                <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
-                  <X className="size-4" />
-                </button>
-              </div>
-              <div className="space-y-3 text-sm">
-                <Field label="Name">
-                  <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="input" />
-                </Field>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Role">
-                    <input value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })} placeholder="e.g. Cashier" className="input" />
-                  </Field>
-                  <Field label="Branch">
-                    <select
-                      value={draft.showroom_id ?? ""}
-                      onChange={(e) => setDraft({ ...draft, showroom_id: e.target.value || null })}
-                      className="input"
-                    >
-                      <option value="">—</option>
-                      {showrooms.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Email">
-                    <input value={draft.email ?? ""} onChange={(e) => setDraft({ ...draft, email: e.target.value })} className="input" />
-                  </Field>
-                  <Field label="Phone">
-                    <input value={draft.phone ?? ""} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} className="input" />
-                  </Field>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Monthly Salary (৳)">
-                    <input type="number" value={draft.salary} onChange={(e) => setDraft({ ...draft, salary: Number(e.target.value) })} className="input" />
-                  </Field>
-                  <Field label="Attendance %">
-                    <input type="number" min={0} max={100} value={draft.attendance} onChange={(e) => setDraft({ ...draft, attendance: Number(e.target.value) })} className="input" />
-                  </Field>
-                </div>
-                <label className="flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={draft.is_active}
-                    onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })}
-                  />
-                  Active
-                </label>
-                <button
-                  onClick={save}
-                  className="w-full px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
-                >
-                  {draft.id ? "Save" : "Add"}
-                </button>
-              </div>
-            </Card>
-          </div>
-        </div>
-      )}
     </AppShell>
   );
 }
@@ -353,16 +244,5 @@ function Stat({ icon, label, value }: { icon?: React.ReactNode; label: string; v
       </div>
       <div className="text-2xl font-semibold mt-1">{value}</div>
     </Card>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="mt-1 [&_.input]:w-full [&_.input]:px-3 [&_.input]:py-2 [&_.input]:rounded-md [&_.input]:border [&_.input]:border-border [&_.input]:bg-background [&_.input]:text-sm">
-        {children}
-      </div>
-    </label>
   );
 }
