@@ -860,7 +860,7 @@ function PosPage() {
               </select>
             </div>
 
-            <div className="relative">
+            <div className="relative hidden sm:block">
               <Calendar className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <input
                 type="date"
@@ -870,6 +870,7 @@ function PosPage() {
               />
             </div>
           </div>
+
 
           {/* Product search inside 60% split */}
           <div className="shrink-0 border-b border-border px-2 py-1.5">
