@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { pageTitle } from "@/lib/company-settings";
+import { ReceivePaymentDialog } from "@/components/receive-payment-dialog";
 
 const sb = supabase as any;
 
