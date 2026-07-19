@@ -497,8 +497,10 @@ function PosPage() {
           reference: externalRef,
           date: new Date().toISOString(),
           mode: paymentMode === "card" ? "cash" : (paymentMode as "cash" | "due" | "partial"),
-          items: items.map(({ p, qty }) => ({ name: p.name, sku: p.sku ?? "", price: priceFor(p), qty })),
-          subtotal, tax: 0, total, paid, due,
+          items: items.map(({ p, qty }) => ({ name: p.name, sku: p.sku ?? "", price: priceFor(p), qty, discount: 0 })),
+          subtotal, discount, tax: 0, shipping, total, paid, due,
+          previousDue: customerDue,
+          payments: payRows.map((r) => ({ method: r.method, amount: r.amount, reference: r.reference ?? null })),
         };
         localStorage.setItem(`invoice:${sale.id}`, JSON.stringify(snapshot));
       } catch { /* ignore */ }
