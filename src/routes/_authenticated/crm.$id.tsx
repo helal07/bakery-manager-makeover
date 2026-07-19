@@ -322,6 +322,16 @@ function CustomerDetail() {
           </div>
         </>
       )}
+      {customer && (
+        <ReceivePaymentDialog
+          open={payOpen}
+          onOpenChange={setPayOpen}
+          customerId={customer.id}
+          customerName={customer.name}
+          customerPhone={customer.phone}
+          onSaved={doLoad}
+        />
+      )}
     </AppShell>
   );
 }
