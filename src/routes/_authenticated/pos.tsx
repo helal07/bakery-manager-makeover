@@ -78,6 +78,33 @@ function PosPage() {
   const [register, setRegister] = useState<RegisterSession | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [closeRegOpen, setCloseRegOpen] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(false);
+  const [recentSales, setRecentSales] = useState<Array<{ id: string; external_ref: string | null; total: number; paid: number; due: number; created_at: string; customer_name: string | null }>>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+
+  async function loadRecentSales() {
+    setRecentLoading(true);
+    try {
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      let q = sb.from("sales")
+        .select("id, external_ref, total, paid, due, created_at, customer_id, customers(name)")
+        .gte("created_at", start.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (loc) q = q.eq("showroom_id", loc);
+      const { data, error } = await q;
+      if (error) throw error;
+      setRecentSales((data ?? []).map((r: any) => ({
+        id: r.id, external_ref: r.external_ref, total: Number(r.total ?? 0),
+        paid: Number(r.paid ?? 0), due: Number(r.due ?? 0), created_at: r.created_at,
+        customer_name: r.customers?.name ?? null,
+      })));
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load recent sales");
+    } finally {
+      setRecentLoading(false);
+    }
+  }
 
   // Held
   const [held, setHeld] = useState<HeldSaleRow[]>([]);
@@ -891,6 +918,77 @@ function PosPage() {
                 className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50">
                 {savingCust ? "Saving…" : "Save customer"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating: Recent Transactions */}
+      <button
+        onClick={() => { setRecentOpen(true); void loadRecentSales(); }}
+        className="fixed bottom-4 right-4 z-[70] h-11 px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg hover:opacity-90 inline-flex items-center gap-2"
+        title="Today's recent sales"
+      >
+        <History className="size-4" /> Recent Transactions
+      </button>
+
+      {recentOpen && (
+        <div className="fixed inset-0 z-[80] bg-black/50 flex justify-end" onClick={() => setRecentOpen(false)}>
+          <div className="w-full max-w-md h-full bg-card border-l border-border shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border">
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                <History className="size-4 text-primary" /> Today's Recent Sales
+              </div>
+              <div className="flex items-center gap-1">
+                <button onClick={loadRecentSales} className="p-1.5 rounded hover:bg-accent" title="Refresh"><RotateCcw className="size-4" /></button>
+                <button onClick={() => setRecentOpen(false)} className="p-1.5 rounded hover:bg-accent"><X className="size-4" /></button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {recentLoading ? (
+                <div className="p-10 text-center text-sm text-muted-foreground">Loading…</div>
+              ) : recentSales.length === 0 ? (
+                <div className="p-10 text-center text-sm text-muted-foreground">No sales today yet.</div>
+              ) : (
+                recentSales.map((s) => {
+                  const t = new Date(s.created_at);
+                  const pad = (n: number) => String(n).padStart(2, "0");
+                  let h = t.getHours(); const ampm = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+                  const time = `${pad(h)}:${pad(t.getMinutes())} ${ampm}`;
+                  return (
+                    <div key={s.id} className="px-4 py-3 border-b border-border hover:bg-accent/30">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold text-sky-700 dark:text-sky-400 truncate">{s.external_ref ?? s.id.slice(0, 8)}</div>
+                          <div className="text-[11px] text-muted-foreground truncate">{s.customer_name ?? "Walk-in Customer"} · {time}</div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-sm font-extrabold tabular-nums">৳{s.total.toFixed(2)}</div>
+                          {s.due > 0 ? (
+                            <div className="text-[10px] font-bold text-destructive">Due ৳{s.due.toFixed(2)}</div>
+                          ) : (
+                            <div className="text-[10px] font-bold text-[color:var(--success)]">Paid</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => window.open(`/invoice/${s.id}`, "_blank", "noopener,width=520,height=800")}
+                          className="h-7 px-2.5 rounded-md border border-border text-[11px] font-semibold hover:bg-accent inline-flex items-center gap-1"
+                        >
+                          <Receipt className="size-3.5" /> View
+                        </button>
+                        <button
+                          onClick={() => window.open(`/invoice/${s.id}?ap=1`, "_blank", "noopener,width=520,height=800")}
+                          className="h-7 px-2.5 rounded-md bg-primary text-primary-foreground text-[11px] font-semibold hover:opacity-90 inline-flex items-center gap-1"
+                        >
+                          <FileText className="size-3.5" /> Print
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
