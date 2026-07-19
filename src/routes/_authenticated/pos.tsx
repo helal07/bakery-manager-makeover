@@ -78,6 +78,33 @@ function PosPage() {
   const [register, setRegister] = useState<RegisterSession | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [closeRegOpen, setCloseRegOpen] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(false);
+  const [recentSales, setRecentSales] = useState<Array<{ id: string; external_ref: string | null; total: number; paid: number; due: number; created_at: string; customer_name: string | null }>>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+
+  async function loadRecentSales() {
+    setRecentLoading(true);
+    try {
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      let q = sb.from("sales")
+        .select("id, external_ref, total, paid, due, created_at, customer_id, customers(name)")
+        .gte("created_at", start.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (loc) q = q.eq("showroom_id", loc);
+      const { data, error } = await q;
+      if (error) throw error;
+      setRecentSales((data ?? []).map((r: any) => ({
+        id: r.id, external_ref: r.external_ref, total: Number(r.total ?? 0),
+        paid: Number(r.paid ?? 0), due: Number(r.due ?? 0), created_at: r.created_at,
+        customer_name: r.customers?.name ?? null,
+      })));
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load recent sales");
+    } finally {
+      setRecentLoading(false);
+    }
+  }
 
   // Held
   const [held, setHeld] = useState<HeldSaleRow[]>([]);
