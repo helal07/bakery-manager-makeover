@@ -491,6 +491,17 @@ function CRM() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {payFor && (
+        <ReceivePaymentDialog
+          open={!!payFor}
+          onOpenChange={(o) => !o && setPayFor(null)}
+          customerId={payFor.id}
+          customerName={payFor.name}
+          customerPhone={payFor.phone}
+          onSaved={refresh}
+        />
+      )}
     </AppShell>
   );
 }
