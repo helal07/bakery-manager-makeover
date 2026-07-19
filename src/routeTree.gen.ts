@@ -76,7 +76,7 @@ import { Route as AuthenticatedExpensesNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authenticated/expenses.list'
 import { Route as AuthenticatedExpensesCategoriesRouteImport } from './routes/_authenticated/expenses.categories'
 import { Route as AuthenticatedEmployeesNewRouteImport } from './routes/_authenticated/employees.new'
-import { Route as AuthenticatedCrmIdRouteImport } from './routes/_authenticated/crm.$id'
+import { Route as AuthenticatedCrmIdIndexRouteImport } from './routes/_authenticated/crm.$id.index'
 import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
 import { Route as AuthenticatedSalesEditIdRouteImport } from './routes/_authenticated/sales.edit.$id'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
@@ -460,9 +460,9 @@ const AuthenticatedEmployeesNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedEmployeesRoute,
   } as any)
-const AuthenticatedCrmIdRoute = AuthenticatedCrmIdRouteImport.update({
-  id: '/crm/$id',
-  path: '/crm/$id',
+const AuthenticatedCrmIdIndexRoute = AuthenticatedCrmIdIndexRouteImport.update({
+  id: '/crm/$id/',
+  path: '/crm/$id/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTransfersDamagedNewRoute =
@@ -491,9 +491,9 @@ const AuthenticatedEmployeesEditIdRoute =
   } as any)
 const AuthenticatedCrmIdLedgerRoute =
   AuthenticatedCrmIdLedgerRouteImport.update({
-    id: '/ledger',
-    path: '/ledger',
-    getParentRoute: () => AuthenticatedCrmIdRoute,
+    id: '/crm/$id/ledger',
+    path: '/crm/$id/ledger',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -521,7 +521,6 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
-  '/crm/$id': typeof AuthenticatedCrmIdRouteWithChildren
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
@@ -569,6 +568,7 @@ export interface FileRoutesByFullPath {
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
+  '/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -593,7 +593,6 @@ export interface FileRoutesByTo {
   '/recipes': typeof AuthenticatedRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
-  '/crm/$id': typeof AuthenticatedCrmIdRouteWithChildren
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
@@ -641,6 +640,7 @@ export interface FileRoutesByTo {
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
+  '/crm/$id': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -669,7 +669,6 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
-  '/_authenticated/crm/$id': typeof AuthenticatedCrmIdRouteWithChildren
   '/_authenticated/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/_authenticated/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/_authenticated/expenses/list': typeof AuthenticatedExpensesListRoute
@@ -717,6 +716,7 @@ export interface FileRoutesById {
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
   '/_authenticated/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
+  '/_authenticated/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -745,7 +745,6 @@ export interface FileRouteTypes {
     | '/reports'
     | '/suppliers'
     | '/invoice/$id'
-    | '/crm/$id'
     | '/employees/new'
     | '/expenses/categories'
     | '/expenses/list'
@@ -793,6 +792,7 @@ export interface FileRouteTypes {
     | '/products/edit/$id'
     | '/sales/edit/$id'
     | '/transfers/damaged/new'
+    | '/crm/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -817,7 +817,6 @@ export interface FileRouteTypes {
     | '/recipes'
     | '/suppliers'
     | '/invoice/$id'
-    | '/crm/$id'
     | '/employees/new'
     | '/expenses/categories'
     | '/expenses/list'
@@ -865,6 +864,7 @@ export interface FileRouteTypes {
     | '/products/edit/$id'
     | '/sales/edit/$id'
     | '/transfers/damaged/new'
+    | '/crm/$id'
   id:
     | '__root__'
     | '/'
@@ -892,7 +892,6 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/suppliers'
     | '/invoice/$id'
-    | '/_authenticated/crm/$id'
     | '/_authenticated/employees/new'
     | '/_authenticated/expenses/categories'
     | '/_authenticated/expenses/list'
@@ -940,6 +939,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/sales/edit/$id'
     | '/_authenticated/transfers/damaged/new'
+    | '/_authenticated/crm/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1423,11 +1423,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmployeesNewRouteImport
       parentRoute: typeof AuthenticatedEmployeesRoute
     }
-    '/_authenticated/crm/$id': {
-      id: '/_authenticated/crm/$id'
+    '/_authenticated/crm/$id/': {
+      id: '/_authenticated/crm/$id/'
       path: '/crm/$id'
-      fullPath: '/crm/$id'
-      preLoaderRoute: typeof AuthenticatedCrmIdRouteImport
+      fullPath: '/crm/$id/'
+      preLoaderRoute: typeof AuthenticatedCrmIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/transfers/damaged/new': {
@@ -1460,10 +1460,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/crm/$id/ledger': {
       id: '/_authenticated/crm/$id/ledger'
-      path: '/ledger'
+      path: '/crm/$id/ledger'
       fullPath: '/crm/$id/ledger'
       preLoaderRoute: typeof AuthenticatedCrmIdLedgerRouteImport
-      parentRoute: typeof AuthenticatedCrmIdRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
@@ -1559,17 +1559,6 @@ const AuthenticatedReportsRouteChildren: AuthenticatedReportsRouteChildren = {
 const AuthenticatedReportsRouteWithChildren =
   AuthenticatedReportsRoute._addFileChildren(AuthenticatedReportsRouteChildren)
 
-interface AuthenticatedCrmIdRouteChildren {
-  AuthenticatedCrmIdLedgerRoute: typeof AuthenticatedCrmIdLedgerRoute
-}
-
-const AuthenticatedCrmIdRouteChildren: AuthenticatedCrmIdRouteChildren = {
-  AuthenticatedCrmIdLedgerRoute: AuthenticatedCrmIdLedgerRoute,
-}
-
-const AuthenticatedCrmIdRouteWithChildren =
-  AuthenticatedCrmIdRoute._addFileChildren(AuthenticatedCrmIdRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountingRoute: typeof AuthenticatedAccountingRoute
   AuthenticatedAiInsightsRoute: typeof AuthenticatedAiInsightsRoute
@@ -1590,7 +1579,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRecipesRoute: typeof AuthenticatedRecipesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
-  AuthenticatedCrmIdRoute: typeof AuthenticatedCrmIdRouteWithChildren
   AuthenticatedProductsCategoriesRoute: typeof AuthenticatedProductsCategoriesRoute
   AuthenticatedProductsNewRoute: typeof AuthenticatedProductsNewRoute
   AuthenticatedProductsSellingPriceGroupsRoute: typeof AuthenticatedProductsSellingPriceGroupsRoute
@@ -1612,9 +1600,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
   AuthenticatedTransfersIndexRoute: typeof AuthenticatedTransfersIndexRoute
+  AuthenticatedCrmIdLedgerRoute: typeof AuthenticatedCrmIdLedgerRoute
   AuthenticatedProductsEditIdRoute: typeof AuthenticatedProductsEditIdRoute
   AuthenticatedSalesEditIdRoute: typeof AuthenticatedSalesEditIdRoute
   AuthenticatedTransfersDamagedNewRoute: typeof AuthenticatedTransfersDamagedNewRoute
+  AuthenticatedCrmIdIndexRoute: typeof AuthenticatedCrmIdIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1637,7 +1627,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRecipesRoute: AuthenticatedRecipesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
-  AuthenticatedCrmIdRoute: AuthenticatedCrmIdRouteWithChildren,
   AuthenticatedProductsCategoriesRoute: AuthenticatedProductsCategoriesRoute,
   AuthenticatedProductsNewRoute: AuthenticatedProductsNewRoute,
   AuthenticatedProductsSellingPriceGroupsRoute:
@@ -1661,9 +1650,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   AuthenticatedTransfersIndexRoute: AuthenticatedTransfersIndexRoute,
+  AuthenticatedCrmIdLedgerRoute: AuthenticatedCrmIdLedgerRoute,
   AuthenticatedProductsEditIdRoute: AuthenticatedProductsEditIdRoute,
   AuthenticatedSalesEditIdRoute: AuthenticatedSalesEditIdRoute,
   AuthenticatedTransfersDamagedNewRoute: AuthenticatedTransfersDamagedNewRoute,
+  AuthenticatedCrmIdIndexRoute: AuthenticatedCrmIdIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
