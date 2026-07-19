@@ -124,6 +124,7 @@ export const defaultInvoiceSettings: InvoiceSettings = {
   showShipping: true,
   showGrandTotal: true,
   showPaid: true,
+  showPreviousDue: true,
   showDue: true,
   labelSubtotal: "Subtotal",
   labelTax: "VAT",
