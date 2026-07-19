@@ -1233,6 +1233,25 @@ function PosPage() {
 
 /* ---------------- Sub-components ---------------- */
 
+function DrawerBtn({
+  onClick, icon, label, disabled, danger,
+}: { onClick: () => void; icon: React.ReactNode; label: string; disabled?: boolean; danger?: boolean }) {
+  return (
+    <button
+      type="button" onClick={onClick} disabled={disabled}
+      className={`h-14 rounded-md border text-xs font-semibold inline-flex flex-col items-center justify-center gap-1 disabled:opacity-40 ${
+        danger
+          ? "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
+          : "border-border bg-background hover:bg-accent"
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+
 function ProductSearchBox({
   inputRef, query, setQuery, products, onPick,
 }: {
