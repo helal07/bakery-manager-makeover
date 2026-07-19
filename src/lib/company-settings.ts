@@ -73,6 +73,8 @@ export type InvoiceSettings = {
   labelDue: string;
   currencySymbol: string;
   decimals: number;
+  dateFormat: DateFormat;
+
 
   // Footer
   footerNote: string;
