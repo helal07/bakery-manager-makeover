@@ -442,6 +442,7 @@ function PosPage() {
         return {
           sale_id: sale.id, product_id: p.id, product_name: p.name, product_sku: p.sku,
           qty, unit_price: up, line_total: +(up * qty).toFixed(2),
+          discount_amount: 0,
         };
       });
       await sb.from("sale_items").insert(lines);
