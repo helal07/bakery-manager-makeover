@@ -942,7 +942,7 @@ function PosPage() {
           </div>
 
           {/* ============ FOOTER ACTIONS (inside 60% cart column) ============ */}
-          <footer className="shrink-0 border-t border-border bg-card px-2 py-1.5 grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+          <footer className="shrink-0 border-t border-border bg-card px-1.5 py-1 grid grid-cols-3 sm:grid-cols-6 gap-1">
             {/* Row 1 on mobile: Cancel | Multiple Pay | Cash (primary actions per Ultimate POS) */}
             <ActBtn tone="danger" onClick={clearCart} icon={<CircleX className="size-4" />} label="Cancel" />
             <ActBtn tone="dark" active={mode === "multi"} onClick={() => { setMode("multi"); openMultiPay(); }} icon={<DollarSign className="size-4" />} label="Multiple Pay" />
@@ -1357,25 +1357,25 @@ function TabPill({ active, onClick, icon, label, count }: { active: boolean; onC
 
 function Stat({ label, value, big, withInfo }: { label: string; value: string; big?: boolean; withInfo?: boolean }) {
   return (
-    <div className={`px-3 py-3 border-r border-border last:border-r-0 ${big ? "bg-[color:var(--success)]/15" : "bg-slate-50 dark:bg-slate-900/40"}`}>
-      <div className="text-[10px] font-extrabold tracking-widest text-slate-600 dark:text-slate-300 uppercase inline-flex items-center gap-1 justify-center">
+    <div className={`px-2 py-1 border-r border-border last:border-r-0 ${big ? "bg-[color:var(--success)]/15" : "bg-slate-50 dark:bg-slate-900/40"}`}>
+      <div className="text-[9px] font-extrabold tracking-widest text-slate-600 dark:text-slate-300 uppercase inline-flex items-center gap-1 justify-center leading-tight">
         {label}{withInfo && <Info className="size-3 text-sky-500" />}
       </div>
-      <div className={`mt-1 tabular-nums font-extrabold ${big ? "text-2xl text-[color:var(--success)]" : "text-lg text-slate-900 dark:text-slate-50"}`}>{value}</div>
+      <div className={`tabular-nums font-extrabold leading-tight ${big ? "text-base text-[color:var(--success)]" : "text-sm text-slate-900 dark:text-slate-50"}`}>{value}</div>
     </div>
   );
 }
 
 function StatInput({ label, value, onChange, tone }: { label: string; value: number; onChange: (n: number) => void; tone?: "danger" }) {
   return (
-    <div className="px-2 py-2 border-r border-border last:border-r-0 bg-slate-50 dark:bg-slate-900/40">
-      <div className={`text-[10px] font-extrabold tracking-widest uppercase text-center ${tone === "danger" ? "text-destructive" : "text-slate-600 dark:text-slate-300"}`}>{label}</div>
+    <div className="px-1.5 py-1 border-r border-border last:border-r-0 bg-slate-50 dark:bg-slate-900/40">
+      <div className={`text-[9px] font-extrabold tracking-widest uppercase text-center leading-tight ${tone === "danger" ? "text-destructive" : "text-slate-600 dark:text-slate-300"}`}>{label}</div>
       <input
         type="number" min={0} step="0.01"
         value={value || ""}
         onChange={(e) => onChange(Math.max(0, +e.target.value || 0))}
         placeholder="0.00"
-        className="mt-1 w-full h-8 px-1 rounded-md border border-border bg-background text-center text-sm font-extrabold tabular-nums outline-none focus:border-primary"
+        className="mt-0.5 w-full h-6 px-1 rounded-md border border-border bg-background text-center text-xs font-extrabold tabular-nums outline-none focus:border-primary"
       />
     </div>
   );
@@ -1394,7 +1394,7 @@ function ActBtn({ onClick, icon, label, tone, active, disabled }: { onClick?: ()
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`h-11 px-2 rounded-md text-xs font-bold inline-flex items-center justify-center gap-1.5 disabled:opacity-50 ${base[tone]}`}
+      className={`h-8 px-1.5 rounded-md text-[11px] font-bold inline-flex items-center justify-center gap-1 disabled:opacity-50 ${base[tone]}`}
     >
       {icon}<span className="truncate">{label}</span>
     </button>
