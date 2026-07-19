@@ -1,9 +1,11 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { ArrowLeft, Mail, Phone, MapPin, Star } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Star, BookOpen, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { ReceivePaymentDialog } from "@/components/receive-payment-dialog";
 
 const sb = supabase as any;
 
