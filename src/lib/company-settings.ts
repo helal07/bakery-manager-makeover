@@ -28,6 +28,28 @@ export const defaultCompany: CompanySettings = {
 
 export type HeaderStyle = "gradient" | "solid" | "minimal" | "bordered";
 export type PaperSize = "58mm" | "80mm" | "A4";
+export type DateFormat = "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD" | "DD MMM YYYY" | "DD/MM/YYYY HH:mm" | "MM/DD/YYYY HH:mm";
+
+export function formatInvoiceDate(iso: string, fmt: DateFormat): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const DD = pad(d.getDate());
+  const MM = pad(d.getMonth() + 1);
+  const YYYY = String(d.getFullYear());
+  const MMM = d.toLocaleString("en", { month: "short" });
+  const HH = pad(d.getHours());
+  const mm = pad(d.getMinutes());
+  switch (fmt) {
+    case "DD/MM/YYYY": return `${DD}/${MM}/${YYYY}`;
+    case "MM/DD/YYYY": return `${MM}/${DD}/${YYYY}`;
+    case "YYYY-MM-DD": return `${YYYY}-${MM}-${DD}`;
+    case "DD MMM YYYY": return `${DD} ${MMM} ${YYYY}`;
+    case "DD/MM/YYYY HH:mm": return `${DD}/${MM}/${YYYY} ${HH}:${mm}`;
+    case "MM/DD/YYYY HH:mm": return `${MM}/${DD}/${YYYY} ${HH}:${mm}`;
+    default: return d.toLocaleString();
+  }
+}
 
 export type InvoiceSettings = {
   // Header
