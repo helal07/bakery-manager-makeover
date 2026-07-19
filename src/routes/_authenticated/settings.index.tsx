@@ -85,6 +85,21 @@ function SettingsPage() {
       toast.error((e as Error).message);
     }
   };
+
+  const [invoice, setInvoice] = useState<InvoiceSettings>(defaultInvoiceSettings);
+  const [invoicePaper, setInvoicePaper] = useState<PaperSize>("A4");
+  useEffect(() => { getInvoiceSettings().then((v) => { setInvoice(v); setInvoicePaper(v.defaultPaper); }).catch(() => {}); }, []);
+  const patchInvoice = (patch: Partial<InvoiceSettings>) => setInvoice((prev) => ({ ...prev, ...patch }));
+  const saveInvoiceAll = async () => {
+    try {
+      await saveInvoiceSettings(invoice);
+      window.dispatchEvent(new Event("company-settings-updated"));
+      toast.success("Invoice settings saved");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+  const resetInvoice = () => setInvoice(defaultInvoiceSettings);
   const saveSoft = (patch: Partial<SoftwarePrefs>) => {
     const next = { ...software, ...patch };
     setSoftware(next);
