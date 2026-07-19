@@ -1997,46 +1997,55 @@ export type Database = {
           code: string | null
           created_at: string
           created_by: string | null
-          from_showroom_id: string | null
+          dest_showroom_id: string | null
           id: string
+          kind: string | null
           note: string | null
+          received_at: string | null
+          sent_at: string | null
+          source_showroom_id: string | null
           status: string
-          to_showroom_id: string | null
           updated_at: string
         }
         Insert: {
           code?: string | null
           created_at?: string
           created_by?: string | null
-          from_showroom_id?: string | null
+          dest_showroom_id?: string | null
           id?: string
+          kind?: string | null
           note?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          source_showroom_id?: string | null
           status?: string
-          to_showroom_id?: string | null
           updated_at?: string
         }
         Update: {
           code?: string | null
           created_at?: string
           created_by?: string | null
-          from_showroom_id?: string | null
+          dest_showroom_id?: string | null
           id?: string
+          kind?: string | null
           note?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          source_showroom_id?: string | null
           status?: string
-          to_showroom_id?: string | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "transfers_from_showroom_id_fkey"
-            columns: ["from_showroom_id"]
+            columns: ["source_showroom_id"]
             isOneToOne: false
             referencedRelation: "showrooms"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "transfers_to_showroom_id_fkey"
-            columns: ["to_showroom_id"]
+            columns: ["dest_showroom_id"]
             isOneToOne: false
             referencedRelation: "showrooms"
             referencedColumns: ["id"]
