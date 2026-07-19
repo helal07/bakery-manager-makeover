@@ -5,7 +5,9 @@ import { Share2, Printer } from "lucide-react";
 import {
   getCompany, defaultCompany, type CompanySettings,
   getInvoiceSettings, defaultInvoiceSettings, type InvoiceSettings, type PaperSize,
+  getCachedCompany, getCachedInvoiceSettings,
 } from "@/lib/company-settings";
+
 import { InvoicePreview, type InvoiceSnapshot } from "@/components/invoice-preview";
 import { supabase } from "@/integrations/supabase/client";
 
