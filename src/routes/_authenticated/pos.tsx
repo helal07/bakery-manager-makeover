@@ -507,19 +507,84 @@ function PosPage() {
   async function complete() {
     if (items.length === 0) { toast.error("Cart is empty"); return; }
     if (saving) return;
-    if (mode === "credit" && isWalkIn) {
-      toast.error("Please select a customer for credit sale");
-      return;
-    }
-    if (mode === "multi" && multiPaid <= 0) {
-      toast.error("Enter tender amounts for multiple pay");
-      return;
-    }
-    if (mode === "multi" && due > 0 && isWalkIn) {
-      toast.error("Select a customer to leave a balance due");
-      return;
+    if (!editingSaleId) {
+      if (mode === "credit" && isWalkIn) {
+        toast.error("Please select a customer for credit sale");
+        return;
+      }
+      if (mode === "multi" && multiPaid <= 0) {
+        toast.error("Enter tender amounts for multiple pay");
+        return;
+      }
+      if (mode === "multi" && due > 0 && isWalkIn) {
+        toast.error("Select a customer to leave a balance due");
+        return;
+      }
     }
     setSaving(true);
+
+    // ============ EDIT MODE ============
+    if (editingSaleId) {
+      try {
+        // 1. Stock delta: reverse old, apply new (positive = returned to stock)
+        const oldMap = new Map<string, number>();
+        for (const l of editOriginalItems) oldMap.set(l.product_id, (oldMap.get(l.product_id) || 0) + l.qty);
+        const newMap = new Map<string, number>();
+        for (const { p, qty } of items) newMap.set(p.id, (newMap.get(p.id) || 0) + qty);
+        const pids = new Set<string>([...oldMap.keys(), ...newMap.keys()]);
+        const ops: Promise<any>[] = [];
+        for (const pid of pids) {
+          const delta = (oldMap.get(pid) || 0) - (newMap.get(pid) || 0);
+          if (delta !== 0) {
+            ops.push(sb.rpc("commit_stock_movement", {
+              _product_id: pid, _showroom_id: editShowroomId, _qty: delta,
+              _kind: "sale_edit", _ref_type: "sale", _ref_id: editingSaleId, _note: "POS edit",
+            }));
+          }
+        }
+        const results = await Promise.all(ops);
+        for (const r of results) if ((r as any)?.error) throw new Error((r as any).error.message);
+
+        // 2. Replace sale_items
+        const { error: delErr } = await sb.from("sale_items").delete().eq("sale_id", editingSaleId);
+        if (delErr) throw delErr;
+        const newLines = items.map(({ p, qty }) => {
+          const up = priceFor(p);
+          return {
+            sale_id: editingSaleId, product_id: p.id, product_name: p.name, product_sku: p.sku,
+            qty, unit_price: up, line_total: +(up * qty).toFixed(2),
+          };
+        });
+        const { error: insErr } = await sb.from("sale_items").insert(newLines);
+        if (insErr) throw insErr;
+
+        // 3. Update sale header (preserve original paid; recompute due)
+        const newDue = +Math.max(0, total - editOriginalPaid).toFixed(2);
+        const { error: upErr } = await sb.from("sales").update({
+          customer_id: customerId,
+          customer_name: customerName.trim() || "Walk-in Customer",
+          customer_phone: customerPhone.trim() || null,
+          subtotal, discount, tax: 0, shipping, total,
+          paid: editOriginalPaid, due: newDue,
+        }).eq("id", editingSaleId);
+        if (upErr) throw upErr;
+
+        invalidate("pos:products:");
+        toast.success(`Sale ${editingRef ?? ""} updated · ৳${total.toFixed(2)}`);
+        clearCart();
+        setDiscount(0);
+        setShipping(0);
+        resetCustomer();
+        exitEditMode();
+        navigate({ to: "/sales/list" });
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to update sale");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const externalRef = `TX-${Math.floor(Math.random() * 9000) + 1000}`;
     try {
       const { data: userRes } = await supabase.auth.getUser();
