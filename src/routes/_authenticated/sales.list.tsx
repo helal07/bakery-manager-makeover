@@ -188,7 +188,7 @@ function SaleList() {
                         <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
                         <div className="absolute left-4 top-9 z-20 w-48 rounded-md border border-border bg-popover shadow-lg py-1 text-sm text-left">
                           <MenuItem icon={Eye} label="View" onClick={() => runAction("View", r)} />
-                          <MenuItem icon={Pencil} label="Edit" onClick={() => { setOpenMenu(null); navigate({ to: "/sales/edit/$id", params: { id: r.id } }); }} />
+                          <MenuItem icon={Pencil} label="Edit" onClick={() => { setOpenMenu(null); navigate({ to: "/pos", search: { edit: r.id } }); }} />
                           <MenuItem icon={CreditCard} label="Payment" disabled={r.status === "Paid"} onClick={() => runAction("Payment", r)} />
                           <MenuItem icon={FileText} label="Invoice" onClick={() => runAction("Invoice", r)} />
                           <MenuItem icon={Undo2} label="Return sale" onClick={() => runAction("Return sale", r)} />
