@@ -860,7 +860,7 @@ function PosPage() {
               </select>
             </div>
 
-            <div className="relative hidden sm:block">
+            <div className="relative">
               <Calendar className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <input
                 type="date"
