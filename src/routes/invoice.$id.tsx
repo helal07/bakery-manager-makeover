@@ -125,7 +125,9 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
       const { data, error } = await sb.rpc("get_invoice_bundle", { _sale_id: id });
       if (!error && data) {
         const snap = buildSnapshotFromBundle(data, settings);
-        if (snap) return snap;
+        // Only trust RPC if it returned items; otherwise fall back to legacy
+        // path (older backends without the RPC may return an empty items array).
+        if (snap && snap.items.length > 0) return snap;
       }
     } catch { /* fall through to legacy path */ }
   }
