@@ -427,6 +427,7 @@ function PosPage() {
           showroom_id: loc,
           cashier_id: userRes.user?.id ?? null,
           register_id: register?.id ?? null,
+          customer_id: customerId,
           customer_name: customerName.trim() || "Walk-in Customer",
           customer_phone: customerPhone.trim() || null,
           subtotal, discount, tax: 0, shipping, total, paid, due,
