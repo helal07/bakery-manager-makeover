@@ -1,9 +1,11 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { ArrowLeft, Mail, Phone, MapPin, Star } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Star, BookOpen, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { ReceivePaymentDialog } from "@/components/receive-payment-dialog";
 
 const sb = supabase as any;
 
@@ -64,13 +66,14 @@ function fmt(n: number) {
 function CustomerDetail() {
   const { id } = Route.useParams();
   const router = useRouter();
+  const navigate = useNavigate();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [payOpen, setPayOpen] = useState(false);
 
-  useEffect(() => {
-    (async () => {
+  const doLoad = async () => {
       try {
         const cRes = await sb
           .from("customers")
@@ -128,8 +131,9 @@ function CustomerDetail() {
       } finally {
         setLoading(false);
       }
-    })();
-  }, [id]);
+    };
+
+  useEffect(() => { doLoad(); }, [id]);
 
   const { ledger, lifetimeSpend, totalPaid, outstanding, orderCount, avgOrder } = useMemo(() => {
     const events: { date: string; kind: "Sale" | "Payment"; charge: number; paid: number; ref: string; refId?: string }[] = [];
@@ -182,12 +186,20 @@ function CustomerDetail() {
       title={customer?.name ?? "Customer"}
       subtitle="Purchase history · payments · outstanding balance"
       actions={
-        <button
-          onClick={() => router.history.back()}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted"
-        >
-          <ArrowLeft className="size-4" /> Back
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.history.back()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted"
+          >
+            <ArrowLeft className="size-4" /> Back
+          </button>
+          <Button size="sm" variant="outline" onClick={() => navigate({ to: "/crm/$id/ledger", params: { id } })}>
+            <BookOpen className="size-4 mr-1" /> Full Ledger
+          </Button>
+          <Button size="sm" onClick={() => setPayOpen(true)} disabled={!customer}>
+            <Wallet className="size-4 mr-1" /> Receive Payment
+          </Button>
+        </div>
       }
     >
       {loading && <Card className="p-6 text-sm text-muted-foreground">Loading…</Card>}
@@ -309,6 +321,16 @@ function CustomerDetail() {
             </Card>
           </div>
         </>
+      )}
+      {customer && (
+        <ReceivePaymentDialog
+          open={payOpen}
+          onOpenChange={setPayOpen}
+          customerId={customer.id}
+          customerName={customer.name}
+          customerPhone={customer.phone}
+          onSaved={doLoad}
+        />
       )}
     </AppShell>
   );

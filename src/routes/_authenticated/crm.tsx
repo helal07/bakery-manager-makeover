@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { UserPlus, Star, Search, MoreHorizontal, Eye, Pencil, Trash2, BookOpen, Users } from "lucide-react";
+import { UserPlus, Star, Search, MoreHorizontal, Eye, Pencil, Trash2, BookOpen, Users, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImage } from "@/lib/storage";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { pageTitle } from "@/lib/company-settings";
+import { ReceivePaymentDialog } from "@/components/receive-payment-dialog";
 
 const sb = supabase as any;
 
@@ -68,6 +69,7 @@ function CRM() {
   const [assignFor, setAssignFor] = useState<Customer | null>(null);
   const [assignGroupId, setAssignGroupId] = useState<string>("");
   const [deleteFor, setDeleteFor] = useState<Customer | null>(null);
+  const [payFor, setPayFor] = useState<Customer | null>(null);
 
   const refresh = async () => {
     try {
@@ -344,8 +346,11 @@ function CRM() {
                       <DropdownMenuItem onClick={() => navigate({ to: "/crm/$id", params: { id: c.id } })}>
                         <Eye className="size-4 mr-2" /> View
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate({ to: "/crm/$id", params: { id: c.id } })}>
+                      <DropdownMenuItem onClick={() => navigate({ to: "/crm/$id/ledger", params: { id: c.id } })}>
                         <BookOpen className="size-4 mr-2" /> Ledger
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setPayFor(c)}>
+                        <Wallet className="size-4 mr-2" /> Receive Payment
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => startEdit(c)}>
                         <Pencil className="size-4 mr-2" /> Edit
@@ -486,6 +491,17 @@ function CRM() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {payFor && (
+        <ReceivePaymentDialog
+          open={!!payFor}
+          onOpenChange={(o) => !o && setPayFor(null)}
+          customerId={payFor.id}
+          customerName={payFor.name}
+          customerPhone={payFor.phone}
+          onSaved={refresh}
+        />
+      )}
     </AppShell>
   );
 }
