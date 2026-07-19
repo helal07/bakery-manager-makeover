@@ -871,17 +871,8 @@ function PosPage() {
                 {groups.map((g) => (<option key={g.id} value={g.id}>{g.name}</option>))}
               </select>
             </div>
-
-            <div className="relative">
-              <Calendar className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              <input
-                type="date"
-                value={invoiceDate}
-                onChange={(e) => setInvoiceDate(e.target.value)}
-                className="w-full h-9 pl-8 pr-2 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
-              />
-            </div>
           </div>
+
 
 
           {/* Product search inside 60% split */}
