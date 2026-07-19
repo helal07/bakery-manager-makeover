@@ -708,6 +708,8 @@ function PosPage() {
   const discountTotal = 0;
   const shippingTotal = 0;
   const [rightTab, setRightTab] = useState<"category" | "brands" | "featured">("category");
+  const [mobileTab, setMobileTab] = useState<"products" | "cart">("products");
+  const itemCount = items.reduce((s, x) => s + x.qty, 0);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
