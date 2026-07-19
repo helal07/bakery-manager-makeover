@@ -758,8 +758,10 @@ function PosPage() {
 
         <div className="ml-auto flex items-center gap-1">
           <RegisterPill register={register} onOpen={() => setRegisterOpen(true)} onClose={() => setCloseRegOpen(true)} />
-          <IconBtn title="Refresh" onClick={() => { invalidate("pos:"); location.reload(); }}><RotateCcw className="size-4" /></IconBtn>
-          <IconBtn title="Hold (F7)" onClick={() => items.length && void handleHold()} disabled={items.length === 0}><Pause className="size-4" /></IconBtn>
+          <div className="hidden sm:flex items-center gap-1">
+            <IconBtn title="Refresh" onClick={() => { invalidate("pos:"); location.reload(); }}><RotateCcw className="size-4" /></IconBtn>
+            <IconBtn title="Hold (F7)" onClick={() => items.length && void handleHold()} disabled={items.length === 0}><Pause className="size-4" /></IconBtn>
+          </div>
           <IconBtn title="Recall held (F8)" onClick={() => setRecallOpen(true)}>
             <Briefcase className="size-4" />
             {held.length > 0 && (
@@ -767,8 +769,10 @@ function PosPage() {
             )}
           </IconBtn>
           <IconBtn title="Cancel sale (Esc)" onClick={clearCart} tone="danger"><CircleX className="size-4" /></IconBtn>
-          <IconBtn title="Fullscreen" onClick={toggleFullscreen}><Maximize2 className="size-4" /></IconBtn>
-          <ShortcutsBadge />
+          <div className="hidden sm:flex items-center gap-1">
+            <IconBtn title="Fullscreen" onClick={toggleFullscreen}><Maximize2 className="size-4" /></IconBtn>
+            <ShortcutsBadge />
+          </div>
         </div>
       </header>
 
