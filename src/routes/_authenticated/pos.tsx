@@ -708,6 +708,8 @@ function PosPage() {
   const discountTotal = 0;
   const shippingTotal = 0;
   const [rightTab, setRightTab] = useState<"category" | "brands" | "featured">("category");
+  const [mobileTab, setMobileTab] = useState<"products" | "cart">("products");
+  const itemCount = items.reduce((s, x) => s + x.qty, 0);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
@@ -756,8 +758,10 @@ function PosPage() {
 
         <div className="ml-auto flex items-center gap-1">
           <RegisterPill register={register} onOpen={() => setRegisterOpen(true)} onClose={() => setCloseRegOpen(true)} />
-          <IconBtn title="Refresh" onClick={() => { invalidate("pos:"); location.reload(); }}><RotateCcw className="size-4" /></IconBtn>
-          <IconBtn title="Hold (F7)" onClick={() => items.length && void handleHold()} disabled={items.length === 0}><Pause className="size-4" /></IconBtn>
+          <div className="hidden sm:flex items-center gap-1">
+            <IconBtn title="Refresh" onClick={() => { invalidate("pos:"); location.reload(); }}><RotateCcw className="size-4" /></IconBtn>
+            <IconBtn title="Hold (F7)" onClick={() => items.length && void handleHold()} disabled={items.length === 0}><Pause className="size-4" /></IconBtn>
+          </div>
           <IconBtn title="Recall held (F8)" onClick={() => setRecallOpen(true)}>
             <Briefcase className="size-4" />
             {held.length > 0 && (
@@ -765,15 +769,17 @@ function PosPage() {
             )}
           </IconBtn>
           <IconBtn title="Cancel sale (Esc)" onClick={clearCart} tone="danger"><CircleX className="size-4" /></IconBtn>
-          <IconBtn title="Fullscreen" onClick={toggleFullscreen}><Maximize2 className="size-4" /></IconBtn>
-          <ShortcutsBadge />
+          <div className="hidden sm:flex items-center gap-1">
+            <IconBtn title="Fullscreen" onClick={toggleFullscreen}><Maximize2 className="size-4" /></IconBtn>
+            <ShortcutsBadge />
+          </div>
         </div>
       </header>
 
       {/* ============ MAIN ============ */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] overflow-hidden pb-12 lg:pb-0">
         {/* Cart column (60%) */}
-        <section className="flex flex-col overflow-hidden bg-card border-r border-border">
+        <section className={`${mobileTab === "cart" ? "flex" : "hidden"} lg:flex flex-col overflow-hidden bg-card border-r border-border`}>
           {/* Toolbar inside 60% split: Customer | Price Group | Invoice Date */}
           <div className="shrink-0 border-b border-border px-2 py-1.5 grid grid-cols-1 sm:grid-cols-3 gap-1.5">
             <div className="flex gap-1.5">
@@ -960,7 +966,7 @@ function PosPage() {
 
 
         {/* Right panel: category + product grid */}
-        <aside className="overflow-y-auto p-2 bg-[oklch(0.97_0.005_240)] dark:bg-background">
+        <aside className={`${mobileTab === "products" ? "block" : "hidden"} lg:block overflow-y-auto p-2 bg-[oklch(0.97_0.005_240)] dark:bg-background`}>
           <div className="grid grid-cols-2 gap-1.5 mb-2">
             <button onClick={() => setRightTab("category")} className={`h-9 rounded-md border text-xs font-semibold inline-flex items-center justify-center gap-2 ${rightTab === "category" ? "bg-primary/10 border-primary text-primary" : "bg-card border-border hover:bg-accent"}`}>
               Category <span className="text-[10px] font-bold opacity-70">({categories.length})</span>
@@ -1078,11 +1084,30 @@ function PosPage() {
       {/* Floating: Recent Transactions */}
       <button
         onClick={() => { setRecentOpen(true); void loadRecentSales(); }}
-        className="fixed bottom-4 right-4 z-[70] h-11 px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg hover:opacity-90 inline-flex items-center gap-2"
+        className="fixed bottom-16 right-3 lg:bottom-4 lg:right-4 z-[70] h-10 w-10 lg:h-11 lg:w-auto lg:px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg hover:opacity-90 inline-flex items-center justify-center gap-2"
         title="Today's recent sales"
       >
-        <History className="size-4" /> Recent Transactions
+        <History className="size-4" /> <span className="hidden lg:inline">Recent Transactions</span>
       </button>
+
+      {/* Mobile bottom tab switcher */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[65] h-12 bg-card border-t border-border grid grid-cols-2">
+        <button
+          onClick={() => setMobileTab("products")}
+          className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${mobileTab === "products" ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
+        >
+          <ScanBarcode className="size-4" /> Products
+        </button>
+        <button
+          onClick={() => setMobileTab("cart")}
+          className={`relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${mobileTab === "cart" ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
+        >
+          <Receipt className="size-4" /> Cart ৳{total.toFixed(0)}
+          {itemCount > 0 && (
+            <span className="absolute top-1 right-6 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">{itemCount}</span>
+          )}
+        </button>
+      </nav>
 
       {recentOpen && (
         <div className="fixed inset-0 z-[80] bg-black/50 flex justify-end" onClick={() => setRecentOpen(false)}>
