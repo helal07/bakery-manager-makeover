@@ -4,7 +4,7 @@ import {
   ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart,
   X, Keyboard, ArrowLeft, User, UserPlus, Users, Pause, PlayCircle, DollarSign,
   Lock, Unlock, Receipt, Calendar, Calculator, Maximize2, Briefcase,
-  CircleX, RotateCcw, CreditCard, FileText, History, Info, Pencil,
+  CircleX, RotateCcw, CreditCard, FileText, History, Info, Pencil, Menu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,6 +90,7 @@ function PosPage() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [closeRegOpen, setCloseRegOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [recentSales, setRecentSales] = useState<Array<{ id: string; external_ref: string | null; total: number; paid: number; due: number; created_at: string; customer_name: string | null }>>([]);
   const [recentLoading, setRecentLoading] = useState(false);
 
@@ -757,24 +758,37 @@ function PosPage() {
         )}
 
         <div className="ml-auto flex items-center gap-1">
-          <RegisterPill register={register} onOpen={() => setRegisterOpen(true)} onClose={() => setCloseRegOpen(true)} />
           <div className="hidden sm:flex items-center gap-1">
+            <RegisterPill register={register} onOpen={() => setRegisterOpen(true)} onClose={() => setCloseRegOpen(true)} />
             <IconBtn title="Refresh" onClick={() => { invalidate("pos:"); location.reload(); }}><RotateCcw className="size-4" /></IconBtn>
             <IconBtn title="Hold (F7)" onClick={() => items.length && void handleHold()} disabled={items.length === 0}><Pause className="size-4" /></IconBtn>
-          </div>
-          <IconBtn title="Recall held (F8)" onClick={() => setRecallOpen(true)}>
-            <Briefcase className="size-4" />
-            {held.length > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">{held.length}</span>
-            )}
-          </IconBtn>
-          <IconBtn title="Cancel sale (Esc)" onClick={clearCart} tone="danger"><CircleX className="size-4" /></IconBtn>
-          <div className="hidden sm:flex items-center gap-1">
+            <IconBtn title="Recall held (F8)" onClick={() => setRecallOpen(true)}>
+              <Briefcase className="size-4" />
+              {held.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">{held.length}</span>
+              )}
+            </IconBtn>
+            <IconBtn title="Cancel sale (Esc)" onClick={clearCart} tone="danger"><CircleX className="size-4" /></IconBtn>
             <IconBtn title="Fullscreen" onClick={toggleFullscreen}><Maximize2 className="size-4" /></IconBtn>
             <ShortcutsBadge />
           </div>
+          {/* Mobile hamburger — parks secondary actions in a breadcrumb drawer */}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            className="sm:hidden relative h-8 w-8 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
+            title="More"
+          >
+            <Menu className="size-4" />
+            {(held.length > 0 || items.length > 0) && (
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">
+                {held.length + (items.length > 0 ? 1 : 0)}
+              </span>
+            )}
+          </button>
         </div>
       </header>
+
 
       {/* ============ MAIN ============ */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] overflow-hidden pb-12 lg:pb-0">
@@ -846,7 +860,7 @@ function PosPage() {
               </select>
             </div>
 
-            <div className="relative">
+            <div className="relative hidden sm:block">
               <Calendar className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <input
                 type="date"
@@ -856,6 +870,7 @@ function PosPage() {
               />
             </div>
           </div>
+
 
           {/* Product search inside 60% split */}
           <div className="shrink-0 border-b border-border px-2 py-1.5">
@@ -1084,11 +1099,12 @@ function PosPage() {
       {/* Floating: Recent Transactions */}
       <button
         onClick={() => { setRecentOpen(true); void loadRecentSales(); }}
-        className="fixed bottom-16 right-3 lg:bottom-4 lg:right-4 z-[70] h-10 w-10 lg:h-11 lg:w-auto lg:px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg hover:opacity-90 inline-flex items-center justify-center gap-2"
+        className="hidden lg:inline-flex fixed bottom-4 right-4 z-[70] h-11 px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg hover:opacity-90 items-center justify-center gap-2"
         title="Today's recent sales"
       >
-        <History className="size-4" /> <span className="hidden lg:inline">Recent Transactions</span>
+        <History className="size-4" /> <span>Recent Transactions</span>
       </button>
+
 
       {/* Mobile bottom tab switcher */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[65] h-12 bg-card border-t border-border grid grid-cols-2">
@@ -1170,11 +1186,71 @@ function PosPage() {
           </div>
         </div>
       )}
+
+      {/* Mobile More drawer — parks secondary menus like a breadcrumb */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-[85] bg-black/50 sm:hidden" onClick={() => setMoreOpen(false)}>
+          <div className="absolute right-0 top-0 bottom-0 w-72 max-w-[85vw] bg-card border-l border-border shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border">
+              <div className="text-sm font-semibold">More</div>
+              <button onClick={() => setMoreOpen(false)} className="p-1.5 rounded hover:bg-accent"><X className="size-4" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              <div>
+                <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1.5">Register</div>
+                <RegisterPill register={register} onOpen={() => { setMoreOpen(false); setRegisterOpen(true); }} onClose={() => { setMoreOpen(false); setCloseRegOpen(true); }} />
+              </div>
+              <div>
+                <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1.5">Invoice date</div>
+                <div className="relative">
+                  <Calendar className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="date" value={invoiceDate}
+                    onChange={(e) => setInvoiceDate(e.target.value)}
+                    className="w-full h-9 pl-8 pr-2 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <DrawerBtn onClick={() => { setMoreOpen(false); setRecentOpen(true); void loadRecentSales(); }} icon={<History className="size-4" />} label="Recent Sales" />
+                <DrawerBtn onClick={() => { setMoreOpen(false); setRecallOpen(true); }} icon={<Briefcase className="size-4" />} label={`Recall${held.length ? ` (${held.length})` : ""}`} />
+                <DrawerBtn onClick={() => { setMoreOpen(false); if (items.length) void handleHold(); }} disabled={items.length === 0} icon={<Pause className="size-4" />} label="Hold (F7)" />
+                <DrawerBtn onClick={() => { setMoreOpen(false); invalidate("pos:"); location.reload(); }} icon={<RotateCcw className="size-4" />} label="Refresh" />
+                <DrawerBtn onClick={() => { setMoreOpen(false); toggleFullscreen(); }} icon={<Maximize2 className="size-4" />} label="Fullscreen" />
+                <DrawerBtn onClick={() => { setMoreOpen(false); clearCart(); }} icon={<CircleX className="size-4" />} label="Cancel Sale" danger />
+              </div>
+              <div className="text-[10px] text-muted-foreground pt-2 border-t border-border">
+                Shortcuts: F2 Scan · F4 Search · F7 Hold · F8 Recall · F9 Complete · Esc Cancel
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
 
 /* ---------------- Sub-components ---------------- */
+
+function DrawerBtn({
+  onClick, icon, label, disabled, danger,
+}: { onClick: () => void; icon: React.ReactNode; label: string; disabled?: boolean; danger?: boolean }) {
+  return (
+    <button
+      type="button" onClick={onClick} disabled={disabled}
+      className={`h-14 rounded-md border text-xs font-semibold inline-flex flex-col items-center justify-center gap-1 disabled:opacity-40 ${
+        danger
+          ? "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
+          : "border-border bg-background hover:bg-accent"
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
 
 function ProductSearchBox({
   inputRef, query, setQuery, products, onPick,
