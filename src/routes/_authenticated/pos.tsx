@@ -538,6 +538,15 @@ function PosPage() {
 
         <LiveClock register={register} />
 
+        {customerId && customerDue > 0 && (
+          <div
+            className="hidden sm:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-[11px] font-bold leading-none"
+            title={`Outstanding due for ${customerName}`}
+          >
+            Customer Due: ৳{customerDue.toFixed(2)}
+          </div>
+        )}
+
         <div className="ml-auto flex items-center gap-1">
           <RegisterPill register={register} onOpen={() => setRegisterOpen(true)} onClose={() => setCloseRegOpen(true)} />
           <IconBtn title="Refresh" onClick={() => { invalidate("pos:"); location.reload(); }}><RotateCcw className="size-4" /></IconBtn>
