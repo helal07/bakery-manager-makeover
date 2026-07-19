@@ -943,12 +943,14 @@ function PosPage() {
 
           {/* ============ FOOTER ACTIONS (inside 60% cart column) ============ */}
           <footer className="shrink-0 border-t border-border bg-card px-2 py-1.5 grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+            {/* Row 1 on mobile: Cancel | Multiple Pay | Cash (primary actions per Ultimate POS) */}
             <ActBtn tone="danger" onClick={clearCart} icon={<CircleX className="size-4" />} label="Cancel" />
+            <ActBtn tone="dark" active={mode === "multi"} onClick={() => { setMode("multi"); openMultiPay(); }} icon={<DollarSign className="size-4" />} label="Multiple Pay" />
+            <ActBtn tone="success" onClick={() => { setMode("cash"); void complete(); }} disabled={!items.length || saving} icon={<DollarSign className="size-4" />} label={saving ? "Saving…" : `Cash ৳${total.toFixed(2)}`} />
+            {/* Row 2 on mobile: Quotation | Credit Sale | Card */}
             <ActBtn tone="muted" onClick={() => items.length && void handleHold()} icon={<FileText className="size-4" />} label="Quotation" />
             <ActBtn tone="warning" active={mode === "credit"} onClick={() => setMode("credit")} icon={<Check className="size-4" />} label="Credit Sale" />
             <ActBtn tone="info" active={mode === "card"} onClick={() => { setMode("card"); void complete(); }} icon={<CreditCard className="size-4" />} label="Card" />
-            <ActBtn tone="dark" active={mode === "multi"} onClick={() => { setMode("multi"); openMultiPay(); }} icon={<DollarSign className="size-4" />} label="Multiple Pay" />
-            <ActBtn tone="success" onClick={() => { setMode("cash"); void complete(); }} disabled={!items.length || saving} icon={<DollarSign className="size-4" />} label={saving ? "Saving…" : `Cash ৳${total.toFixed(2)}`} />
           </footer>
 
           {/* Payment mode helper strip */}
