@@ -377,7 +377,7 @@ function InvoiceBody({ p }: { p: Purchase }) {
     <div className="space-y-4 text-sm">
       <div className="flex items-start justify-between">
         <div>
-          <div className="text-lg font-semibold">Crumb & Co.</div>
+          <div className="text-lg font-semibold">{getCompanyName()}</div>
           <div className="text-xs text-muted-foreground">Purchase Invoice</div>
         </div>
         <div className="text-right">
