@@ -731,13 +731,13 @@ function PosPage() {
         </div>
       )}
       {/* ============ TOP BAR ============ */}
-      <header className="shrink-0 border-b border-border bg-card px-2 py-1.5 flex items-center gap-1.5 flex-wrap">
+      <header className="shrink-0 border-b border-border bg-card px-1.5 py-1 flex items-center gap-1">
         <IconBtn title="Exit POS" onClick={() => navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /></IconBtn>
         <select
           value={currentShowroomId ?? ""}
           onChange={(e) => setCurrentShowroomId(e.target.value || null)}
           title="Business Location"
-          className="h-8 max-w-[180px] rounded-md border border-primary/40 bg-background px-2 text-xs font-semibold outline-none focus:border-primary"
+          className="h-7 min-w-0 flex-1 sm:flex-none sm:max-w-[180px] rounded-md border border-primary/40 bg-background px-1.5 text-[11px] font-semibold outline-none focus:border-primary truncate"
         >
           {hasGlobalAccess && <option value="">All locations</option>}
           {showrooms.map((s) => (
@@ -746,18 +746,16 @@ function PosPage() {
           {showrooms.length === 0 && <option value="">No showroom</option>}
         </select>
 
-        <div className="relative">
-          <Calendar className="size-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <input
-            type="date"
-            value={invoiceDate}
-            onChange={(e) => setInvoiceDate(e.target.value)}
-            title="Invoice date"
-            className="h-8 pl-7 pr-1.5 rounded-md border border-border bg-background text-xs font-semibold outline-none focus:border-primary"
-          />
-        </div>
+        <input
+          type="date"
+          value={invoiceDate}
+          onChange={(e) => setInvoiceDate(e.target.value)}
+          title="Invoice date"
+          className="h-7 w-[112px] shrink-0 px-1.5 rounded-md border border-border bg-background text-[11px] font-semibold outline-none focus:border-primary"
+        />
 
-        <LiveClock register={register} />
+
+        <div className="hidden sm:block"><LiveClock register={register} /></div>
 
 
         {customerId && customerDue > 0 && (
@@ -788,7 +786,7 @@ function PosPage() {
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            className="sm:hidden relative h-8 w-8 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
+            className="sm:hidden relative h-7 w-7 shrink-0 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
             title="More"
           >
             <Menu className="size-4" />
