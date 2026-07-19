@@ -230,46 +230,57 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
 }
 
 
+function readLocalSnapshot(id: string): InvoiceSnapshot | null {
+  try {
+    const raw = localStorage.getItem(`invoice:${id}`) ?? sessionStorage.getItem(`invoice:${id}`);
+    return raw ? (JSON.parse(raw) as InvoiceSnapshot) : null;
+  } catch { return null; }
+}
+
 function InvoiceView() {
   const { id } = useParams({ from: "/invoice/$id" });
   const s = useSearch({ from: "/invoice/$id" });
 
-  const [stored, setStored] = useState<InvoiceSnapshot | null>(null);
-  const [company, setCompany] = useState<CompanySettings>(defaultCompany);
-  const [settings, setSettings] = useState<InvoiceSettings>(defaultInvoiceSettings);
-  const [paper, setPaper] = useState<PaperSize>("80mm");
-  const [ready, setReady] = useState(false);
+  // Seed synchronously from local caches so the first paint is instant.
+  const cachedCompany = getCachedCompany();
+  const cachedInvoice = getCachedInvoiceSettings();
+  const localSnap = typeof window !== "undefined" ? readLocalSnapshot(id) : null;
+
+  const [stored, setStored] = useState<InvoiceSnapshot | null>(localSnap);
+  const [company, setCompany] = useState<CompanySettings>(cachedCompany ?? defaultCompany);
+  const [settings, setSettings] = useState<InvoiceSettings>(cachedInvoice ?? defaultInvoiceSettings);
+  const [paper, setPaper] = useState<PaperSize>((cachedInvoice ?? defaultInvoiceSettings).defaultPaper);
+  // "Ready to print" the moment we have *anything* renderable (snapshot or query fallback).
+  const [ready, setReady] = useState<boolean>(Boolean(localSnap));
 
   useEffect(() => {
-    Promise.all([getCompany(), getInvoiceSettings()]).then(async ([c, inv]) => {
-      setCompany(c);
-      setSettings(inv);
-      setPaper(inv.defaultPaper);
-      // Prefer fresh DB data; fall back to local snapshot only if DB has nothing
-      let snap: InvoiceSnapshot | null = null;
+    // Reconcile settings + fresh DB data in the background — never blocks the paint.
+    let cancelled = false;
+    (async () => {
       try {
-        snap = await fetchSaleSnapshot(id, inv);
-      } catch { /* ignore */ }
-      if (!snap) {
-        try {
-          const raw = localStorage.getItem(`invoice:${id}`) ?? sessionStorage.getItem(`invoice:${id}`);
-          if (raw) snap = JSON.parse(raw) as InvoiceSnapshot;
-        } catch { /* ignore */ }
+        const [c, inv] = await Promise.all([getCompany(), getInvoiceSettings()]);
+        if (cancelled) return;
+        setCompany(c);
+        setSettings(inv);
+        if (!localSnap) setPaper(inv.defaultPaper);
+        const snap = await fetchSaleSnapshot(id, inv).catch(() => null);
+        if (cancelled) return;
+        if (snap) setStored(snap);
+      } finally {
+        if (!cancelled) setReady(true);
       }
-      if (snap) setStored(snap);
-      setReady(true);
-    }).catch(() => setReady(true));
+    })();
+    return () => { cancelled = true; };
   }, [id]);
-
 
   useEffect(() => {
     if (!ready) return;
-    // Auto-print only when explicitly requested via ?ap=1 (e.g. from POS after sale).
-    // Plain reference clicks (from ledger, sales list) just view.
     if (s.ap !== 1) return;
-    const t = setTimeout(() => { try { window.print(); } catch { /* ignore */ } }, 500);
+    // Snapshot-first: fire print as soon as we have something on screen.
+    const t = setTimeout(() => { try { window.print(); } catch { /* ignore */ } }, 250);
     return () => clearTimeout(t);
   }, [ready, s.ap]);
+
 
   // Build a snapshot even when localStorage is empty (falls back to query params)
   const snapshot: InvoiceSnapshot = stored ?? {
