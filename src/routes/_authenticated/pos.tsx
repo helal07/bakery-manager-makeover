@@ -758,24 +758,37 @@ function PosPage() {
         )}
 
         <div className="ml-auto flex items-center gap-1">
-          <RegisterPill register={register} onOpen={() => setRegisterOpen(true)} onClose={() => setCloseRegOpen(true)} />
           <div className="hidden sm:flex items-center gap-1">
+            <RegisterPill register={register} onOpen={() => setRegisterOpen(true)} onClose={() => setCloseRegOpen(true)} />
             <IconBtn title="Refresh" onClick={() => { invalidate("pos:"); location.reload(); }}><RotateCcw className="size-4" /></IconBtn>
             <IconBtn title="Hold (F7)" onClick={() => items.length && void handleHold()} disabled={items.length === 0}><Pause className="size-4" /></IconBtn>
-          </div>
-          <IconBtn title="Recall held (F8)" onClick={() => setRecallOpen(true)}>
-            <Briefcase className="size-4" />
-            {held.length > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">{held.length}</span>
-            )}
-          </IconBtn>
-          <IconBtn title="Cancel sale (Esc)" onClick={clearCart} tone="danger"><CircleX className="size-4" /></IconBtn>
-          <div className="hidden sm:flex items-center gap-1">
+            <IconBtn title="Recall held (F8)" onClick={() => setRecallOpen(true)}>
+              <Briefcase className="size-4" />
+              {held.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">{held.length}</span>
+              )}
+            </IconBtn>
+            <IconBtn title="Cancel sale (Esc)" onClick={clearCart} tone="danger"><CircleX className="size-4" /></IconBtn>
             <IconBtn title="Fullscreen" onClick={toggleFullscreen}><Maximize2 className="size-4" /></IconBtn>
             <ShortcutsBadge />
           </div>
+          {/* Mobile hamburger — parks secondary actions in a breadcrumb drawer */}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            className="sm:hidden relative h-8 w-8 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
+            title="More"
+          >
+            <Menu className="size-4" />
+            {(held.length > 0 || items.length > 0) && (
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">
+                {held.length + (items.length > 0 ? 1 : 0)}
+              </span>
+            )}
+          </button>
         </div>
       </header>
+
 
       {/* ============ MAIN ============ */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] overflow-hidden pb-12 lg:pb-0">
