@@ -160,6 +160,13 @@ function AuthPage() {
             {busy && <Loader2 className="size-4 animate-spin" />}
             {mode === "signin" ? "Sign in to dashboard" : "Create account"}
           </button>
+          {mode === "signin" && (
+            <div className="text-right">
+              <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-foreground underline">
+                Forgot password?
+              </a>
+            </div>
+          )}
         </form>
 
         {mode === "signup" && (

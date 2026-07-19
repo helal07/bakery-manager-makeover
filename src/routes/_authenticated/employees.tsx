@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { Plus, Pencil, Trash2, Users, ShieldCheck, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, ShieldCheck, Search, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { toast } from "sonner";
+import { sendLoginSetupEmail } from "@/lib/auth-invite.functions";
 
 export const Route = createFileRoute("/_authenticated/employees")({
   head: () => ({ meta: [{ title: "Teams · Muzahid Food" }] }),
@@ -28,11 +30,33 @@ type Showroom = { id: string; name: string };
 function EmployeesPage() {
   const navigate = useNavigate();
   const { isAdmin, loading: roleLoading } = useIsAdmin();
+  const sendSetup = useServerFn(sendLoginSetupEmail);
   const [list, setList] = useState<Employee[]>([]);
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [sendingId, setSendingId] = useState<string | null>(null);
+
+  const sendLogin = async (e: Employee) => {
+    if (!guard()) return;
+    if (!e.email) return toast.error("Add an email for this employee first");
+    setSendingId(e.id);
+    try {
+      const res = await sendSetup({
+        data: { email: e.email, redirectTo: `${window.location.origin}/reset-password` },
+      });
+      toast.success(
+        res.mode === "invited"
+          ? `Invite sent to ${e.email}`
+          : `Password reset link sent to ${e.email}`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send email");
+    } finally {
+      setSendingId(null);
+    }
+  };
 
   const guard = () => {
     if (roleLoading) {
@@ -205,6 +229,14 @@ function EmployeesPage() {
                   <td className="px-5 py-3 text-right">৳{u.salary.toLocaleString()}</td>
                   <td className="px-5 py-3 text-right">
                     <div className="inline-flex gap-1">
+                      <button
+                        onClick={() => sendLogin(u)}
+                        disabled={sendingId === u.id || !u.email}
+                        className="p-1.5 rounded hover:bg-muted disabled:opacity-40"
+                        title={u.email ? "Send login / reset password email" : "No email on file"}
+                      >
+                        <KeyRound className="size-3.5" />
+                      </button>
                       <button onClick={() => openEdit(u)} className="p-1.5 rounded hover:bg-muted" title="Edit">
                         <Pencil className="size-3.5" />
                       </button>
