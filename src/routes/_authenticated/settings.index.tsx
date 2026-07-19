@@ -3,10 +3,14 @@ import { AppShell, Card } from "@/components/app-shell";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  User, Building2, Bell, Palette, Shield, Database, Printer, Globe,
-  Camera, Save, Trash2, Download, Upload, Check, Store,
+  Building2, Bell, Palette, Database, Printer,
+  Save, Download, Upload, Check, Store, FileText,
 } from "lucide-react";
-import { getCompany, saveCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
+import {
+  getCompany, saveCompany, defaultCompany, type CompanySettings,
+  getInvoiceSettings, saveInvoiceSettings, defaultInvoiceSettings, type InvoiceSettings, type PaperSize,
+} from "@/lib/company-settings";
+import { InvoicePreview, sampleInvoice } from "@/components/invoice-preview";
 import {
   getProfile, saveProfile, getSoftware, saveSoftware,
   type UserProfile, type SoftwarePrefs,
@@ -21,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/settings/")({
 
 type Tab = "software";
 type Section =
-  | "company" | "appearance" | "notifications" | "printing" | "backup";
+  | "company" | "invoice" | "appearance" | "notifications" | "printing" | "backup";
 
 const NAV: { tab: Tab; groups: { label: string; items: { id: Section; label: string; icon: any }[] }[] }[] = [
   {
