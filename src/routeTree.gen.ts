@@ -73,6 +73,7 @@ import { Route as AuthenticatedExpensesReportRouteImport } from './routes/_authe
 import { Route as AuthenticatedExpensesNewRouteImport } from './routes/_authenticated/expenses.new'
 import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authenticated/expenses.list'
 import { Route as AuthenticatedExpensesCategoriesRouteImport } from './routes/_authenticated/expenses.categories'
+import { Route as AuthenticatedEmployeesNewRouteImport } from './routes/_authenticated/employees.new'
 import { Route as AuthenticatedCrmIdRouteImport } from './routes/_authenticated/crm.$id'
 import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
 import { Route as AuthenticatedSalesEditIdRouteImport } from './routes/_authenticated/sales.edit.$id'
@@ -439,6 +440,12 @@ const AuthenticatedExpensesCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedExpensesRoute,
   } as any)
+const AuthenticatedEmployeesNewRoute =
+  AuthenticatedEmployeesNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedEmployeesRoute,
+  } as any)
 const AuthenticatedCrmIdRoute = AuthenticatedCrmIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -473,7 +480,7 @@ export interface FileRoutesByFullPath {
   '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/employees': typeof AuthenticatedEmployeesRoute
+  '/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteWithChildren
   '/inventory': typeof AuthenticatedInventoryRoute
   '/orders': typeof AuthenticatedOrdersRoute
@@ -488,6 +495,7 @@ export interface FileRoutesByFullPath {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/crm/$id': typeof AuthenticatedCrmIdRoute
+  '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
   '/expenses/new': typeof AuthenticatedExpensesNewRoute
@@ -542,7 +550,7 @@ export interface FileRoutesByTo {
   '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/employees': typeof AuthenticatedEmployeesRoute
+  '/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteWithChildren
   '/inventory': typeof AuthenticatedInventoryRoute
   '/orders': typeof AuthenticatedOrdersRoute
@@ -555,6 +563,7 @@ export interface FileRoutesByTo {
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/crm/$id': typeof AuthenticatedCrmIdRoute
+  '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/expenses/list': typeof AuthenticatedExpensesListRoute
   '/expenses/new': typeof AuthenticatedExpensesNewRoute
@@ -611,7 +620,7 @@ export interface FileRoutesById {
   '/_authenticated/crm': typeof AuthenticatedCrmRouteWithChildren
   '/_authenticated/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
+  '/_authenticated/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRouteWithChildren
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
@@ -626,6 +635,7 @@ export interface FileRoutesById {
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/_authenticated/crm/$id': typeof AuthenticatedCrmIdRoute
+  '/_authenticated/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/_authenticated/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
   '/_authenticated/expenses/list': typeof AuthenticatedExpensesListRoute
   '/_authenticated/expenses/new': typeof AuthenticatedExpensesNewRoute
@@ -697,6 +707,7 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/invoice/$id'
     | '/crm/$id'
+    | '/employees/new'
     | '/expenses/categories'
     | '/expenses/list'
     | '/expenses/new'
@@ -764,6 +775,7 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/invoice/$id'
     | '/crm/$id'
+    | '/employees/new'
     | '/expenses/categories'
     | '/expenses/list'
     | '/expenses/new'
@@ -834,6 +846,7 @@ export interface FileRouteTypes {
     | '/_authenticated/suppliers'
     | '/invoice/$id'
     | '/_authenticated/crm/$id'
+    | '/_authenticated/employees/new'
     | '/_authenticated/expenses/categories'
     | '/_authenticated/expenses/list'
     | '/_authenticated/expenses/new'
@@ -1337,6 +1350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExpensesCategoriesRouteImport
       parentRoute: typeof AuthenticatedExpensesRoute
     }
+    '/_authenticated/employees/new': {
+      id: '/_authenticated/employees/new'
+      path: '/new'
+      fullPath: '/employees/new'
+      preLoaderRoute: typeof AuthenticatedEmployeesNewRouteImport
+      parentRoute: typeof AuthenticatedEmployeesRoute
+    }
     '/_authenticated/crm/$id': {
       id: '/_authenticated/crm/$id'
       path: '/$id'
@@ -1378,6 +1398,20 @@ const AuthenticatedCrmRouteChildren: AuthenticatedCrmRouteChildren = {
 
 const AuthenticatedCrmRouteWithChildren =
   AuthenticatedCrmRoute._addFileChildren(AuthenticatedCrmRouteChildren)
+
+interface AuthenticatedEmployeesRouteChildren {
+  AuthenticatedEmployeesNewRoute: typeof AuthenticatedEmployeesNewRoute
+}
+
+const AuthenticatedEmployeesRouteChildren: AuthenticatedEmployeesRouteChildren =
+  {
+    AuthenticatedEmployeesNewRoute: AuthenticatedEmployeesNewRoute,
+  }
+
+const AuthenticatedEmployeesRouteWithChildren =
+  AuthenticatedEmployeesRoute._addFileChildren(
+    AuthenticatedEmployeesRouteChildren,
+  )
 
 interface AuthenticatedExpensesRouteChildren {
   AuthenticatedExpensesCategoriesRoute: typeof AuthenticatedExpensesCategoriesRoute
@@ -1462,7 +1496,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRouteWithChildren
   AuthenticatedCustomerGroupsRoute: typeof AuthenticatedCustomerGroupsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRoute
+  AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRouteWithChildren
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRouteWithChildren
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
@@ -1508,7 +1542,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCrmRoute: AuthenticatedCrmRouteWithChildren,
   AuthenticatedCustomerGroupsRoute: AuthenticatedCustomerGroupsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedEmployeesRoute: AuthenticatedEmployeesRoute,
+  AuthenticatedEmployeesRoute: AuthenticatedEmployeesRouteWithChildren,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRouteWithChildren,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
