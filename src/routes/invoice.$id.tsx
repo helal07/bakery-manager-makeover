@@ -27,7 +27,22 @@ export const Route = createFileRoute("/invoice/$id")({
   component: InvoiceView,
 });
 
+async function tryItemSelects(saleId: string): Promise<{ data: any[] }> {
+  const selects = [
+    "qty, unit_price, line_total, product_id, product_name, product_sku, products(name, sku)",
+    "qty, unit_price, line_total, product_id, product_name, product_sku",
+    "qty, unit_price, line_total, product_id, products(name, sku)",
+    "qty, unit_price, line_total, product_id",
+  ];
+  for (const sel of selects) {
+    const res = await sb.from("sale_items").select(sel).eq("sale_id", saleId);
+    if (!res.error) return { data: res.data ?? [] };
+  }
+  return { data: [] };
+}
+
 async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise<InvoiceSnapshot | null> {
+
   let sale: any = null;
   const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (uuidRe.test(id)) {
