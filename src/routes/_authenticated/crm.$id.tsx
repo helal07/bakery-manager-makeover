@@ -131,8 +131,9 @@ function CustomerDetail() {
       } finally {
         setLoading(false);
       }
-    })();
-  }, [id]);
+    };
+
+  useEffect(() => { doLoad(); }, [id]);
 
   const { ledger, lifetimeSpend, totalPaid, outstanding, orderCount, avgOrder } = useMemo(() => {
     const events: { date: string; kind: "Sale" | "Payment"; charge: number; paid: number; ref: string; refId?: string }[] = [];
