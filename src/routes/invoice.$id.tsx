@@ -78,14 +78,21 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
     const { data: cust } = await sb.from("customers")
       .select("address").eq("id", sale.customer_id).maybeSingle();
     customerAddress = cust?.address ?? undefined;
-    const { data: otherSales } = await sb
-      .from("sales").select("due").eq("customer_id", sale.customer_id).neq("id", sale.id);
-    const outstanding = (otherSales ?? []).reduce((n: number, r: any) => n + Number(r.due || 0), 0);
+    // Prior sales only (strictly before this sale) — excludes current + future
+    const { data: priorSales } = await sb
+      .from("sales").select("due,created_at")
+      .eq("customer_id", sale.customer_id)
+      .neq("id", sale.id)
+      .lt("created_at", sale.created_at);
+    const outstanding = (priorSales ?? []).reduce((n: number, r: any) => n + Number(r.due || 0), 0);
     const { data: standalonePays } = await sb
-      .from("customer_payments").select("amount").eq("customer_id", sale.customer_id).is("sale_id", null);
+      .from("customer_payments").select("amount,created_at")
+      .eq("customer_id", sale.customer_id).is("sale_id", null)
+      .lt("created_at", sale.created_at);
     const paidStandalone = (standalonePays ?? []).reduce((n: number, r: any) => n + Number(r.amount || 0), 0);
     previousDue = Math.max(0, outstanding - paidStandalone);
   }
+
 
   const total = Number(sale.total || 0);
   const paid = Number(sale.paid || 0);
