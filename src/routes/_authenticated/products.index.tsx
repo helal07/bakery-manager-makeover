@@ -4,7 +4,6 @@ import { type ProductCategory, loadCategories, addCategory } from "@/lib/product
 import { Plus, Pencil, Trash2, QrCode, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
-import { pageTitle } from "@/lib/company-settings";
   Dialog,
   DialogContent,
   DialogHeader,
@@ -22,6 +21,7 @@ import {
 } from "@/lib/product-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { printLabels, type LabelSize } from "@/lib/print-labels";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/products/")({
   head: () => ({ meta: [{ title: pageTitle("Products") }] }),

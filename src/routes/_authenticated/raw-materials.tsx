@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import {
-import { pageTitle } from "@/lib/company-settings";
   loadRawMaterials,
   adjustRawStock,
   addRawMaterial,
@@ -26,6 +25,7 @@ import { toast } from "sonner";
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { z } from "zod";
 import { PermissionGate } from "@/components/permission-gate";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/raw-materials")({
   head: () => ({ meta: [{ title: pageTitle("Raw Materials") }] }),

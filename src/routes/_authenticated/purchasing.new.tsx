@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
-import { pageTitle } from "@/lib/company-settings";
   Dialog,
   DialogContent,
   DialogHeader,
@@ -18,6 +17,7 @@ import { savePurchase, type PurchaseItem } from "@/lib/purchase-store";
 import { loadSuppliers, addSupplier, type Supplier } from "@/lib/supplier-store";
 import { loadRawMaterials, addRawMaterial, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/purchasing/new")({
   head: () => ({ meta: [{ title: pageTitle("Add Purchase") }] }),

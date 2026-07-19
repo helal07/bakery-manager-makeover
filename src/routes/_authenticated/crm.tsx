@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImage } from "@/lib/storage";
 import {
-import { pageTitle } from "@/lib/company-settings";
   Dialog,
   DialogContent,
   DialogHeader,
@@ -30,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { pageTitle } from "@/lib/company-settings";
 
 const sb = supabase as any;
 

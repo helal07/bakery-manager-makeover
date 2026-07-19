@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import {
-import { pageTitle } from "@/lib/company-settings";
   ShoppingBag, Cake, AlertTriangle, ArrowUpRight, ArrowDownRight,
   Plus, ScanBarcode, Flame, Wheat, Search,
   X, Trash2, Minus, Cookie, Croissant, Check, Clock, PieChart, UserPlus,
@@ -17,6 +16,7 @@ import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRecipes, type RecipeMap } from "@/lib/recipe-store";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { pageTitle } from "@/lib/company-settings";
 
 const sb = supabase as any;
 

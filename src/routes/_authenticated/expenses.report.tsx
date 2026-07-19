@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileDown, RotateCcw } from "lucide-react";
 import {
-import { pageTitle } from "@/lib/company-settings";
   loadExpenses, loadExpenseCategories, type Expense, type ExpenseCategory,
 } from "@/lib/expense-store";
 import { exportCsv } from "@/components/report-filters";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/expenses/report")({
   head: () => ({ meta: [{ title: pageTitle("Expense Report") }] }),

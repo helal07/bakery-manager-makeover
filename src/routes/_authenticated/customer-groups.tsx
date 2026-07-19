@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
-import { pageTitle } from "@/lib/company-settings";
   Dialog,
   DialogContent,
   DialogHeader,
@@ -15,6 +14,7 @@ import { pageTitle } from "@/lib/company-settings";
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { pageTitle } from "@/lib/company-settings";
 const sb = supabase as any;
 
 type CustomerGroup = {
