@@ -69,6 +69,7 @@ function CRM() {
   const [assignFor, setAssignFor] = useState<Customer | null>(null);
   const [assignGroupId, setAssignGroupId] = useState<string>("");
   const [deleteFor, setDeleteFor] = useState<Customer | null>(null);
+  const [payFor, setPayFor] = useState<Customer | null>(null);
 
   const refresh = async () => {
     try {
