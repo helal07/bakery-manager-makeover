@@ -1099,11 +1099,12 @@ function PosPage() {
       {/* Floating: Recent Transactions */}
       <button
         onClick={() => { setRecentOpen(true); void loadRecentSales(); }}
-        className="fixed bottom-16 right-3 lg:bottom-4 lg:right-4 z-[70] h-10 w-10 lg:h-11 lg:w-auto lg:px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg hover:opacity-90 inline-flex items-center justify-center gap-2"
+        className="hidden lg:inline-flex fixed bottom-4 right-4 z-[70] h-11 px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg hover:opacity-90 items-center justify-center gap-2"
         title="Today's recent sales"
       >
-        <History className="size-4" /> <span className="hidden lg:inline">Recent Transactions</span>
+        <History className="size-4" /> <span>Recent Transactions</span>
       </button>
+
 
       {/* Mobile bottom tab switcher */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[65] h-12 bg-card border-t border-border grid grid-cols-2">
