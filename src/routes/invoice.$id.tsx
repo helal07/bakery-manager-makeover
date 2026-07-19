@@ -41,6 +41,62 @@ async function tryItemSelects(saleId: string): Promise<{ data: any[] }> {
   return { data: [] };
 }
 
+function phoneDigits(value: unknown): string {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
+function sameCustomer(row: any, sale: any, salePhoneDigits: string): boolean {
+  if (sale.customer_id && row.customer_id && row.customer_id === sale.customer_id) return true;
+  if (!salePhoneDigits) return false;
+  const rowPhoneDigits = phoneDigits(row.customer_phone);
+  return Boolean(rowPhoneDigits && rowPhoneDigits === salePhoneDigits);
+}
+
+async function calculatePreviousDue(sale: any): Promise<number> {
+  const salePhone = phoneDigits(sale.customer_phone);
+  if (!sale.customer_id && !salePhone) return 0;
+
+  let priorQuery = sb
+    .from("sales")
+    .select("id,due,customer_id,customer_phone,created_at")
+    .neq("id", sale.id)
+    .lt("created_at", sale.created_at);
+
+  if (sale.customer_id) {
+    priorQuery = salePhone
+      ? priorQuery.or(`customer_id.eq.${sale.customer_id},customer_phone.eq.${sale.customer_phone}`)
+      : priorQuery.eq("customer_id", sale.customer_id);
+  } else if (salePhone) {
+    priorQuery = priorQuery.eq("customer_phone", sale.customer_phone);
+  }
+
+  const { data: priorSales } = await priorQuery;
+  const outstanding = (priorSales ?? [])
+    .filter((row: any) => sameCustomer(row, sale, salePhone))
+    .reduce((n: number, row: any) => n + Number(row.due || 0), 0);
+
+  let paymentQuery = sb
+    .from("customer_payments")
+    .select("amount,customer_id,customer_phone,sale_id,created_at")
+    .is("sale_id", null)
+    .lt("created_at", sale.created_at);
+
+  if (sale.customer_id) {
+    paymentQuery = salePhone
+      ? paymentQuery.or(`customer_id.eq.${sale.customer_id},customer_phone.eq.${sale.customer_phone}`)
+      : paymentQuery.eq("customer_id", sale.customer_id);
+  } else if (salePhone) {
+    paymentQuery = paymentQuery.eq("customer_phone", sale.customer_phone);
+  }
+
+  const { data: standalonePays } = await paymentQuery;
+  const paidStandalone = (standalonePays ?? [])
+    .filter((row: any) => sameCustomer(row, sale, salePhone))
+    .reduce((n: number, row: any) => n + Number(row.amount || 0), 0);
+
+  return Math.max(0, +(outstanding - paidStandalone).toFixed(2));
+}
+
 async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise<InvoiceSnapshot | null> {
 
   let sale: any = null;
@@ -74,23 +130,22 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
 
   let customerAddress: string | undefined;
   let previousDue = 0;
-  if (sale.customer_id) {
-    const { data: cust } = await sb.from("customers")
-      .select("address").eq("id", sale.customer_id).maybeSingle();
+  if (sale.customer_id || sale.customer_phone) {
+    let cust: any = null;
+    if (sale.customer_id) {
+      const { data } = await sb.from("customers")
+        .select("address").eq("id", sale.customer_id).maybeSingle();
+      cust = data;
+    }
+    if (!cust && sale.customer_phone) {
+      const { data } = await sb.from("customers")
+        .select("address,phone").eq("phone", sale.customer_phone).maybeSingle();
+      cust = data;
+    }
     customerAddress = cust?.address ?? undefined;
-    // Prior sales only (strictly before this sale) — excludes current + future
-    const { data: priorSales } = await sb
-      .from("sales").select("due,created_at")
-      .eq("customer_id", sale.customer_id)
-      .neq("id", sale.id)
-      .lt("created_at", sale.created_at);
-    const outstanding = (priorSales ?? []).reduce((n: number, r: any) => n + Number(r.due || 0), 0);
-    const { data: standalonePays } = await sb
-      .from("customer_payments").select("amount,created_at")
-      .eq("customer_id", sale.customer_id).is("sale_id", null)
-      .lt("created_at", sale.created_at);
-    const paidStandalone = (standalonePays ?? []).reduce((n: number, r: any) => n + Number(r.amount || 0), 0);
-    previousDue = Math.max(0, outstanding - paidStandalone);
+    // Prior sales/payments only (strictly before this sale) — excludes current + future.
+    // POS history may have customer_id missing, so match by saved customer_id OR exact phone.
+    previousDue = await calculatePreviousDue(sale);
   }
 
 
