@@ -321,7 +321,7 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
           <span>{snapshot.reference}</span>
           <span style={{ textTransform: "uppercase" }}>{badge.label}</span>
         </div>
-        <div style={{ fontSize: 10 }}>{new Date(snapshot.date).toLocaleString()}</div>
+        <div style={{ fontSize: 10 }}>{formatInvoiceDate(snapshot.date, s.dateFormat)}</div>
 
         {s.showCustomerBlock && (
           <>
