@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { loadPurchases, loadCategories, type Purchase, type PurchaseCategory } from "@/lib/purchase-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { ReportFilters, exportCsv, type ReportFilter } from "@/components/report-filters";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/reports/purchase")({
-  head: () => ({ meta: [{ title: "Purchase Reports · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Purchase Reports") }] }),
   component: PurchaseReport,
 });
 

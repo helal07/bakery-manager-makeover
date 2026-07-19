@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import {
+import { pageTitle } from "@/lib/company-settings";
   ShoppingBag, Cake, AlertTriangle, ArrowUpRight, ArrowDownRight,
   Plus, ScanBarcode, Flame, Wheat, Search,
   X, Trash2, Minus, Cookie, Croissant, Check, Clock, PieChart, UserPlus,
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   validateSearch: (s: Record<string, unknown>) => ({ sale: s.sale ? 1 : undefined }),
   head: () => ({
     meta: [
-      { title: "Dashboard · Crumb & Co. Bakery ERP" },
+      { title: pageTitle("Dashboard") },
       { name: "description", content: "Unified dashboard for multi-branch commercial bakery operations." },
     ],
   }),

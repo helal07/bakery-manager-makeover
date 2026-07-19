@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import {
+import { pageTitle } from "@/lib/company-settings";
   loadRawMaterials,
   adjustRawStock,
   addRawMaterial,
@@ -27,7 +28,7 @@ import { z } from "zod";
 import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/raw-materials")({
-  head: () => ({ meta: [{ title: "Raw Materials · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Raw Materials") }] }),
   component: () => (
     <PermissionGate anyOf={["production.raw_materials.view", "production.access"]} title="Raw Materials">
       <RawMaterials />

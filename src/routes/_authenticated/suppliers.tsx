@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { addSupplier, loadSuppliers, type Supplier } from "@/lib/supplier-store";
 import {
+import { pageTitle } from "@/lib/company-settings";
   Dialog,
   DialogContent,
   DialogHeader,
@@ -16,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/suppliers")({
-  head: () => ({ meta: [{ title: "Suppliers · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Suppliers") }] }),
   component: Suppliers,
 });
 

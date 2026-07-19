@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Search, Wallet, TrendingDown, Calendar, Layers } 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+import { pageTitle } from "@/lib/company-settings";
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import {
 } from "@/lib/expense-store";
 
 export const Route = createFileRoute("/_authenticated/expenses/list")({
-  head: () => ({ meta: [{ title: "List Expenses · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("List Expenses") }] }),
   component: ExpensesList,
 });
 

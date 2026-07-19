@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Eye, Pencil, CreditCard, FileText, Undo2, Bell, ChevronDown, UserRound, Store, Download, Printer, Share2, MessageCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { pageTitle } from "@/lib/company-settings";
 
 const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/sales/list")({
-  head: () => ({ meta: [{ title: "Sale List · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Sale List") }] }),
   component: SaleList,
 });
 

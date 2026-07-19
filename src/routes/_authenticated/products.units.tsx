@@ -8,9 +8,10 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { addUnit, loadUnits, removeUnit, renameUnit, type Unit } from "@/lib/unit-store";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/products/units")({
-  head: () => ({ meta: [{ title: "Units · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Units") }] }),
   component: UnitsPage,
 });
 

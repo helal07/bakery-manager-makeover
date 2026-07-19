@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import {
+import { pageTitle } from "@/lib/company-settings";
   addCategory,
   deleteCategory,
   loadCategories,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/purchase-store";
 
 export const Route = createFileRoute("/_authenticated/purchasing/categories")({
-  head: () => ({ meta: [{ title: "Purchase Categories · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Purchase Categories") }] }),
   component: PurchaseCategoriesPage,
 });
 

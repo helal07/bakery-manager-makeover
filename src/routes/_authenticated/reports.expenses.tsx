@@ -3,9 +3,10 @@ import { AppShell, Card, Badge } from "@/components/app-shell";
 import { useEffect, useMemo, useState } from "react";
 import { loadExpenses, EXPENSE_CATEGORIES, type Expense } from "@/lib/expense-store";
 import { ReportFilters, exportCsv, type ReportFilter } from "@/components/report-filters";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/reports/expenses")({
-  head: () => ({ meta: [{ title: "Expense Reports · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Expense Reports") }] }),
   component: ExpenseReport,
 });
 

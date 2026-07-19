@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/accounting")({
-  head: () => ({ meta: [{ title: "Accounting · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Accounting") }] }),
   component: Accounting,
 });
 

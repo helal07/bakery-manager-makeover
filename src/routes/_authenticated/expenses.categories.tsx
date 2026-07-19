@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
+import { pageTitle } from "@/lib/company-settings";
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -15,7 +16,7 @@ import {
 } from "@/lib/expense-store";
 
 export const Route = createFileRoute("/_authenticated/expenses/categories")({
-  head: () => ({ meta: [{ title: "Expense Categories · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Expense Categories") }] }),
   component: ExpenseCategories,
 });
 

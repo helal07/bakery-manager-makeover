@@ -4,11 +4,12 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { ChefHat, Loader2, Eye, EyeOff, Croissant, Wheat, Cookie, Sparkles } from "lucide-react";
 import bakeryBg from "@/assets/auth-bakery-bg.jpg";
+import { pageTitle } from "@/lib/company-settings";
 
 const searchSchema = z.object({ denied: z.coerce.number().optional() });
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Sign in") }] }),
   validateSearch: searchSchema,
   component: AuthPage,
 });

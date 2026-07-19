@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
+import { pageTitle } from "@/lib/company-settings";
   Dialog,
   DialogContent,
   DialogHeader,
@@ -27,7 +28,7 @@ type CustomerGroup = {
 type Spg = { id: string; name: string };
 
 export const Route = createFileRoute("/_authenticated/customer-groups")({
-  head: () => ({ meta: [{ title: "Customer Groups · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Customer Groups") }] }),
   component: CustomerGroupsPage,
 });
 

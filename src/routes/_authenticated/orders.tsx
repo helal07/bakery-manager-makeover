@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/orders")({
-  head: () => ({ meta: [{ title: "Orders · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Orders") }] }),
   component: Orders,
 });
 

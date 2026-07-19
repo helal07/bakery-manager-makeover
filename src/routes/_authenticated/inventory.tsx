@@ -5,9 +5,10 @@ import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/inventory")({
-  head: () => ({ meta: [{ title: "Inventory · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Inventory") }] }),
   component: Inventory,
 });
 

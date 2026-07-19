@@ -9,9 +9,10 @@ import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
 import { PermissionGate } from "@/components/permission-gate";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/recipes")({
-  head: () => ({ meta: [{ title: "Recipes & BOM · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Recipes & BOM") }] }),
   component: () => (
     <PermissionGate anyOf={["production.recipes.view", "production.access"]} title="Recipes & BOM">
       <Recipes />

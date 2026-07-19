@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
+import { pageTitle } from "@/lib/company-settings";
   Dialog,
   DialogContent,
   DialogHeader,
@@ -19,7 +20,7 @@ import { loadRawMaterials, addRawMaterial, type RawMaterial } from "@/lib/raw-ma
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 
 export const Route = createFileRoute("/_authenticated/purchasing/new")({
-  head: () => ({ meta: [{ title: "Add Purchase · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Add Purchase") }] }),
   component: AddPurchase,
 });
 

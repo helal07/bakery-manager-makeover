@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImage } from "@/lib/storage";
 import {
+import { pageTitle } from "@/lib/company-settings";
   Dialog,
   DialogContent,
   DialogHeader,
@@ -47,7 +48,7 @@ type Customer = {
 type Group = { id: string; name: string };
 
 export const Route = createFileRoute("/_authenticated/crm")({
-  head: () => ({ meta: [{ title: "Customers · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Customers") }] }),
   component: CRM,
 });
 
