@@ -148,11 +148,12 @@ function InvoiceView() {
 
   useEffect(() => {
     if (!ready) return;
-    const shouldAuto = s.ap ? s.ap === 1 : settings.autoPrint;
-    if (!shouldAuto) return;
+    // Auto-print only when explicitly requested via ?ap=1 (e.g. from POS after sale).
+    // Plain reference clicks (from ledger, sales list) just view.
+    if (s.ap !== 1) return;
     const t = setTimeout(() => { try { window.print(); } catch { /* ignore */ } }, 500);
     return () => clearTimeout(t);
-  }, [ready, s.ap, settings.autoPrint]);
+  }, [ready, s.ap]);
 
   // Build a snapshot even when localStorage is empty (falls back to query params)
   const snapshot: InvoiceSnapshot = stored ?? {
