@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { addExpense, loadExpenseCategories, type ExpenseCategory } from "@/lib/expense-store";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/expenses/new")({
-  head: () => ({ meta: [{ title: "Add Expense · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Add Expense") }] }),
   component: AddExpense,
 });
 

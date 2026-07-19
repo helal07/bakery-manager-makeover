@@ -10,9 +10,10 @@ import {
   loadExpenses, loadExpenseCategories, type Expense, type ExpenseCategory,
 } from "@/lib/expense-store";
 import { exportCsv } from "@/components/report-filters";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/expenses/report")({
-  head: () => ({ meta: [{ title: "Expense Report · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Expense Report") }] }),
   component: ExpenseReport,
 });
 

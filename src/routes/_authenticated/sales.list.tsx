@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Eye, Pencil, CreditCard, FileText, Undo2, Bell, ChevronDown, UserRound, Store, Download, Printer, Share2, MessageCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { pageTitle, getCachedCompany, defaultCompany } from "@/lib/company-settings";
 
 const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/sales/list")({
-  head: () => ({ meta: [{ title: "Sale List · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Sale List") }] }),
   component: SaleList,
 });
 
@@ -418,7 +419,8 @@ function NotifyBody({ row, onClose }: { row: Row; onClose: () => void }) {
   const savedPhone = row.phone && row.phone !== "—" ? normalizeBangladeshNumber(row.phone, true) : "";
   const [phone, setPhone] = useState(savedPhone);
   const [error, setError] = useState("");
-  const company = { name: "Crumb & Co.", address: "12 Gulshan Ave, Dhaka" };
+  const cachedCo = getCachedCompany();
+  const company = { name: cachedCo?.name || defaultCompany.name, address: cachedCo?.address || defaultCompany.address };
   const product = `${row.items} item${row.items > 1 ? "s" : ""}`;
   const invoiceUrl = (() => {
     const origin = typeof window !== "undefined" ? window.location.origin : "https://crumb.co";

@@ -13,9 +13,10 @@ import {
   renameCategory,
   type PurchaseCategory,
 } from "@/lib/purchase-store";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/purchasing/categories")({
-  head: () => ({ meta: [{ title: "Purchase Categories · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Purchase Categories") }] }),
   component: PurchaseCategoriesPage,
 });
 

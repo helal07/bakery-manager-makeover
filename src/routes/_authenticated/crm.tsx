@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { pageTitle } from "@/lib/company-settings";
 
 const sb = supabase as any;
 
@@ -47,7 +48,7 @@ type Customer = {
 type Group = { id: string; name: string };
 
 export const Route = createFileRoute("/_authenticated/crm")({
-  head: () => ({ meta: [{ title: "Customers · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Customers") }] }),
   component: CRM,
 });
 

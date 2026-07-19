@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { pageTitle } from "@/lib/company-settings";
 const sb = supabase as any;
 
 type CustomerGroup = {
@@ -27,7 +28,7 @@ type CustomerGroup = {
 type Spg = { id: string; name: string };
 
 export const Route = createFileRoute("/_authenticated/customer-groups")({
-  head: () => ({ meta: [{ title: "Customer Groups · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Customer Groups") }] }),
   component: CustomerGroupsPage,
 });
 

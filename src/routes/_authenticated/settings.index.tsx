@@ -8,8 +8,7 @@ import {
 } from "lucide-react";
 import {
   getCompany, saveCompany, defaultCompany, type CompanySettings,
-  getInvoiceSettings, saveInvoiceSettings, defaultInvoiceSettings, type InvoiceSettings, type PaperSize,
-} from "@/lib/company-settings";
+  getInvoiceSettings, saveInvoiceSettings, defaultInvoiceSettings, type InvoiceSettings, type PaperSize, pageTitle } from "@/lib/company-settings";
 import { InvoicePreview, sampleInvoice } from "@/components/invoice-preview";
 import {
   getProfile, saveProfile, getSoftware, saveSoftware,
@@ -19,7 +18,7 @@ import { uploadImage } from "@/lib/storage";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/settings/")({
-  head: () => ({ meta: [{ title: "Settings · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Settings") }] }),
   component: SettingsPage,
 });
 

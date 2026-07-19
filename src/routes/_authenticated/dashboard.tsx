@@ -16,6 +16,7 @@ import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRecipes, type RecipeMap } from "@/lib/recipe-store";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { pageTitle } from "@/lib/company-settings";
 
 const sb = supabase as any;
 
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   validateSearch: (s: Record<string, unknown>) => ({ sale: s.sale ? 1 : undefined }),
   head: () => ({
     meta: [
-      { title: "Dashboard · Crumb & Co. Bakery ERP" },
+      { title: pageTitle("Dashboard") },
       { name: "description", content: "Unified dashboard for multi-branch commercial bakery operations." },
     ],
   }),

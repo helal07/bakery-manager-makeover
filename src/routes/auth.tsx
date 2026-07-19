@@ -4,11 +4,12 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { ChefHat, Loader2, Eye, EyeOff, Croissant, Wheat, Cookie, Sparkles } from "lucide-react";
 import bakeryBg from "@/assets/auth-bakery-bg.jpg";
+import { getCompany, pageTitle, getCompanyName } from "@/lib/company-settings";
 
 const searchSchema = z.object({ denied: z.coerce.number().optional() });
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Sign in") }] }),
   validateSearch: searchSchema,
   component: AuthPage,
 });
@@ -23,6 +24,8 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [brandName, setBrandName] = useState<string>(() => getCompanyName());
+  useEffect(() => { getCompany().then((c) => setBrandName(c.name || getCompanyName())).catch(() => {}); }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -80,7 +83,7 @@ function AuthPage() {
               <div className="size-10 rounded-xl bg-primary text-primary-foreground grid place-items-center shadow-lg shadow-primary/40">
                 <ChefHat className="size-5" />
               </div>
-              <span className="font-semibold tracking-tight text-lg">Crumb &amp; Co.</span>
+              <span className="font-semibold tracking-tight text-lg">{brandName}</span>
             </div>
           </div>
           <div className="relative space-y-6">
@@ -110,7 +113,7 @@ function AuthPage() {
             <div className="size-9 rounded-lg bg-primary text-primary-foreground grid place-items-center">
               <ChefHat className="size-5" />
             </div>
-            <span className="font-semibold tracking-tight">Crumb &amp; Co.</span>
+            <span className="font-semibold tracking-tight">{brandName}</span>
           </div>
           <div className="mb-6">
             <h1 className="text-2xl font-semibold tracking-tight">

@@ -187,6 +187,19 @@ export function getCachedInvoiceSettings(): InvoiceSettings | null {
   } catch { return null; }
 }
 
+/** Build a document title using the cached company name (safe in head()). */
+export function pageTitle(section: string): string {
+  const cached = getCachedCompany();
+  const name = (cached?.name && cached.name.trim()) || defaultCompany.name;
+  return section ? `${section} · ${name}` : name;
+}
+
+/** Get the company display name synchronously from cache (fallback to default). */
+export function getCompanyName(): string {
+  const cached = getCachedCompany();
+  return (cached?.name && cached.name.trim()) || defaultCompany.name;
+}
+
 function writeCache(c: CompanySettings) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch { /* ignore */ }
 }

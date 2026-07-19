@@ -14,9 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/suppliers")({
-  head: () => ({ meta: [{ title: "Suppliers · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Suppliers") }] }),
   component: Suppliers,
 });
 

@@ -2,9 +2,10 @@ import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-r
 import { AppShell, Card } from "@/components/app-shell";
 import { useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/sales/edit/$id")({
-  head: ({ params }) => ({ meta: [{ title: `Edit Sale #${params.id} · Crumb & Co.` }] }),
+  head: ({ params }) => ({ meta: [{ title: pageTitle(`Edit Sale #${params.id}`) }] }),
   component: EditSale,
 });
 

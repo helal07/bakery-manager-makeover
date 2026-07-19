@@ -25,9 +25,10 @@ import { toast } from "sonner";
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { z } from "zod";
 import { PermissionGate } from "@/components/permission-gate";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/raw-materials")({
-  head: () => ({ meta: [{ title: "Raw Materials · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Raw Materials") }] }),
   component: () => (
     <PermissionGate anyOf={["production.raw_materials.view", "production.access"]} title="Raw Materials">
       <RawMaterials />

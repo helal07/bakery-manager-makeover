@@ -5,9 +5,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { loadPurchases, updatePurchasePayment, type Purchase } from "@/lib/purchase-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
+import { pageTitle, getCompanyName } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/purchasing/list")({
-  head: () => ({ meta: [{ title: "Purchase List · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Purchase List") }] }),
   component: PurchaseList,
 });
 
@@ -376,7 +377,7 @@ function InvoiceBody({ p }: { p: Purchase }) {
     <div className="space-y-4 text-sm">
       <div className="flex items-start justify-between">
         <div>
-          <div className="text-lg font-semibold">Crumb & Co.</div>
+          <div className="text-lg font-semibold">{getCompanyName()}</div>
           <div className="text-xs text-muted-foreground">Purchase Invoice</div>
         </div>
         <div className="text-right">

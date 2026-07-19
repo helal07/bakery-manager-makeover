@@ -17,9 +17,10 @@ import { savePurchase, type PurchaseItem } from "@/lib/purchase-store";
 import { loadSuppliers, addSupplier, type Supplier } from "@/lib/supplier-store";
 import { loadRawMaterials, addRawMaterial, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/purchasing/new")({
-  head: () => ({ meta: [{ title: "Add Purchase · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Add Purchase") }] }),
   component: AddPurchase,
 });
 

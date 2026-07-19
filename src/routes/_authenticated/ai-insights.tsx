@@ -7,9 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
 import type { LucideIcon } from "lucide-react";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/ai-insights")({
-  head: () => ({ meta: [{ title: "AI Insights · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("AI Insights") }] }),
   component: AIInsights,
 });
 

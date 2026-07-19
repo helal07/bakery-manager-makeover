@@ -21,9 +21,10 @@ import {
 } from "@/lib/product-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { printLabels, type LabelSize } from "@/lib/print-labels";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/products/")({
-  head: () => ({ meta: [{ title: "Products · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("Products") }] }),
   component: Products,
 });
 

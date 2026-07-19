@@ -13,9 +13,10 @@ import {
   deleteExpense, loadExpenses, updateExpense, loadExpenseCategories,
   type Expense, type ExpenseCategory,
 } from "@/lib/expense-store";
+import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/expenses/list")({
-  head: () => ({ meta: [{ title: "List Expenses · Crumb & Co." }] }),
+  head: () => ({ meta: [{ title: pageTitle("List Expenses") }] }),
   component: ExpensesList,
 });
 
