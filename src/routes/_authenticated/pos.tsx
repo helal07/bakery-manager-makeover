@@ -782,20 +782,7 @@ function PosPage() {
             <IconBtn title="Fullscreen" onClick={toggleFullscreen}><Maximize2 className="size-4" /></IconBtn>
             <ShortcutsBadge />
           </div>
-          {/* Mobile hamburger — parks secondary actions in a breadcrumb drawer */}
-          <button
-            type="button"
-            onClick={() => setMoreOpen(true)}
-            className="sm:hidden relative h-7 w-7 shrink-0 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
-            title="More"
-          >
-            <Menu className="size-4" />
-            {(held.length > 0 || items.length > 0) && (
-              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">
-                {held.length + (items.length > 0 ? 1 : 0)}
-              </span>
-            )}
-          </button>
+          {/* Mobile drawer trigger moved to floating action (see below) */}
         </div>
       </header>
 
