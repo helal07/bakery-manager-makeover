@@ -133,18 +133,14 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
               </div>
               <div className="text-right shrink-0">
                 <div className="text-[10px] uppercase tracking-[0.15em] opacity-80">{s.invoiceTitle}</div>
-                <div className="text-2xl font-bold tabular-nums">{snapshot.reference}</div>
-                <div className="text-[11px] opacity-90 mt-1">{new Date(snapshot.date).toLocaleString()}</div>
-                <div className={`mt-1.5 inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badge.cls}`}>
-                  {badge.label}
-                </div>
+                {s.showVatReg && company.vatReg && <div className="text-[11px] opacity-75 mt-0.5">VAT Reg. {company.vatReg}</div>}
               </div>
             </div>
           </div>
 
-          {/* Customer / Meta strip */}
+          {/* Customer left, Invoice # + date right — same row */}
           <div className="grid sm:grid-cols-2 gap-4 px-8 py-4 bg-muted/40 border-b border-border text-xs">
-            {s.showCustomerBlock && (
+            {s.showCustomerBlock ? (
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{s.labelBilledTo}</div>
                 <div className="font-semibold text-sm">{snapshot.customer.name}</div>
@@ -159,10 +155,14 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
                   </div>
                 )}
               </div>
-            )}
+            ) : <div />}
             <div className="sm:text-right space-y-0.5">
-              <div><span className="text-muted-foreground">Items: </span><span className="font-medium">{items.reduce((n, i) => n + i.qty, 0)}</span></div>
-              <div><span className="text-muted-foreground">Payment: </span><span className="font-medium capitalize">{snapshot.mode}</span></div>
+              <div className="text-xl font-bold tabular-nums leading-tight">{snapshot.reference}</div>
+              <div className="text-[11px] text-muted-foreground">{formatInvoiceDate(snapshot.date, s.dateFormat)}</div>
+              <div className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badge.cls}`}>
+                {badge.label}
+              </div>
+              <div className="pt-1 text-muted-foreground">Items: <span className="font-medium text-foreground">{items.reduce((n, i) => n + i.qty, 0)}</span> · Payment: <span className="font-medium capitalize text-foreground">{snapshot.mode}</span></div>
               {s.showServedBy && manager && (
                 <div className="text-muted-foreground flex items-center gap-1 sm:justify-end">
                   <User2 className="size-3" /> Served by {manager}
@@ -170,6 +170,7 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
               )}
             </div>
           </div>
+
 
           {/* Items table with visible row separators */}
           <div className="px-8 py-5">
