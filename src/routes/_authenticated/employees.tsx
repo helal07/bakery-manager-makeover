@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { Plus, Pencil, Trash2, Users, ShieldCheck, X, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, ShieldCheck, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { toast } from "sonner";

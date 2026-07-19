@@ -78,6 +78,7 @@ import { Route as AuthenticatedCrmIdRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
 import { Route as AuthenticatedSalesEditIdRouteImport } from './routes/_authenticated/sales.edit.$id'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
+import { Route as AuthenticatedEmployeesEditIdRouteImport } from './routes/_authenticated/employees.edit.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -469,6 +470,12 @@ const AuthenticatedProductsEditIdRoute =
     path: '/products/edit/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEmployeesEditIdRoute =
+  AuthenticatedEmployeesEditIdRouteImport.update({
+    id: '/edit/$id',
+    path: '/edit/$id',
+    getParentRoute: () => AuthenticatedEmployeesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -536,6 +543,7 @@ export interface FileRoutesByFullPath {
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/transfers/': typeof AuthenticatedTransfersIndexRoute
+  '/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
@@ -604,6 +612,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/transfers': typeof AuthenticatedTransfersIndexRoute
+  '/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
@@ -676,6 +685,7 @@ export interface FileRoutesById {
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/transfers/': typeof AuthenticatedTransfersIndexRoute
+  '/_authenticated/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/sales/edit/$id': typeof AuthenticatedSalesEditIdRoute
   '/_authenticated/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
@@ -748,6 +758,7 @@ export interface FileRouteTypes {
     | '/reports/'
     | '/settings/'
     | '/transfers/'
+    | '/employees/edit/$id'
     | '/products/edit/$id'
     | '/sales/edit/$id'
     | '/transfers/damaged/new'
@@ -816,6 +827,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/transfers'
+    | '/employees/edit/$id'
     | '/products/edit/$id'
     | '/sales/edit/$id'
     | '/transfers/damaged/new'
@@ -887,6 +899,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/'
     | '/_authenticated/settings/'
     | '/_authenticated/transfers/'
+    | '/_authenticated/employees/edit/$id'
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/sales/edit/$id'
     | '/_authenticated/transfers/damaged/new'
@@ -1385,6 +1398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductsEditIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/employees/edit/$id': {
+      id: '/_authenticated/employees/edit/$id'
+      path: '/edit/$id'
+      fullPath: '/employees/edit/$id'
+      preLoaderRoute: typeof AuthenticatedEmployeesEditIdRouteImport
+      parentRoute: typeof AuthenticatedEmployeesRoute
+    }
   }
 }
 
@@ -1401,11 +1421,13 @@ const AuthenticatedCrmRouteWithChildren =
 
 interface AuthenticatedEmployeesRouteChildren {
   AuthenticatedEmployeesNewRoute: typeof AuthenticatedEmployeesNewRoute
+  AuthenticatedEmployeesEditIdRoute: typeof AuthenticatedEmployeesEditIdRoute
 }
 
 const AuthenticatedEmployeesRouteChildren: AuthenticatedEmployeesRouteChildren =
   {
     AuthenticatedEmployeesNewRoute: AuthenticatedEmployeesNewRoute,
+    AuthenticatedEmployeesEditIdRoute: AuthenticatedEmployeesEditIdRoute,
   }
 
 const AuthenticatedEmployeesRouteWithChildren =
