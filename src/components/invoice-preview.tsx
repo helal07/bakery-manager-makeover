@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { MapPin, Phone, User2 } from "lucide-react";
-import type { CompanySettings, InvoiceSettings, PaperSize } from "@/lib/company-settings";
+import { formatInvoiceDate, type CompanySettings, type InvoiceSettings, type PaperSize } from "@/lib/company-settings";
 
 export type InvoiceLine = {
   name: string;
