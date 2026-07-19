@@ -1119,7 +1119,7 @@ function PosPage() {
       </button>
 
 
-      {/* Mobile: quick access to Recent + Browse products (Ultimate POS keeps grid off mobile) */}
+      {/* Mobile: quick access to Recent (Browse is now inline with product search) */}
       <div className="lg:hidden fixed bottom-20 right-3 z-[65] flex flex-col gap-2">
         <button
           onClick={() => { setRecentOpen(true); void loadRecentSales(); }}
@@ -1127,13 +1127,6 @@ function PosPage() {
           title="Recent transactions"
         >
           <History className="size-4" />
-        </button>
-        <button
-          onClick={() => setMobileTab(mobileTab === "products" ? "cart" : "products")}
-          className="size-11 grid place-items-center rounded-full bg-card border border-border text-foreground shadow-lg"
-          title={mobileTab === "products" ? "Back to cart" : "Browse products"}
-        >
-          {mobileTab === "products" ? <Receipt className="size-4" /> : <ScanBarcode className="size-4" />}
         </button>
       </div>
 
