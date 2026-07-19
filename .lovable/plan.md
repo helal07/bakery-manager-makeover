@@ -1,34 +1,40 @@
-## Diagnosis update
+## লক্ষ্য
+POS চেকআউটের পর invoice window খুললে instant load — কোন spinner-জাল না।
 
-Policies ঠিক আছে — তিনটাই permissive (`uid() IS NOT NULL`, `cmd=ALL`, `authenticated`)। যেহেতু sales list production-এ দেখা যাচ্ছে, auth token পাস হচ্ছে এবং `sale_items` read-ও RLS-এ block হওয়ার কথা না। তাই RLS root cause **নয়**।
+## এখন কেন slow
+`invoice.$id.tsx` এর `fetchSaleSnapshot()` সব query **serial** চালায়:
+1. `sales` লুকআপ  →  2. `sale_items`  →  3. `products` enrichment  →  4. `sale_payments`  →  5. `showrooms`  →  6. `customers`  →  7. `previousDue` এর জন্য আরও 2টা query।
 
-সবচেয়ে সম্ভাব্য কারণ (unconfirmed): production bundle একটা পুরনো version চালাচ্ছে যেখানে `sale_items` query-তে `products(name, sku)` PostgREST embed করা আছে। Production Supabase-এ যদি `sale_items.product_id → products.id` FK PostgREST schema cache-এ visible না থাকে, embed fail করে এবং items empty আসে। এই version-এ fallback ছিল না, বা mirror deploy পুরনো bundle serve করছে।
+মোট ~7-9 round-trip, তারপর `InvoicePreview` render হয়। VPS latency-এ এটা 2-4s লাগে। যদিও POS ইতিমধ্যে `localStorage.setItem('invoice:<id>', snapshot)` করে, কোডটা DB-first — snapshot শুধু fallback হিসেবে ব্যবহার হয়।
 
-## Plan
+## সমাধান (৩ স্তর)
 
-### Step 1 — Simplify + harden `tryItemSelects()` in `src/routes/invoice.$id.tsx`
-- চারটা fallback query মুছে **একটাই query**: `sb.from("sale_items").select("*").eq("sale_id", sale.id)` — কোনো embed নেই, তাই FK/schema-cache issue-এ ভাঙবে না।
-- Item row-এ ইতিমধ্যেই `product_name`, `product_sku` সংরক্ষিত আছে (user-এর sample row confirms) — এগুলো সরাসরি use হবে।
-- Optional enrichment: distinct `product_id`-এর জন্য আলাদা `products` query — fail করলে fallback ঠিক আছে।
-- Debug aid: query error বা empty result হলে `console.warn("[invoice] sale_items", { saleId, count, error })`।
+### 1. Instant paint from POS snapshot (frontend only, দুই env-এই কাজ করবে)
+`invoice.$id.tsx`-এ:
+- Mount হওয়ার সাথে সাথেই `localStorage`/`sessionStorage` থেকে snapshot পড়ে **সাথে সাথে render** ও `?ap=1` হলে print trigger করবে।
+- এর পর background-এ DB fetch চালিয়ে fresh data দিয়ে reconcile (previousDue, showroom address etc. accurate করার জন্য)।
+- Company + invoice settings ইতিমধ্যেই `localStorage`-cached — সেটাই sync-ভাবে seed হবে, `await` না করে।
 
-### Step 2 — Production FK sanity check (user action, optional)
-পরবর্তীতে embed use করতে চাইলে VPS-এ চালাবেন:
-```sql
-SELECT conname FROM pg_constraint
-WHERE conrelid = 'public.sale_items'::regclass AND contype = 'f';
-```
-কোনো FK না থাকলে `sql/12_sale_items_fk.sql` তৈরি করব। এটা current fix-এর জন্য দরকার না, শুধু future-proofing।
+POS side-এ: snapshot-এ `customerAddress` + fresh `showroom` fields সব already আছে, তাই instant paint সম্পূর্ণ accurate।
 
-### Step 3 — Verify mirror deployment freshness
-Fix push হওয়ার পর VPS-এর deployed bundle-এ latest code গেছে কিনা check:
-- ব্রাউজারে production invoice page open করে DevTools > Network > invoice.$id JS chunk-এর content search করুন `"[invoice] sale_items"` string দিয়ে। থাকলে new bundle live।
-- না থাকলে GitHub Actions mirror workflow বা Coolify build log check করবেন।
+### 2. Parallelize DB reconciliation
+`fetchSaleSnapshot()` কে `Promise.all` দিয়ে items/payments/showroom/customer/priorSales/priorPayments একসাথে fire — sequential await বাদ। এতে reconciliation round-trip 7 → 2।
 
-### Step 4 — Verify items render
-Production-এ existing invoice reload → Burger Bun row দেখা যাবে। না গেলে console warn payload paste করবেন — exact cause বেরোবে।
+### 3. Single-RPC fast path (optional, দুই env-এ SQL migration লাগবে)
+নতুন SQL function `public.get_invoice_bundle(_sale_id uuid)` যা এক call-এ JSON return করবে: sale + items(+product name/sku) + payments + showroom + customer address + previousDue।
+- Dev: `supabase--migration` দিয়ে apply।
+- VPS: `sql/12_invoice_bundle_rpc.sql` file generate করব — manually SQL editor-এ চালাবেন।
 
-## Technical notes
-- Edit: শুধু `src/routes/invoice.$id.tsx` — একটা function replace।
-- কোনো SQL migration লাগছে না (RLS/policy ঠিক আছে)।
-- Dev-এ regression risk শূন্য — new query strict superset।
+তিন স্তর একসাথে হলে print window খোলার **সাথে সাথেই** invoice দৃশ্যমান, DB reconciliation invisible-ভাবে ~150ms-এ শেষ।
+
+## যে ফাইল বদলাবে
+- `src/routes/invoice.$id.tsx` — snapshot-first render, parallel fetch, RPC try-first with fallback।
+- `sql/12_invoice_bundle_rpc.sql` — নতুন RPC (VPS-এর জন্য)।
+- Dev DB-তে একই RPC migration-এর মাধ্যমে।
+
+## Behavior contracts (unchanged)
+- `?ap=1` থাকলেই auto-print, না থাকলে view-only।
+- Previous Due = strictly prior sales due − prior standalone payments।
+- Print output HTML/CSS একদম unchanged।
+
+Approve করলে implement করি।
