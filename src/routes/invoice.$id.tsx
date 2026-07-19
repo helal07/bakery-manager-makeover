@@ -28,17 +28,31 @@ export const Route = createFileRoute("/invoice/$id")({
 });
 
 async function tryItemSelects(saleId: string): Promise<{ data: any[] }> {
-  const selects = [
-    "qty, unit_price, line_total, product_id, product_name, product_sku, products(name, sku)",
-    "qty, unit_price, line_total, product_id, product_name, product_sku",
-    "qty, unit_price, line_total, product_id, products(name, sku)",
-    "qty, unit_price, line_total, product_id",
-  ];
-  for (const sel of selects) {
-    const res = await sb.from("sale_items").select(sel).eq("sale_id", saleId);
-    if (!res.error) return { data: res.data ?? [] };
+  // Single unembedded query — resilient to schema-cache / FK visibility issues.
+  const res = await sb.from("sale_items").select("*").eq("sale_id", saleId);
+  if (res.error) {
+    console.warn("[invoice] sale_items query failed", { saleId, error: res.error });
+    return { data: [] };
   }
-  return { data: [] };
+  const rows: any[] = res.data ?? [];
+  if (rows.length === 0) {
+    console.warn("[invoice] sale_items empty for sale", { saleId });
+    return { data: [] };
+  }
+
+  // Optional product enrichment (name/sku fallback) — safe if it fails.
+  const ids = Array.from(new Set(rows.map((r: any) => r.product_id).filter(Boolean)));
+  if (ids.length) {
+    const prodRes = await sb.from("products").select("id,name,sku").in("id", ids);
+    if (!prodRes.error && prodRes.data) {
+      const map = new Map<string, any>(prodRes.data.map((p: any) => [p.id, p]));
+      for (const r of rows) {
+        const p = map.get(r.product_id);
+        if (p) r.products = { name: p.name, sku: p.sku };
+      }
+    }
+  }
+  return { data: rows };
 }
 
 function phoneDigits(value: unknown): string {
