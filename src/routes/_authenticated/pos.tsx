@@ -716,6 +716,17 @@ function PosPage() {
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[oklch(0.97_0.005_240)] dark:bg-background text-foreground">
+      {editingSaleId && (
+        <div className="shrink-0 bg-amber-500/15 border-b border-amber-500/40 text-amber-900 dark:text-amber-200 px-3 py-1.5 flex items-center gap-3 text-xs">
+          <Pencil className="size-3.5" />
+          <span className="font-semibold">Editing sale {editingRef ?? `#${editingSaleId.slice(0, 8)}`}</span>
+          <span className="opacity-70">Save to update. Original payment (৳{editOriginalPaid.toFixed(2)}) is preserved.</span>
+          <button
+            onClick={() => { clearCart(); setDiscount(0); setShipping(0); resetCustomer(); exitEditMode(); navigate({ to: "/sales/list" }); }}
+            className="ml-auto px-2 py-0.5 rounded border border-amber-500/60 hover:bg-amber-500/20"
+          >Cancel edit</button>
+        </div>
+      )}
       {/* ============ TOP BAR ============ */}
       <header className="shrink-0 border-b border-border bg-card px-2 py-1.5 flex items-center gap-1.5 flex-wrap">
         <IconBtn title="Exit POS" onClick={() => navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /></IconBtn>
