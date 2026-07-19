@@ -786,7 +786,7 @@ function PosPage() {
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            className="sm:hidden relative h-8 w-8 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
+            className="sm:hidden relative h-7 w-7 shrink-0 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
             title="More"
           >
             <Menu className="size-4" />
