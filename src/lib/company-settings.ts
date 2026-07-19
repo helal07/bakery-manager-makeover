@@ -22,6 +22,134 @@ export const defaultCompany: CompanySettings = {
   footerNote: "Thank you for your purchase.",
 };
 
+// ============================================================
+// Invoice customization (stored in company_settings.settings.invoice)
+// ============================================================
+
+export type HeaderStyle = "gradient" | "solid" | "minimal" | "bordered";
+export type PaperSize = "58mm" | "80mm" | "A4";
+
+export type InvoiceSettings = {
+  // Header
+  headerStyle: HeaderStyle;
+  accentColor: string;         // any CSS color value
+  showLogo: boolean;
+  showBusinessName: boolean;
+  showTagline: boolean;
+  showVatReg: boolean;
+  invoiceTitle: string;        // e.g. "Invoice", "Tax Invoice", "চালান"
+  numberPrefix: string;        // e.g. "INV-"
+  numberPadding: number;       // digits, e.g. 6
+
+  // Outlet & customer
+  showOutletBlock: boolean;
+  showCustomerBlock: boolean;
+  showServedBy: boolean;
+  labelOutlet: string;
+  labelBilledTo: string;
+  labelDetails: string;
+
+  // Items table
+  colIndex: boolean;
+  colSku: boolean;
+  colQty: boolean;
+  colPrice: boolean;
+  colAmount: boolean;
+  zebraRows: boolean;
+
+  // Totals
+  showSubtotal: boolean;
+  showTax: boolean;
+  showShipping: boolean;
+  showGrandTotal: boolean;
+  showPaid: boolean;
+  showDue: boolean;
+  labelSubtotal: string;
+  labelTax: string;
+  labelShipping: string;
+  labelGrandTotal: string;
+  labelPaid: string;
+  labelDue: string;
+  currencySymbol: string;
+  decimals: number;
+
+  // Footer
+  footerNote: string;
+  termsText: string;
+  showSignatures: boolean;
+  sigCustomer: string;
+  sigAuthorized: string;
+  showPoweredBy: boolean;
+
+  // Print
+  defaultPaper: PaperSize;
+  autoPrint: boolean;
+  thermalShowLogo: boolean;
+  thermalMonospace: boolean;
+
+  // Badges
+  badgePaid: string;
+  badgePartial: string;
+  badgeCredit: string;
+};
+
+export const defaultInvoiceSettings: InvoiceSettings = {
+  headerStyle: "gradient",
+  accentColor: "hsl(var(--primary))",
+  showLogo: true,
+  showBusinessName: true,
+  showTagline: true,
+  showVatReg: true,
+  invoiceTitle: "Invoice",
+  numberPrefix: "INV-",
+  numberPadding: 6,
+
+  showOutletBlock: true,
+  showCustomerBlock: true,
+  showServedBy: true,
+  labelOutlet: "Outlet",
+  labelBilledTo: "Billed to",
+  labelDetails: "Details",
+
+  colIndex: true,
+  colSku: true,
+  colQty: true,
+  colPrice: true,
+  colAmount: true,
+  zebraRows: false,
+
+  showSubtotal: true,
+  showTax: true,
+  showShipping: true,
+  showGrandTotal: true,
+  showPaid: true,
+  showDue: true,
+  labelSubtotal: "Subtotal",
+  labelTax: "VAT",
+  labelShipping: "Shipping",
+  labelGrandTotal: "Grand Total",
+  labelPaid: "Paid",
+  labelDue: "Due",
+  currencySymbol: "৳",
+  decimals: 2,
+
+  footerNote: "Thank you for your purchase.",
+  termsText: "",
+  showSignatures: true,
+  sigCustomer: "Received by (Customer)",
+  sigAuthorized: "Authorized signature",
+  showPoweredBy: true,
+
+  defaultPaper: "80mm",
+  autoPrint: true,
+  thermalShowLogo: true,
+  thermalMonospace: true,
+
+  badgePaid: "PAID",
+  badgePartial: "PARTIAL",
+  badgeCredit: "CREDIT",
+};
+
 function fromRow(r: Record<string, unknown>): CompanySettings {
   const stored = (r.logo_url as string) ?? "";
   const isUrl = /^(https?:|data:|blob:)/i.test(stored);
@@ -39,6 +167,7 @@ function fromRow(r: Record<string, unknown>): CompanySettings {
 }
 
 const CACHE_KEY = "company-settings-cache-v1";
+const INVOICE_CACHE_KEY = "invoice-settings-cache-v1";
 
 export function getCachedCompany(): CompanySettings | null {
   if (typeof localStorage === "undefined") return null;
@@ -49,8 +178,20 @@ export function getCachedCompany(): CompanySettings | null {
   } catch { return null; }
 }
 
+export function getCachedInvoiceSettings(): InvoiceSettings | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(INVOICE_CACHE_KEY);
+    if (!raw) return null;
+    return { ...defaultInvoiceSettings, ...JSON.parse(raw) } as InvoiceSettings;
+  } catch { return null; }
+}
+
 function writeCache(c: CompanySettings) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch { /* ignore */ }
+}
+function writeInvoiceCache(s: InvoiceSettings) {
+  try { localStorage.setItem(INVOICE_CACHE_KEY, JSON.stringify(s)); } catch { /* ignore */ }
 }
 
 let inflight: Promise<CompanySettings> | null = null;
@@ -79,6 +220,54 @@ export async function getCompany(): Promise<CompanySettings> {
   try { return await inflight; } finally { inflight = null; }
 }
 
+let invoiceInflight: Promise<InvoiceSettings> | null = null;
+
+export async function getInvoiceSettings(): Promise<InvoiceSettings> {
+  if (invoiceInflight) return invoiceInflight;
+  invoiceInflight = (async () => {
+    const { data, error } = await supabase
+      .from("company_settings")
+      .select("settings")
+      .eq("is_current", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return defaultInvoiceSettings;
+    const s = (data as { settings?: { invoice?: Partial<InvoiceSettings> } }).settings;
+    const merged: InvoiceSettings = { ...defaultInvoiceSettings, ...(s?.invoice ?? {}) };
+    writeInvoiceCache(merged);
+    return merged;
+  })();
+  try { return await invoiceInflight; } finally { invoiceInflight = null; }
+}
+
+export async function saveInvoiceSettings(next: InvoiceSettings): Promise<void> {
+  const { data: existing } = await supabase
+    .from("company_settings")
+    .select("id, settings")
+    .eq("is_current", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const currentSettings = (existing?.settings as Record<string, unknown> | null) ?? {};
+  const patched = { ...currentSettings, invoice: next };
+
+  if (existing?.id) {
+    const { error } = await supabase
+      .from("company_settings")
+      .update({ settings: patched })
+      .eq("id", existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("company_settings")
+      .insert({ is_current: true, settings: patched, name: defaultCompany.name, address: defaultCompany.address });
+    if (error) throw error;
+  }
+  writeInvoiceCache(next);
+}
+
 export async function saveCompany(c: CompanySettings) {
   const payload = {
     name: c.name,
@@ -99,7 +288,6 @@ export async function saveCompany(c: CompanySettings) {
     .limit(1)
     .maybeSingle();
   if (existing?.id) {
-    // Demote any other stale "current" rows so getCompany always resolves one.
     await supabase
       .from("company_settings")
       .update({ is_current: false })
