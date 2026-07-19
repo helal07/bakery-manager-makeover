@@ -1394,7 +1394,7 @@ function ActBtn({ onClick, icon, label, tone, active, disabled }: { onClick?: ()
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`h-11 px-2 rounded-md text-xs font-bold inline-flex items-center justify-center gap-1.5 disabled:opacity-50 ${base[tone]}`}
+      className={`h-8 px-1.5 rounded-md text-[11px] font-bold inline-flex items-center justify-center gap-1 disabled:opacity-50 ${base[tone]}`}
     >
       {icon}<span className="truncate">{label}</span>
     </button>
