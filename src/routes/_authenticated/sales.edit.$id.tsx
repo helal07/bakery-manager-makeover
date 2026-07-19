@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/sales/edit/$id")({
 });
 
 function EditSale() {
-  const { id } = useParams({ from: "/sales/edit/$id" });
+  const { id } = useParams({ from: "/_authenticated/sales/edit/$id" });
   const navigate = useNavigate();
   const [customer, setCustomer] = useState("Walk-in Customer");
   const [items, setItems] = useState(1);
