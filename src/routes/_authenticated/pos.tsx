@@ -1106,24 +1106,23 @@ function PosPage() {
       </button>
 
 
-      {/* Mobile bottom tab switcher */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[65] h-12 bg-card border-t border-border grid grid-cols-2">
+      {/* Mobile: quick access to Recent + Browse products (Ultimate POS keeps grid off mobile) */}
+      <div className="lg:hidden fixed bottom-20 right-3 z-[65] flex flex-col gap-2">
         <button
-          onClick={() => setMobileTab("products")}
-          className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${mobileTab === "products" ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
+          onClick={() => { setRecentOpen(true); void loadRecentSales(); }}
+          className="size-11 grid place-items-center rounded-full bg-primary text-primary-foreground shadow-lg"
+          title="Recent transactions"
         >
-          <ScanBarcode className="size-4" /> Products
+          <History className="size-4" />
         </button>
         <button
-          onClick={() => setMobileTab("cart")}
-          className={`relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${mobileTab === "cart" ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
+          onClick={() => setMobileTab(mobileTab === "products" ? "cart" : "products")}
+          className="size-11 grid place-items-center rounded-full bg-card border border-border text-foreground shadow-lg"
+          title={mobileTab === "products" ? "Back to cart" : "Browse products"}
         >
-          <Receipt className="size-4" /> Cart ৳{total.toFixed(0)}
-          {itemCount > 0 && (
-            <span className="absolute top-1 right-6 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">{itemCount}</span>
-          )}
+          {mobileTab === "products" ? <Receipt className="size-4" /> : <ScanBarcode className="size-4" />}
         </button>
-      </nav>
+      </div>
 
       {recentOpen && (
         <div className="fixed inset-0 z-[80] bg-black/50 flex justify-end" onClick={() => setRecentOpen(false)}>
