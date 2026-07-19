@@ -63,6 +63,7 @@ export type InvoiceSettings = {
   showShipping: boolean;
   showGrandTotal: boolean;
   showPaid: boolean;
+  showPreviousDue: boolean;
   showDue: boolean;
   labelSubtotal: string;
   labelTax: string;
