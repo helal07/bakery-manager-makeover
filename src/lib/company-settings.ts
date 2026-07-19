@@ -158,6 +158,8 @@ export const defaultInvoiceSettings: InvoiceSettings = {
   labelDue: "Due",
   currencySymbol: "৳",
   decimals: 2,
+  dateFormat: "DD/MM/YYYY HH:mm",
+
 
   footerNote: "Thank you for your purchase.",
   termsText: "",
