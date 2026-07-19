@@ -75,11 +75,21 @@ export function ReceivePaymentDialog({ open, onOpenChange, customerId, customerN
       if (error) throw error;
 
       if (targetSaleId) {
-        const sale = dueSales.find((s) => s.id === targetSaleId);
-        if (sale) {
-          const newPaid = Number(sale.paid) + amt;
-          const newDue = Math.max(0, Number(sale.total) - newPaid);
-          await sb.from("sales").update({ paid: newPaid, due: newDue }).eq("id", targetSaleId);
+        // Re-fetch latest sale figures to avoid stale state overwriting concurrent updates
+        const { data: fresh } = await sb
+          .from("sales")
+          .select("total, paid")
+          .eq("id", targetSaleId)
+          .maybeSingle();
+        if (fresh) {
+          const total = Number(fresh.total || 0);
+          const newPaid = Math.min(total, Number(fresh.paid || 0) + amt);
+          const newDue = Math.max(0, total - newPaid);
+          const { error: upErr } = await sb
+            .from("sales")
+            .update({ paid: newPaid, due: newDue })
+            .eq("id", targetSaleId);
+          if (upErr) throw upErr;
         }
       }
       toast.success("Payment recorded");
