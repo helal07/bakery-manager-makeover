@@ -83,7 +83,7 @@ function AuthPage() {
               <div className="size-10 rounded-xl bg-primary text-primary-foreground grid place-items-center shadow-lg shadow-primary/40">
                 <ChefHat className="size-5" />
               </div>
-              <span className="font-semibold tracking-tight text-lg">Crumb &amp; Co.</span>
+              <span className="font-semibold tracking-tight text-lg">{brandName}</span>
             </div>
           </div>
           <div className="relative space-y-6">
@@ -113,7 +113,7 @@ function AuthPage() {
             <div className="size-9 rounded-lg bg-primary text-primary-foreground grid place-items-center">
               <ChefHat className="size-5" />
             </div>
-            <span className="font-semibold tracking-tight">Crumb &amp; Co.</span>
+            <span className="font-semibold tracking-tight">{brandName}</span>
           </div>
           <div className="mb-6">
             <h1 className="text-2xl font-semibold tracking-tight">
