@@ -942,7 +942,7 @@ function PosPage() {
           </div>
 
           {/* ============ FOOTER ACTIONS (inside 60% cart column) ============ */}
-          <footer className="shrink-0 border-t border-border bg-card px-2 py-1.5 grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+          <footer className="shrink-0 border-t border-border bg-card px-1.5 py-1 grid grid-cols-3 sm:grid-cols-6 gap-1">
             {/* Row 1 on mobile: Cancel | Multiple Pay | Cash (primary actions per Ultimate POS) */}
             <ActBtn tone="danger" onClick={clearCart} icon={<CircleX className="size-4" />} label="Cancel" />
             <ActBtn tone="dark" active={mode === "multi"} onClick={() => { setMode("multi"); openMultiPay(); }} icon={<DollarSign className="size-4" />} label="Multiple Pay" />
