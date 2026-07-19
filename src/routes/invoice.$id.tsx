@@ -7,6 +7,9 @@ import {
   getInvoiceSettings, defaultInvoiceSettings, type InvoiceSettings, type PaperSize,
 } from "@/lib/company-settings";
 import { InvoicePreview, type InvoiceSnapshot } from "@/components/invoice-preview";
+import { supabase } from "@/integrations/supabase/client";
+
+const sb = supabase as any;
 
 const invoiceSearchSchema = z.object({
   c: z.string().optional(),
@@ -24,6 +27,58 @@ export const Route = createFileRoute("/invoice/$id")({
   component: InvoiceView,
 });
 
+async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise<InvoiceSnapshot | null> {
+  // Try external_ref match first, then uuid prefix
+  let sale: any = null;
+  const byRef = await sb.from("sales").select("*").eq("external_ref", id).maybeSingle();
+  if (byRef?.data) sale = byRef.data;
+  if (!sale) {
+    const byId = await sb.from("sales").select("*").ilike("id", `${id}%`).limit(1);
+    if (byId?.data?.[0]) sale = byId.data[0];
+  }
+  if (!sale) return null;
+
+  const { data: items } = await sb
+    .from("sale_items")
+    .select("qty, unit_price, product_id, products(name, sku)")
+    .eq("sale_id", sale.id);
+
+  let showroom: any = null;
+  if (sale.showroom_id) {
+    const { data: sh } = await sb.from("showrooms")
+      .select("id,name,code,address,city,phone,manager_name")
+      .eq("id", sale.showroom_id).maybeSingle();
+    showroom = sh ?? null;
+  }
+
+  const total = Number(sale.total || 0);
+  const paid = Number(sale.paid || 0);
+  const due = Math.max(0, total - paid);
+  const mode: "cash" | "due" | "partial" = paid <= 0 ? "due" : paid >= total ? "cash" : "partial";
+  const subtotal = Number(sale.subtotal ?? total);
+  const tax = Number(sale.tax ?? 0);
+  const shipping = Number(sale.shipping ?? 0);
+
+  const ref = sale.external_ref
+    ?? `${settings.numberPrefix}${String(sale.id).slice(0, settings.numberPadding).toUpperCase()}`;
+
+  return {
+    customer: { name: sale.customer_name ?? "Walk-in Customer", phone: sale.customer_phone ?? "" },
+    branch: showroom?.name ?? "Factory",
+    showroom,
+    reference: ref,
+    date: sale.created_at ?? new Date().toISOString(),
+    mode,
+    items: (items ?? []).map((it: any) => ({
+      name: it.products?.name ?? "Item",
+      sku: it.products?.sku ?? "",
+      price: Number(it.unit_price || 0),
+      qty: Number(it.qty || 0),
+    })),
+    subtotal, tax, shipping, total, paid, due,
+  };
+}
+
 function InvoiceView() {
   const { id } = useParams({ from: "/invoice/$id" });
   const s = useSearch({ from: "/invoice/$id" });
@@ -39,13 +94,19 @@ function InvoiceView() {
       const raw = localStorage.getItem(`invoice:${id}`) ?? sessionStorage.getItem(`invoice:${id}`);
       if (raw) setStored(JSON.parse(raw) as InvoiceSnapshot);
     } catch { /* ignore */ }
-    Promise.all([getCompany(), getInvoiceSettings()]).then(([c, inv]) => {
+    Promise.all([getCompany(), getInvoiceSettings()]).then(async ([c, inv]) => {
       setCompany(c);
       setSettings(inv);
       setPaper(inv.defaultPaper);
+      // Always try to fetch fresh from DB so items/totals reflect the real sale
+      try {
+        const fromDb = await fetchSaleSnapshot(id, inv);
+        if (fromDb) setStored(fromDb);
+      } catch { /* ignore */ }
       setReady(true);
     }).catch(() => setReady(true));
   }, [id]);
+
 
   useEffect(() => {
     if (!ready) return;
