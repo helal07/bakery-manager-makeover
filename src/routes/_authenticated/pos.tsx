@@ -791,8 +791,8 @@ function PosPage() {
 
 
       {/* ============ MAIN ============ */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] overflow-hidden pb-12 lg:pb-0">
-        {/* Cart column (60%) */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] overflow-hidden">
+        {/* Cart column (60%) — full width on mobile (Ultimate POS style) */}
         <section className={`${mobileTab === "cart" ? "flex" : "hidden"} lg:flex flex-col overflow-hidden bg-card border-r border-border`}>
           {/* Toolbar inside 60% split: Customer | Price Group | Invoice Date */}
           <div className="shrink-0 border-b border-border px-2 py-1.5 grid grid-cols-1 sm:grid-cols-3 gap-1.5">
