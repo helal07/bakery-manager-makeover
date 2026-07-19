@@ -4,7 +4,7 @@ import {
   ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart,
   X, Keyboard, ArrowLeft, User, UserPlus, Users, Pause, PlayCircle, DollarSign,
   Lock, Unlock, Receipt, Calendar, Calculator, Maximize2, Briefcase,
-  CircleX, RotateCcw, CreditCard, FileText, History, Info,
+  CircleX, RotateCcw, CreditCard, FileText, History, Info, Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,9 @@ const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({ meta: [{ title: "POS · Muzahid Food" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    edit: typeof s.edit === "string" ? s.edit : undefined,
+  }),
   component: PosPage,
 });
 
@@ -39,8 +42,16 @@ const METHOD_LABEL: Record<PayMethod, string> = {
 
 function PosPage() {
   const navigate = useNavigate();
+  const { edit: editId } = Route.useSearch();
   const { currentShowroomId, showrooms, hasGlobalAccess, setCurrentShowroomId } = useShowroomScope();
   const loc = currentShowroomId ?? null;
+
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+  const [editingRef, setEditingRef] = useState<string | null>(null);
+  const [editOriginalItems, setEditOriginalItems] = useState<Array<{ product_id: string; qty: number }>>([]);
+  const [editOriginalPaid, setEditOriginalPaid] = useState(0);
+  const [editShowroomId, setEditShowroomId] = useState<string | null>(null);
+  const [editHydrated, setEditHydrated] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [recipeMap, setRecipeMap] = useState<RecipeMap>({});
@@ -328,6 +339,71 @@ function PosPage() {
   const [shipping, setShipping] = useState(0);
   const total = +(subtotal - discount + shipping).toFixed(2);
 
+  // Hydrate POS from an existing sale when ?edit=<id> is present
+  useEffect(() => {
+    if (!editId || editHydrated || products.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let row: any = null;
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(editId);
+        if (isUuid) {
+          const { data } = await sb.from("sales").select("*").eq("id", editId).maybeSingle();
+          row = data;
+        }
+        if (!row) {
+          const { data } = await sb.from("sales").select("*").eq("external_ref", editId).maybeSingle();
+          row = data;
+        }
+        if (!row) { toast.error(`Sale not found: ${editId}`); return; }
+        if (cancelled) return;
+
+        // Match sale's showroom scope so stock ops target the right location
+        if (row.showroom_id && row.showroom_id !== loc) {
+          try { setCurrentShowroomId(row.showroom_id); } catch { /* ignore */ }
+        }
+
+        const { data: items } = await sb.from("sale_items").select("*").eq("sale_id", row.id);
+        const cartMap: Record<string, number> = {};
+        const originals: Array<{ product_id: string; qty: number }> = [];
+        for (const it of items ?? []) {
+          if (!it.product_id) continue;
+          cartMap[it.product_id] = (cartMap[it.product_id] || 0) + Number(it.qty);
+          originals.push({ product_id: it.product_id, qty: Number(it.qty) });
+        }
+        if (cancelled) return;
+        setCart(cartMap);
+        setEditOriginalItems(originals);
+        setEditOriginalPaid(Number(row.paid || 0));
+        setEditShowroomId(row.showroom_id ?? null);
+        setEditingSaleId(row.id);
+        setEditingRef(row.external_ref ?? null);
+        setDiscount(Number(row.discount || 0));
+        setShipping(Number(row.shipping || 0));
+        setCustomerId(row.customer_id ?? null);
+        setCustomerName(row.customer_name || "Walk-in Customer");
+        setCustomerPhone(row.customer_phone || "");
+        if (row.customer_name) setCustQuery(`${row.customer_name}${row.customer_phone ? " · " + row.customer_phone : ""}`);
+        setMode((row.payment_mode === "due" ? "credit" : row.payment_mode === "partial" ? "multi" : (row.payment_mode || "cash")) as Mode);
+        setEditHydrated(true);
+        toast.info(`Editing sale ${row.external_ref ?? "#" + String(row.id).slice(0, 8)}`);
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to load sale for edit");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editId, editHydrated, products.length, loc, setCurrentShowroomId]);
+
+  const exitEditMode = () => {
+    setEditingSaleId(null);
+    setEditingRef(null);
+    setEditOriginalItems([]);
+    setEditOriginalPaid(0);
+    setEditShowroomId(null);
+    setEditHydrated(false);
+  };
+
+
   // Payment computation per Ultimate-POS logic
   const multiPaid = tenders.reduce((s, t) => s + (Number(t.amount) || 0), 0);
   const paid =
@@ -431,19 +507,84 @@ function PosPage() {
   async function complete() {
     if (items.length === 0) { toast.error("Cart is empty"); return; }
     if (saving) return;
-    if (mode === "credit" && isWalkIn) {
-      toast.error("Please select a customer for credit sale");
-      return;
-    }
-    if (mode === "multi" && multiPaid <= 0) {
-      toast.error("Enter tender amounts for multiple pay");
-      return;
-    }
-    if (mode === "multi" && due > 0 && isWalkIn) {
-      toast.error("Select a customer to leave a balance due");
-      return;
+    if (!editingSaleId) {
+      if (mode === "credit" && isWalkIn) {
+        toast.error("Please select a customer for credit sale");
+        return;
+      }
+      if (mode === "multi" && multiPaid <= 0) {
+        toast.error("Enter tender amounts for multiple pay");
+        return;
+      }
+      if (mode === "multi" && due > 0 && isWalkIn) {
+        toast.error("Select a customer to leave a balance due");
+        return;
+      }
     }
     setSaving(true);
+
+    // ============ EDIT MODE ============
+    if (editingSaleId) {
+      try {
+        // 1. Stock delta: reverse old, apply new (positive = returned to stock)
+        const oldMap = new Map<string, number>();
+        for (const l of editOriginalItems) oldMap.set(l.product_id, (oldMap.get(l.product_id) || 0) + l.qty);
+        const newMap = new Map<string, number>();
+        for (const { p, qty } of items) newMap.set(p.id, (newMap.get(p.id) || 0) + qty);
+        const pids = new Set<string>([...oldMap.keys(), ...newMap.keys()]);
+        const ops: Promise<any>[] = [];
+        for (const pid of pids) {
+          const delta = (oldMap.get(pid) || 0) - (newMap.get(pid) || 0);
+          if (delta !== 0) {
+            ops.push(sb.rpc("commit_stock_movement", {
+              _product_id: pid, _showroom_id: editShowroomId, _qty: delta,
+              _kind: "sale_edit", _ref_type: "sale", _ref_id: editingSaleId, _note: "POS edit",
+            }));
+          }
+        }
+        const results = await Promise.all(ops);
+        for (const r of results) if ((r as any)?.error) throw new Error((r as any).error.message);
+
+        // 2. Replace sale_items
+        const { error: delErr } = await sb.from("sale_items").delete().eq("sale_id", editingSaleId);
+        if (delErr) throw delErr;
+        const newLines = items.map(({ p, qty }) => {
+          const up = priceFor(p);
+          return {
+            sale_id: editingSaleId, product_id: p.id, product_name: p.name, product_sku: p.sku,
+            qty, unit_price: up, line_total: +(up * qty).toFixed(2),
+          };
+        });
+        const { error: insErr } = await sb.from("sale_items").insert(newLines);
+        if (insErr) throw insErr;
+
+        // 3. Update sale header (preserve original paid; recompute due)
+        const newDue = +Math.max(0, total - editOriginalPaid).toFixed(2);
+        const { error: upErr } = await sb.from("sales").update({
+          customer_id: customerId,
+          customer_name: customerName.trim() || "Walk-in Customer",
+          customer_phone: customerPhone.trim() || null,
+          subtotal, discount, tax: 0, shipping, total,
+          paid: editOriginalPaid, due: newDue,
+        }).eq("id", editingSaleId);
+        if (upErr) throw upErr;
+
+        invalidate("pos:products:");
+        toast.success(`Sale ${editingRef ?? ""} updated · ৳${total.toFixed(2)}`);
+        clearCart();
+        setDiscount(0);
+        setShipping(0);
+        resetCustomer();
+        exitEditMode();
+        navigate({ to: "/sales/list" });
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to update sale");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const externalRef = `TX-${Math.floor(Math.random() * 9000) + 1000}`;
     try {
       const { data: userRes } = await supabase.auth.getUser();
@@ -575,6 +716,17 @@ function PosPage() {
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[oklch(0.97_0.005_240)] dark:bg-background text-foreground">
+      {editingSaleId && (
+        <div className="shrink-0 bg-amber-500/15 border-b border-amber-500/40 text-amber-900 dark:text-amber-200 px-3 py-1.5 flex items-center gap-3 text-xs">
+          <Pencil className="size-3.5" />
+          <span className="font-semibold">Editing sale {editingRef ?? `#${editingSaleId.slice(0, 8)}`}</span>
+          <span className="opacity-70">Save to update. Original payment (৳{editOriginalPaid.toFixed(2)}) is preserved.</span>
+          <button
+            onClick={() => { clearCart(); setDiscount(0); setShipping(0); resetCustomer(); exitEditMode(); navigate({ to: "/sales/list" }); }}
+            className="ml-auto px-2 py-0.5 rounded border border-amber-500/60 hover:bg-amber-500/20"
+          >Cancel edit</button>
+        </div>
+      )}
       {/* ============ TOP BAR ============ */}
       <header className="shrink-0 border-b border-border bg-card px-2 py-1.5 flex items-center gap-1.5 flex-wrap">
         <IconBtn title="Exit POS" onClick={() => navigate({ to: "/dashboard" })}><ArrowLeft className="size-4" /></IconBtn>
