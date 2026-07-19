@@ -246,7 +246,7 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
                   <div className="flex justify-between font-semibold pt-1.5 mt-1 border-t border-border">
                     <span>Today's Bill</span><span className="tabular-nums">{money(snapshot.total)}</span>
                   </div>
-                  {previousDue > 0 && (
+                  {s.showPreviousDue && (
                     <div className="flex justify-between text-amber-800">
                       <span>Previous Due</span><span className="tabular-nums">+ {money(previousDue)}</span>
                     </div>
