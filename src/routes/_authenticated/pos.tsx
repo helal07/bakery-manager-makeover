@@ -873,15 +873,25 @@ function PosPage() {
 
 
 
-          {/* Product search inside 60% split */}
-          <div className="shrink-0 border-b border-border px-2 py-1.5">
-            <ProductSearchBox
-              inputRef={searchRef}
-              query={query}
-              setQuery={setQuery}
-              products={products}
-              onPick={addFromSearch}
-            />
+          {/* Product search + scan/browse toggle */}
+          <div className="shrink-0 border-b border-border px-2 py-1.5 flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <ProductSearchBox
+                inputRef={searchRef}
+                query={query}
+                setQuery={setQuery}
+                products={products}
+                onPick={addFromSearch}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileTab(mobileTab === "products" ? "cart" : "products")}
+              className="lg:hidden shrink-0 h-9 w-9 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
+              title={mobileTab === "products" ? "Back to cart" : "Browse products"}
+            >
+              {mobileTab === "products" ? <Receipt className="size-4" /> : <ScanBarcode className="size-4" />}
+            </button>
           </div>
 
           <div className="grid grid-cols-[1fr_130px_100px_32px] sm:grid-cols-[1fr_170px_130px_36px] text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 px-2 sm:px-4 py-2 border-b-2 border-primary/40 bg-slate-100 dark:bg-slate-800/60">
