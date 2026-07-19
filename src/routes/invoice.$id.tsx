@@ -99,6 +99,7 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
       sku: it.products?.sku ?? "",
       price: Number(it.unit_price || 0),
       qty: Number(it.qty || 0),
+      discount: Number(it.discount_amount || 0),
     })),
     subtotal, discount, tax, shipping, total, paid, due,
     previousDue,
