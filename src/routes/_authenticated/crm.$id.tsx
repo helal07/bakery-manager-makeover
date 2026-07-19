@@ -186,12 +186,20 @@ function CustomerDetail() {
       title={customer?.name ?? "Customer"}
       subtitle="Purchase history · payments · outstanding balance"
       actions={
-        <button
-          onClick={() => router.history.back()}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted"
-        >
-          <ArrowLeft className="size-4" /> Back
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.history.back()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted"
+          >
+            <ArrowLeft className="size-4" /> Back
+          </button>
+          <Button size="sm" variant="outline" onClick={() => navigate({ to: "/crm/$id/ledger", params: { id } })}>
+            <BookOpen className="size-4 mr-1" /> Full Ledger
+          </Button>
+          <Button size="sm" onClick={() => setPayOpen(true)} disabled={!customer}>
+            <Wallet className="size-4 mr-1" /> Receive Payment
+          </Button>
+        </div>
       }
     >
       {loading && <Card className="p-6 text-sm text-muted-foreground">Loading…</Card>}
