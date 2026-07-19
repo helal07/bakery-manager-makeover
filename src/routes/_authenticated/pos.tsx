@@ -755,7 +755,7 @@ function PosPage() {
         />
 
 
-        <LiveClock register={register} />
+        <div className="hidden sm:block"><LiveClock register={register} /></div>
 
 
         {customerId && customerDue > 0 && (
