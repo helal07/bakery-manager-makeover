@@ -746,7 +746,19 @@ function PosPage() {
           {showrooms.length === 0 && <option value="">No showroom</option>}
         </select>
 
+        <div className="relative">
+          <Calendar className="size-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <input
+            type="date"
+            value={invoiceDate}
+            onChange={(e) => setInvoiceDate(e.target.value)}
+            title="Invoice date"
+            className="h-8 pl-7 pr-1.5 rounded-md border border-border bg-background text-xs font-semibold outline-none focus:border-primary"
+          />
+        </div>
+
         <LiveClock register={register} />
+
 
         {customerId && customerDue > 0 && (
           <div
