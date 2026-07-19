@@ -1084,11 +1084,30 @@ function PosPage() {
       {/* Floating: Recent Transactions */}
       <button
         onClick={() => { setRecentOpen(true); void loadRecentSales(); }}
-        className="fixed bottom-4 right-4 z-[70] h-11 px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg hover:opacity-90 inline-flex items-center gap-2"
+        className="fixed bottom-16 right-3 lg:bottom-4 lg:right-4 z-[70] h-10 w-10 lg:h-11 lg:w-auto lg:px-4 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg hover:opacity-90 inline-flex items-center justify-center gap-2"
         title="Today's recent sales"
       >
-        <History className="size-4" /> Recent Transactions
+        <History className="size-4" /> <span className="hidden lg:inline">Recent Transactions</span>
       </button>
+
+      {/* Mobile bottom tab switcher */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[65] h-12 bg-card border-t border-border grid grid-cols-2">
+        <button
+          onClick={() => setMobileTab("products")}
+          className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${mobileTab === "products" ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
+        >
+          <ScanBarcode className="size-4" /> Products
+        </button>
+        <button
+          onClick={() => setMobileTab("cart")}
+          className={`relative flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${mobileTab === "cart" ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
+        >
+          <Receipt className="size-4" /> Cart ৳{total.toFixed(0)}
+          {itemCount > 0 && (
+            <span className="absolute top-1 right-6 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold">{itemCount}</span>
+          )}
+        </button>
+      </nav>
 
       {recentOpen && (
         <div className="fixed inset-0 z-[80] bg-black/50 flex justify-end" onClick={() => setRecentOpen(false)}>
