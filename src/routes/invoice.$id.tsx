@@ -42,7 +42,7 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
 
   const { data: items } = await sb
     .from("sale_items")
-    .select("qty, unit_price, line_total, discount_amount, product_id, products(name, sku)")
+    .select("qty, unit_price, line_total, product_id, product_name, product_sku, products(name, sku)")
     .eq("sale_id", sale.id);
 
   const { data: pays } = await sb
