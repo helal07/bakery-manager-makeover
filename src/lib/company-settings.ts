@@ -63,6 +63,7 @@ export type InvoiceSettings = {
   showShipping: boolean;
   showGrandTotal: boolean;
   showPaid: boolean;
+  showPreviousDue: boolean;
   showDue: boolean;
   labelSubtotal: string;
   labelTax: string;
@@ -123,6 +124,7 @@ export const defaultInvoiceSettings: InvoiceSettings = {
   showShipping: true,
   showGrandTotal: true,
   showPaid: true,
+  showPreviousDue: true,
   showDue: true,
   labelSubtotal: "Subtotal",
   labelTax: "VAT",

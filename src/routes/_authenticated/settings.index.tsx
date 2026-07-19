@@ -294,6 +294,7 @@ function SettingsPage() {
                     <Toggle label="Show shipping" checked={invoice.showShipping} onChange={v => patchInvoice({ showShipping: v })} />
                     <Toggle label="Show grand total" checked={invoice.showGrandTotal} onChange={v => patchInvoice({ showGrandTotal: v })} />
                     <Toggle label="Show paid" checked={invoice.showPaid} onChange={v => patchInvoice({ showPaid: v })} />
+                    <Toggle label="Show previous due" checked={invoice.showPreviousDue} onChange={v => patchInvoice({ showPreviousDue: v })} />
                     <Toggle label="Show due" checked={invoice.showDue} onChange={v => patchInvoice({ showDue: v })} />
                   </div>
                 </Panel>

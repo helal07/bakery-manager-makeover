@@ -39,7 +39,7 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
 
   const { data: items } = await sb
     .from("sale_items")
-    .select("qty, unit_price, line_total, product_id, products(name, sku)")
+    .select("qty, unit_price, line_total, discount_amount, product_id, products(name, sku)")
     .eq("sale_id", sale.id);
 
   const { data: pays } = await sb
@@ -99,6 +99,7 @@ async function fetchSaleSnapshot(id: string, settings: InvoiceSettings): Promise
       sku: it.products?.sku ?? "",
       price: Number(it.unit_price || 0),
       qty: Number(it.qty || 0),
+      discount: Number(it.discount_amount || 0),
     })),
     subtotal, discount, tax, shipping, total, paid, due,
     previousDue,
@@ -121,19 +122,22 @@ function InvoiceView() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`invoice:${id}`) ?? sessionStorage.getItem(`invoice:${id}`);
-      if (raw) setStored(JSON.parse(raw) as InvoiceSnapshot);
-    } catch { /* ignore */ }
     Promise.all([getCompany(), getInvoiceSettings()]).then(async ([c, inv]) => {
       setCompany(c);
       setSettings(inv);
       setPaper(inv.defaultPaper);
-      // Always try to fetch fresh from DB so items/totals reflect the real sale
+      // Prefer fresh DB data; fall back to local snapshot only if DB has nothing
+      let snap: InvoiceSnapshot | null = null;
       try {
-        const fromDb = await fetchSaleSnapshot(id, inv);
-        if (fromDb) setStored(fromDb);
+        snap = await fetchSaleSnapshot(id, inv);
       } catch { /* ignore */ }
+      if (!snap) {
+        try {
+          const raw = localStorage.getItem(`invoice:${id}`) ?? sessionStorage.getItem(`invoice:${id}`);
+          if (raw) snap = JSON.parse(raw) as InvoiceSnapshot;
+        } catch { /* ignore */ }
+      }
+      if (snap) setStored(snap);
       setReady(true);
     }).catch(() => setReady(true));
   }, [id]);
