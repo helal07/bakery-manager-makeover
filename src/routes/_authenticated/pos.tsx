@@ -42,8 +42,16 @@ const METHOD_LABEL: Record<PayMethod, string> = {
 
 function PosPage() {
   const navigate = useNavigate();
+  const { edit: editId } = Route.useSearch();
   const { currentShowroomId, showrooms, hasGlobalAccess, setCurrentShowroomId } = useShowroomScope();
   const loc = currentShowroomId ?? null;
+
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+  const [editingRef, setEditingRef] = useState<string | null>(null);
+  const [editOriginalItems, setEditOriginalItems] = useState<Array<{ product_id: string; qty: number }>>([]);
+  const [editOriginalPaid, setEditOriginalPaid] = useState(0);
+  const [editShowroomId, setEditShowroomId] = useState<string | null>(null);
+  const [editHydrated, setEditHydrated] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [recipeMap, setRecipeMap] = useState<RecipeMap>({});
