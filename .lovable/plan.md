@@ -1,51 +1,73 @@
 
-## Problem
+## লক্ষ্য
 
-Two invoice surfaces render differently even though they share `/invoice/$id` and `<InvoicePreview />`:
+দুইটা সম্পূর্ণ আলাদা ব্যাকেন্ড চলবে একই কোডবেসে:
 
-- **POS → F9 → auto-open**: opens `window.open("/invoice/${sale.id}", ...)` with a local snapshot stashed in `localStorage:invoice:<saleId>`. That snapshot is missing `discount`, `shipping`, `previousDue`, and `payments`, so the preview shows no "Discount" line and the *Today's Bill + Previous Due = Total − Today Payment = Due Till Today* block collapses (rows are conditional on non-zero values).
-- **Sales List → Print**: no local snapshot, so `fetchSaleSnapshot()` runs and pulls `sale.discount`, computes `previousDue`, loads `sale_payments` → full breakdown → looks like "a different invoice".
+- **Lovable Cloud Supabase** → Lovable-এর ভিতরে live preview / development-এর জন্য
+- **Self-hosted VPS Supabase** (`supabase.muzahidfood.com`) → GitHub mirror → Coolify auto-deploy → production
 
-Confirmed:
-- `src/routes/_authenticated/pos.tsx` (~L481) snapshot omits `discount`, `shipping`, `previousDue`, `payments`.
-- `src/routes/invoice.$id.tsx` eagerly renders the localStorage snapshot; DB fetch overwrites, but auto-print can fire on the partial version.
-- `src/components/invoice-preview.tsx` — breakdown rows exist but are conditionally hidden when values are 0.
-- DB: `sales.discount` exists, `sales.shipping` does **not**. `sale_items` already has `discount_amount` (from legacy part 9) — no new column needed.
+Frontend কোড একটাই — শুধু env variable আলাদা হবে, তাই কোনো কোড duplication লাগবে না।
 
-## Fix (data parity + breakdown rows + wire per-line discount storage)
+## কিভাবে কাজ করবে
 
-### 1. `src/routes/_authenticated/pos.tsx` — enrich the invoice snapshot before opening the print window
+Vite automatically env ফাইল আলাদা করে:
 
-In the sale-completion block, include on the snapshot:
-- `discount` (sale-level, already in state),
-- `shipping` (already in state),
-- `previousDue`: reuse the `customerDue` already computed in the header,
-- `payments`: mirror the `payRows` we just inserted (`{ method, amount, reference }`),
-- `customer.address` when a saved customer is selected.
+```text
+Lovable preview / dev  →  .env             (Cloud Supabase)
+Coolify production build →  .env.production  (VPS Supabase)
+```
 
-Also persist per-line discount when inserting `sale_items`: add `discount_amount: Number(line.discount || 0)` to each row (column already exists). If the current POS UI has no per-line discount input, pass 0 for now — the storage path is wired so future UI changes just flow through.
+এই split এখনই setup করা আছে — কোনো কোড change লাগবে না, শুধু নিশ্চিত করতে হবে দুই ব্যাকেন্ডের schema সবসময় sync থাকে।
 
-### 2. `src/routes/invoice.$id.tsx` — always prefer fresh DB data before printing
+```text
+                    ┌──────────────────────────┐
+                    │   Lovable কোডবেস (one)   │
+                    └────────────┬─────────────┘
+                                 │ git push
+                    ┌────────────┴─────────────┐
+                    ▼                          ▼
+           Lovable preview               GitHub mirror
+           uses .env                     → Coolify build
+           → Cloud Supabase              uses .env.production
+                                         → VPS Supabase
+```
 
-- Keep the localStorage read as a fallback only; don't set `stored` from it eagerly. Instead, await `fetchSaleSnapshot()` and only fall back to the localStorage snapshot if the DB fetch returns nothing.
-- Include `sale_items.discount_amount` in the select and map it to `discount` on each `InvoiceLine`.
-- Coerce `sale.shipping` safely with `Number(sale.shipping ?? 0)` (schema currently lacks the column; treat as 0).
-- Auto-print already waits for `ready`; keep that gate — this ensures the DB-hydrated snapshot is what prints.
+## Migration workflow (সবচেয়ে গুরুত্বপূর্ণ)
 
-### 3. `src/components/invoice-preview.tsx` — always render the breakdown skeleton
+প্রতিবার schema change করলে **একই SQL দুই জায়গায় যাবে**:
 
-The block *Today's Bill + Previous Due = Total − Today Payment = Due Till Today* currently hides rows when their values are 0, breaking the equation visually. Change so:
-- "Previous Due" row renders whenever a new `showPreviousDue` toggle is on (default true), even when 0.
-- "Today Payment" row renders whenever `s.showPaid` is on, regardless of amount.
-- Mirror the same three-row structure into the thermal (58/80mm) layout for parity.
+1. আমি `sql/NN_short_name.sql` ফাইল তৈরি করব (VPS-এর জন্য — তুমি Supabase Studio-তে paste করবে)
+2. একই SQL আমি `supabase--migration` tool দিয়ে Lovable Cloud-এ apply করব (তুমি approve করলে auto-run হবে)
+3. `sql/applied.md`-এ tick করে রাখবে VPS-এ কোনটা চালানো হয়েছে
 
-No visual redesign — only unhiding rows and adding the missing per-line `discount` column value already supported by the type.
+এতে দুই DB সবসময় same schema-তে থাকবে, code একই থাকবে, দুই জায়গায় test করা যাবে।
 
-### 4. `src/lib/company-settings.ts` — add `showPreviousDue` toggle
+## এখন যা করতে হবে (setup steps)
 
-Add `showPreviousDue: boolean` to `InvoiceSettings` (default `true`) and expose it as a checkbox in the Invoice tab of `src/routes/_authenticated/settings.index.tsx` under existing Totals toggles.
+1. **Lovable Cloud-এ full baseline apply**
+   `sql/00_baseline.sql` + `sql/02` … `sql/09` — সব একে একে Cloud-এ migration হিসেবে চালাব যাতে Cloud DB VPS-এর current state-এর সাথে match করে।
+2. **Cloud-এ প্রথম owner user তৈরি**
+   Cloud-এ Lovable preview খুলে auth page থেকে sign up করলে auto-trigger `owner` role দিয়ে দেবে (baseline-এই trigger আছে)।
+3. **Cloud-এ demo data (optional)**
+   Preview-তে test করার জন্য `sql/01_seed.sql`-এর equivalent Cloud-এ চালাব যাতে products/showroom/customer থাকে।
+4. **Verify parity**
+   Cloud preview-এ POS → sale → invoice flow test করব; VPS-এ same flow তুমি deploy-এর পর test করবে। দুই জায়গায় behavior একই হওয়া উচিত।
+5. **নতুন feature workflow লক করা**
+   এই turn-এর পর থেকে যেকোনো backend change-এ আমি সবসময় দুইটা জিনিস একসাথে দেব: `sql/NN_*.sql` ফাইল + `supabase--migration` call। তুমি শুধু approve চাপবে (Cloud auto-apply) এবং VPS Studio-তে ফাইলটা paste করবে।
 
-## Out of scope
+## যা change হবে না
 
-- Restyling the invoice — only data parity and the missing breakdown rows.
-- Adding a per-line discount input to the POS cart UI — storage path is wired; UI stays as-is unless requested next.
+- Frontend কোড, mirror workflow, Coolify auto-deploy — সব যেমন আছে তেমনি থাকবে
+- `.env` / `.env.production` structure — already correct
+- VPS-এর কোনো data touch হবে না; শুধু নতুন migration ফাইল তুমি ম্যানুয়ালি apply করবে
+
+## Technical notes
+
+- `.env` git-ignored করা উচিত না — Lovable preview build-এ এটা লাগে (Cloud URL/key public anon key, safe)
+- `.env.production` VPS credentials আছে — এটাও public anon key, তবু ইচ্ছা করলে GitHub secrets-এ move করা যায় future-এ
+- Service role key কোথাও committed নেই — Coolify secret + Lovable Cloud managed
+- দুই DB-তে data আলাদা থাকবে (independent) — এটাই চাওয়া, preview data প্রোডাকশনে impact করবে না
+
+## Approve করলে যা করব প্রথম
+
+Cloud-এ `sql/00_baseline.sql` full apply করার জন্য `supabase--migration` call দেব — তুমি approve চাপলে Cloud DB আজকের VPS state-এর সাথে match করবে, তারপর একে একে `sql/02` থেকে `sql/09` apply করব।
