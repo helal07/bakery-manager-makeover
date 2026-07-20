@@ -372,7 +372,9 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
         {s.footerNote && <div style={{ textAlign: "center", fontSize: 10, whiteSpace: "pre-wrap" }}>{s.footerNote}</div>}
         {s.termsText && <div style={{ textAlign: "center", fontSize: 9, marginTop: 3, whiteSpace: "pre-wrap" }}>{s.termsText}</div>}
         {s.showPoweredBy && (
-          <div style={{ textAlign: "center", fontSize: 9, marginTop: 4, opacity: 0.7 }}>Powered by {company.name}</div>
+          <div style={{ textAlign: "center", fontSize: 9, marginTop: 4, opacity: 0.7 }}>
+            Powered by IT Solution<br />www.itsolution.bd
+          </div>
         )}
       </div>
     </div>
