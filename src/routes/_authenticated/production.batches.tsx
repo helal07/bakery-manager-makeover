@@ -13,11 +13,13 @@ export const Route = createFileRoute("/_authenticated/production/batches")({
 
 type Batch = {
   id: string;
+  fullId: string;
   product: string;
   qty: number;
   date: string;
   status: "Completed";
 };
+
 
 function Production() {
   const { currentShowroomId } = useShowroomScope();
