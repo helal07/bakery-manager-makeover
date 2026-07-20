@@ -1,62 +1,51 @@
-## লক্ষ্য
-Production মডিউলটা এমনভাবে সাজানো যেন যেকোনো নতুন ইউজার ৩০ সেকেন্ডে বুঝে ফেলে — শুধু দুইটা কাজ: **রেসিপি বানাও**, তারপর **Produce চাপো**। বাকি সব (Work Order, QC, Wastage, Repurpose, Reports) "Advanced" ভাঁজে লুকানো থাকবে।
+## Goal
+Production home (`/production`) কে একটি real "Production Dashboard" বানানো — যেখানে এক নজরে আজকের/মাসের production picture দেখা যাবে, শুধু navigation tile নয়।
 
-## নতুন Production Home layout
+## Layout (top → bottom)
 
-```text
-┌─────────────────────────────────────────────┐
-│  Production                                 │
-│  Recipe বানান → Produce চাপুন → শেষ         │
-├─────────────────────────────────────────────┤
-│  ┌────────────┐   ┌────────────┐            │
-│  │ 📖 Recipes │   │ 🏭 Produce │  ← বড় ২টা  │
-│  │  & BOM     │   │  (1-click) │    tile    │
-│  └────────────┘   └────────────┘            │
-│                                             │
-│  Recent batches (last 5) — inline preview  │
-│                                             │
-│  ▸ Advanced (collapsed)                     │
-│     Work Orders · QC · Wastage · Repurpose  │
-│     · Recipe Categories · Cost Report       │
-│     · Consumption Report · Batches history  │
-└─────────────────────────────────────────────┘
-```
+1. **Date range filter bar** — Today · This Week · This Month · Custom (date-from/to). Default: Today.
+   - Second row: Product filter (optional, all products by default).
 
-## নতুন "Produce" পেজ (`/production/produce`) — one-click flow
+2. **KPI cards (grid, 4 per row)**
+   - Total Production (qty units + batch count) — from `stock_ledger` kind=`production`.
+   - Total Transfers Out (qty + transfer count) — from `transfers` / `transfer_items`, factory → showroom.
+   - Wastage (qty + value) — from `wastage_log`.
+   - Current Stock Value — Factory raw material stock value + finished goods stock value (raw_material_stock × cost, product_stock × cost).
+   - Batches: Completed vs Running (from `stock_ledger` production entries; running = today's produce not yet transferred, optional).
+   - Raw Material Consumed (value) — from `raw_stock_ledger` kind=`production_consume` in range.
+   - Avg Cost / Unit — consumed value ÷ produced qty.
+   - Top produced product (name + qty) in range.
 
-একটাই screen, একটাই form:
+3. **Charts row**
+   - Bar chart: Daily production qty over selected range (Recharts).
+   - Bar/line: Daily wastage qty.
+   - Donut: Production share by product (top 5 + others).
 
-1. **Product dropdown** — শুধু যেসব product-এর recipe define করা আছে সেগুলোই দেখাবে (recipe না থাকলে disabled + "Set recipe first" link)।
-2. **Batch quantity** input (default 1)।
-3. Product select করলেই নিচে **auto preview**:
-   - কী কী raw material লাগবে (qty × batch)
-   - প্রতিটার current stock — সবুজ (enough) / লাল (short)
-   - Total estimated cost
-4. **[Produce Now]** — বড় primary বাটন। চাপলে:
-   - Confirm dialog: "X batch of Y produce করবেন? Z raw material কাটা যাবে।"
-   - Yes → existing `commit_production_batch` RPC কল → toast "✓ Produced" → form reset + recent batches list-এ instant append।
-5. যদি কোনো raw material short হয়, Produce বাটন disabled + "Not enough: sugar 2kg short" red banner।
+4. **Two-column tables**
+   - Recent batches (existing, keep) — last 8, with product, qty, date, cost.
+   - Low stock alerts — raw materials where `raw_material_stock.quantity <= min_stock`.
 
-এতে Work Order/QC কিছুই লাগবে না — এক ক্লিকেই stock কাটা + finished stock যোগ।
+5. **Keep** existing "Advanced" collapsible section for less-used sub-pages (Repurpose, Cost Report, Consumption Report). Remove the two big primary tiles at top (New Production / Recipes already in sidebar) OR keep as small quick-action buttons in the header.
 
-## Recipes পেজ — minor polish
-- উপরে বড় হেল্প ব্যানার: "একটা product-এর জন্য কোন raw material কতটুকু লাগে সেটা এখানে define করুন। এরপর Produce পেজ থেকে এক ক্লিকে batch বানাতে পারবেন।"
-- প্রতিটা recipe card-এ "▶ Produce" shortcut বাটন — সরাসরি `/production/produce?product=ID` prefill।
+## Data sources (existing tables, no schema change needed)
+- `stock_ledger` (kind=`production`, showroom_id IS NULL) → production qty/batches.
+- `raw_stock_ledger` (kind=`production_consume`) → consumption value (join `raw_materials.cost`).
+- `wastage_log` → wastage qty + value.
+- `product_stock` + `products.cost` → finished stock value.
+- `raw_material_stock` + `raw_materials.cost` → raw stock value + low-stock alerts.
+- `transfers` + `transfer_items` → transfers count/qty in range.
 
-## Advanced section behavior
-- Production home-এ collapsed accordion, default বন্ধ।
-- Expand করলে আগের ৮টা tile grid দেখাবে (Work Orders, QC, Wastage, Repurpose, Recipe Categories, Cost Report, Consumption Report, Batches history)।
-- URLs / routes / permissions — সব unchanged, শুধু visibility চেঞ্জ।
+All queries client-side via `supabase` client with date filters on `created_at`. Parallel fetch with `Promise.all`, wrapped in a single `useEffect` keyed by date range. No new migration file needed.
 
-## যে ফাইল বদলাবে / নতুন হবে
-- **নতুন**: `src/routes/_authenticated/production.produce.tsx` — one-click Produce screen।
-- **Rewrite**: `src/routes/_authenticated/production.index.tsx` — নতুন 2-tile + recent batches + collapsed Advanced।
-- **Update**: `src/routes/_authenticated/recipes.tsx` — help banner + per-recipe "Produce" shortcut।
-- **কোনো DB migration লাগবে না** — existing `commit_production_batch` RPC আর tables যথেষ্ট।
+## Files to touch
+- `src/routes/_authenticated/production.index.tsx` — full rewrite as dashboard.
+- Optional new component `src/components/production/kpi-card.tsx` for reuse (or inline).
+- Use existing `recharts` (already used elsewhere) for charts.
 
-## যা অপরিবর্তিত
-- Work Orders, QC, Wastage, Repurpose, Reports — কোড unchanged, শুধু home থেকে সরাসরি না দেখিয়ে Advanced-এ।
-- RBAC permissions (`production.access`, `production.recipes.view` ইত্যাদি) — same।
-- VPS-এ কিছু চালাতে হবে না।
+## Out of scope
+- No schema/DB changes → no new SQL migration file.
+- No changes to sidebar or other production sub-pages.
+- "Running batch" concept — only shown if trivially derivable from existing ledger; otherwise omitted to avoid new tables.
 
-Approve করলে implement শুরু করি।
+## Deliverable
+Production dashboard যেখানে দিনের/মাসের production KPI, charts, low-stock alerts, recent batches সব একসাথে দেখা যাবে — filter করে date range change করা যাবে।
