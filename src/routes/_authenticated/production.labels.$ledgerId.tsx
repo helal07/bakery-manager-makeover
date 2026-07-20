@@ -3,11 +3,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, Card } from "@/components/app-shell";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getCompanyName, pageTitle } from "@/lib/company-settings";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer, ArrowLeft, Eye, X } from "lucide-react";
 import { toast } from "sonner";
 
 type Layout = "a4" | "roll";
+
 
 export const Route = createFileRoute("/_authenticated/production/labels/$ledgerId")({
   head: () => ({ meta: [{ title: pageTitle("Print Labels") }] }),
@@ -74,6 +76,8 @@ function LabelsPage() {
 
   const labels = useMemo(() => Array.from({ length: Math.max(0, count) }, (_, i) => i), [count]);
 
+  const [previewOpen, setPreviewOpen] = useState(false);
+
   return (
     <AppShell
       title="Print Batch Labels"
@@ -84,10 +88,11 @@ function LabelsPage() {
             <ArrowLeft className="size-4" /> Back
           </Link>
           <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+            onClick={() => setPreviewOpen(true)}
+            disabled={!info || count === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50"
           >
-            <Printer className="size-4" /> Print
+            <Eye className="size-4" /> Preview & Print
           </button>
         </div>
       }
@@ -131,18 +136,59 @@ function LabelsPage() {
         </div>
       </Card>
 
-      {loading && <Card className="p-6 text-sm text-muted-foreground">Loading batch…</Card>}
+      {loading && <Card className="p-6 text-sm text-muted-foreground print:hidden">Loading batch…</Card>}
       {!loading && info && count === 0 && (
-        <Card className="p-6 text-sm text-muted-foreground print:hidden">Enter a number of labels above to preview.</Card>
+        <Card className="p-6 text-sm text-muted-foreground print:hidden">Set the number of labels above, then click Preview & Print.</Card>
+      )}
+      {!loading && info && count > 0 && (
+        <Card className="p-4 print:hidden">
+          <div className="text-xs text-muted-foreground mb-3">Inline preview (first {Math.min(count, 10)} of {count})</div>
+          <div className={layout === "a4" ? "labels-a4" : "labels-roll"}>
+            {labels.slice(0, 10).map((i) => (
+              <LabelCell key={i} info={info} company={company} />
+            ))}
+          </div>
+        </Card>
       )}
 
-      {!loading && info && count > 0 && (
-        <div className={layout === "a4" ? "labels-a4" : "labels-roll"}>
-          {labels.map((i) => (
-            <LabelCell key={i} info={info} company={company} />
-          ))}
-        </div>
-      )}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-hidden p-0 print:max-w-none print:max-h-none print:h-auto print:overflow-visible print:shadow-none print:border-0">
+          <DialogHeader className="px-5 py-3 border-b flex-row items-center justify-between space-y-0 print:hidden">
+            <DialogTitle className="text-sm">
+              Print preview — {layout === "a4" ? "A4 sticker sheet" : "38 × 25 mm roll"} · {count} label{count !== 1 ? "s" : ""}
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs hover:bg-primary/90"
+              >
+                <Printer className="size-3.5" /> Print now
+              </button>
+              <button
+                onClick={() => setPreviewOpen(false)}
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md border text-xs hover:bg-muted"
+              >
+                <X className="size-3.5" /> Close
+              </button>
+            </div>
+          </DialogHeader>
+          <div className="overflow-auto bg-muted/40 p-6 print:bg-white print:p-0" style={{ maxHeight: "80vh" }}>
+            {info && (
+              <div className="print-area mx-auto bg-white shadow-sm print:shadow-none" style={{
+                width: layout === "a4" ? "210mm" : "38mm",
+                minHeight: layout === "a4" ? "297mm" : undefined,
+                padding: layout === "a4" ? "5mm" : "0",
+              }}>
+                <div className={layout === "a4" ? "labels-a4" : "labels-roll"}>
+                  {labels.map((i) => (
+                    <LabelCell key={i} info={info} company={company} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .labels-a4 {
@@ -179,6 +225,9 @@ function LabelsPage() {
         .label-company { font-size: 5.5pt; text-align: center; color: #475569; letter-spacing: 0.2px; }
         @media print {
           @page { size: ${layout === "roll" ? "38mm 25mm" : "A4"}; margin: ${layout === "roll" ? "0" : "5mm"}; }
+          body * { visibility: hidden !important; }
+          .print-area, .print-area * { visibility: visible !important; }
+          .print-area { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; padding: 0 !important; }
           .label-cell { border: none; }
           .labels-roll .label-cell { page-break-after: always; }
         }
@@ -186,6 +235,7 @@ function LabelsPage() {
     </AppShell>
   );
 }
+
 
 function LabelCell({ info, company }: { info: BatchInfo; company: string }) {
   const ref = useRef<SVGSVGElement>(null);
