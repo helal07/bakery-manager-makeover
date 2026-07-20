@@ -352,27 +352,18 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
           <span>TOTAL</span><span>{money(grandWithPrev)}</span>
         </div>
 
-        {payments.length > 0 && (
-          <>
-            <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
-            <div style={{ fontWeight: 700, fontSize: 10 }}>Payments</div>
-            {payments.map((p, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}>
-                <span style={{ textTransform: "capitalize" }}>{methodLabel[p.method] ?? p.method}{p.reference ? ` · ${p.reference}` : ""}</span>
-                <span>{money(p.amount)}</span>
-              </div>
-            ))}
-          </>
-        )}
         {s.showPaid && (
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
             <span>Today Payment</span><span>- {money(snapshot.paid)}</span>
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 12, borderTop: "1px dashed #000", paddingTop: 2, marginTop: 2 }}>
-          <span>Due Till Today</span><span>{money(dueTillToday)}</span>
-        </div>
+        {dueTillToday > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 12, borderTop: "1px dashed #000", paddingTop: 2, marginTop: 2 }}>
+            <span>Due Till Today</span><span>{money(dueTillToday)}</span>
+          </div>
+        )}
+
 
         <div style={{ borderTop: "1px dashed #000", margin: "6px 0" }} />
         {s.footerNote && <div style={{ textAlign: "center", fontSize: 10, whiteSpace: "pre-wrap" }}>{s.footerNote}</div>}
