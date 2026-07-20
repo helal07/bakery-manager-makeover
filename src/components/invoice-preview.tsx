@@ -352,7 +352,7 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
           <div style={{ display: "flex", justifyContent: "space-between" }}><span>Previous Due</span><span>+ {money(previousDue)}</span></div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 12, borderTop: "1px dashed #000", paddingTop: 2, marginTop: 2 }}>
-          <span>TOTAL</span><span>{money(grandWithPrev)}</span>
+          <span>Receivable</span><span>{money(grandWithPrev)}</span>
         </div>
 
         {s.showPaid && (
