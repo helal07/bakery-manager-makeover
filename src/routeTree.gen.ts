@@ -80,6 +80,7 @@ import { Route as AuthenticatedEmployeesNewRouteImport } from './routes/_authent
 import { Route as AuthenticatedCrmIdIndexRouteImport } from './routes/_authenticated/crm.$id.index'
 import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
+import { Route as AuthenticatedProductionLabelsLedgerIdRouteImport } from './routes/_authenticated/production.labels.$ledgerId'
 import { Route as AuthenticatedEmployeesEditIdRouteImport } from './routes/_authenticated/employees.edit.$id'
 import { Route as AuthenticatedCrmIdLedgerRouteImport } from './routes/_authenticated/crm.$id.ledger'
 
@@ -483,6 +484,12 @@ const AuthenticatedProductsEditIdRoute =
     path: '/products/edit/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedProductionLabelsLedgerIdRoute =
+  AuthenticatedProductionLabelsLedgerIdRouteImport.update({
+    id: '/labels/$ledgerId',
+    path: '/labels/$ledgerId',
+    getParentRoute: () => AuthenticatedProductionRoute,
+  } as any)
 const AuthenticatedEmployeesEditIdRoute =
   AuthenticatedEmployeesEditIdRouteImport.update({
     id: '/edit/$id',
@@ -566,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/transfers/': typeof AuthenticatedTransfersIndexRoute
   '/crm/$id/ledger': typeof AuthenticatedCrmIdLedgerRoute
   '/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
+  '/production/labels/$ledgerId': typeof AuthenticatedProductionLabelsLedgerIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
@@ -638,6 +646,7 @@ export interface FileRoutesByTo {
   '/transfers': typeof AuthenticatedTransfersIndexRoute
   '/crm/$id/ledger': typeof AuthenticatedCrmIdLedgerRoute
   '/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
+  '/production/labels/$ledgerId': typeof AuthenticatedProductionLabelsLedgerIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/crm/$id': typeof AuthenticatedCrmIdIndexRoute
@@ -714,6 +723,7 @@ export interface FileRoutesById {
   '/_authenticated/transfers/': typeof AuthenticatedTransfersIndexRoute
   '/_authenticated/crm/$id/ledger': typeof AuthenticatedCrmIdLedgerRoute
   '/_authenticated/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
+  '/_authenticated/production/labels/$ledgerId': typeof AuthenticatedProductionLabelsLedgerIdRoute
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/_authenticated/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
@@ -790,6 +800,7 @@ export interface FileRouteTypes {
     | '/transfers/'
     | '/crm/$id/ledger'
     | '/employees/edit/$id'
+    | '/production/labels/$ledgerId'
     | '/products/edit/$id'
     | '/transfers/damaged/new'
     | '/crm/$id/'
@@ -862,6 +873,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/crm/$id/ledger'
     | '/employees/edit/$id'
+    | '/production/labels/$ledgerId'
     | '/products/edit/$id'
     | '/transfers/damaged/new'
     | '/crm/$id'
@@ -937,6 +949,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transfers/'
     | '/_authenticated/crm/$id/ledger'
     | '/_authenticated/employees/edit/$id'
+    | '/_authenticated/production/labels/$ledgerId'
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/transfers/damaged/new'
     | '/_authenticated/crm/$id/'
@@ -1451,6 +1464,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductsEditIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/production/labels/$ledgerId': {
+      id: '/_authenticated/production/labels/$ledgerId'
+      path: '/labels/$ledgerId'
+      fullPath: '/production/labels/$ledgerId'
+      preLoaderRoute: typeof AuthenticatedProductionLabelsLedgerIdRouteImport
+      parentRoute: typeof AuthenticatedProductionRoute
+    }
     '/_authenticated/employees/edit/$id': {
       id: '/_authenticated/employees/edit/$id'
       path: '/edit/$id'
@@ -1514,6 +1534,7 @@ interface AuthenticatedProductionRouteChildren {
   AuthenticatedProductionWastageRoute: typeof AuthenticatedProductionWastageRoute
   AuthenticatedProductionWorkOrdersRoute: typeof AuthenticatedProductionWorkOrdersRoute
   AuthenticatedProductionIndexRoute: typeof AuthenticatedProductionIndexRoute
+  AuthenticatedProductionLabelsLedgerIdRoute: typeof AuthenticatedProductionLabelsLedgerIdRoute
 }
 
 const AuthenticatedProductionRouteChildren: AuthenticatedProductionRouteChildren =
@@ -1533,6 +1554,8 @@ const AuthenticatedProductionRouteChildren: AuthenticatedProductionRouteChildren
     AuthenticatedProductionWorkOrdersRoute:
       AuthenticatedProductionWorkOrdersRoute,
     AuthenticatedProductionIndexRoute: AuthenticatedProductionIndexRoute,
+    AuthenticatedProductionLabelsLedgerIdRoute:
+      AuthenticatedProductionLabelsLedgerIdRoute,
   }
 
 const AuthenticatedProductionRouteWithChildren =

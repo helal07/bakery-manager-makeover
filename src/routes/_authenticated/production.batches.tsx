@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { Factory } from "lucide-react";
+import { Factory, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
@@ -13,11 +13,13 @@ export const Route = createFileRoute("/_authenticated/production/batches")({
 
 type Batch = {
   id: string;
+  fullId: string;
   product: string;
   qty: number;
   date: string;
   status: "Completed";
 };
+
 
 function Production() {
   const { currentShowroomId } = useShowroomScope();
@@ -45,6 +47,7 @@ function Production() {
       setBatches(
         (data ?? []).map((r) => ({
           id: (r.id as string).slice(0, 8).toUpperCase(),
+          fullId: r.id as string,
           product: (r as { products?: { name?: string } | null }).products?.name ?? "—",
           qty: Number(r.qty ?? 0),
           date: (r.created_at as string).slice(0, 10),
@@ -100,6 +103,7 @@ function Production() {
               <th className="text-right font-medium px-5 py-3">Qty</th>
               <th className="text-left font-medium px-5 py-3">Date</th>
               <th className="text-right font-medium px-5 py-3">Status</th>
+              <th className="text-right font-medium px-5 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -112,12 +116,23 @@ function Production() {
                 <td className="px-5 py-3 text-right">
                   <Badge tone="success">{b.status}</Badge>
                 </td>
+                <td className="px-5 py-3 text-right">
+                  <Link
+                    to="/production/labels/$ledgerId"
+                    params={{ ledgerId: b.fullId }}
+                    search={{ layout: "a4", qty: Math.min(b.qty, 50) }}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded border text-xs hover:bg-muted"
+                  >
+                    <Printer className="size-3.5" /> Labels
+                  </Link>
+                </td>
               </tr>
             ))}
             {batches.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-8 text-sm text-muted-foreground">{loading ? "Loading…" : "No production batches yet. Approve one from Recipes."}</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-sm text-muted-foreground">{loading ? "Loading…" : "No production batches yet. Approve one from Recipes."}</td></tr>
             )}
           </tbody>
+
         </table>
       </Card>
     </AppShell>
