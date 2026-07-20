@@ -204,41 +204,10 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
               </tbody>
             </table>
 
-            {/* Summary: payments left, totals right */}
-            <div className="mt-6 grid sm:grid-cols-2 gap-6">
-              <div className="text-sm">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Payment Received Today</div>
-                {payments.length > 0 ? (
-                  <div className="rounded-lg border border-border overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
-                        <tr>
-                          <th className="text-left py-1.5 px-2 font-semibold">Method</th>
-                          <th className="text-left py-1.5 px-2 font-semibold">Ref</th>
-                          <th className="text-right py-1.5 px-2 font-semibold">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {payments.map((p, i) => (
-                          <tr key={i} className="border-t border-border">
-                            <td className="py-1.5 px-2 capitalize">{methodLabel[p.method] ?? p.method}</td>
-                            <td className="py-1.5 px-2 text-muted-foreground">{p.reference || "—"}</td>
-                            <td className="py-1.5 px-2 text-right tabular-nums">{money(p.amount)}</td>
-                          </tr>
-                        ))}
-                        <tr className="border-t border-border bg-muted/30 font-semibold">
-                          <td className="py-1.5 px-2" colSpan={2}>Total Paid</td>
-                          <td className="py-1.5 px-2 text-right tabular-nums">{money(snapshot.paid)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground text-sm">No payment received today.</div>
-                )}
-              </div>
+            {/* Summary: totals only */}
+            <div className="mt-6 flex justify-end">
+              <div className="text-sm w-full sm:w-1/2">
 
-              <div className="text-sm">
                 <div className="space-y-1.5">
                   {s.showSubtotal && <div className="flex justify-between"><span className="text-muted-foreground">{s.labelSubtotal}</span><span className="tabular-nums">{money(snapshot.subtotal)}</span></div>}
                   {saleDiscount > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span className="tabular-nums">- {money(saleDiscount)}</span></div>}
@@ -256,9 +225,12 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
                     <span>{s.labelGrandTotal}</span><span className="tabular-nums">{money(grandWithPrev)}</span>
                   </div>
                   {s.showPaid && <div className="flex justify-between"><span className="text-muted-foreground">Today Payment</span><span className="tabular-nums">- {money(snapshot.paid)}</span></div>}
-                  <div className={`flex justify-between font-bold pt-1.5 border-t border-border ${dueTillToday > 0 ? "text-destructive" : "text-emerald-700"}`}>
-                    <span>Due Till Today</span><span className="tabular-nums">{money(dueTillToday)}</span>
-                  </div>
+                  {dueTillToday > 0 && (
+                    <div className="flex justify-between font-bold pt-1.5 border-t border-border text-destructive">
+                      <span>Due Till Today</span><span className="tabular-nums">{money(dueTillToday)}</span>
+                    </div>
+                  )}
+
                 </div>
               </div>
             </div>
@@ -380,27 +352,18 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
           <span>TOTAL</span><span>{money(grandWithPrev)}</span>
         </div>
 
-        {payments.length > 0 && (
-          <>
-            <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
-            <div style={{ fontWeight: 700, fontSize: 10 }}>Payments</div>
-            {payments.map((p, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}>
-                <span style={{ textTransform: "capitalize" }}>{methodLabel[p.method] ?? p.method}{p.reference ? ` · ${p.reference}` : ""}</span>
-                <span>{money(p.amount)}</span>
-              </div>
-            ))}
-          </>
-        )}
         {s.showPaid && (
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
             <span>Today Payment</span><span>- {money(snapshot.paid)}</span>
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 12, borderTop: "1px dashed #000", paddingTop: 2, marginTop: 2 }}>
-          <span>Due Till Today</span><span>{money(dueTillToday)}</span>
-        </div>
+        {dueTillToday > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 12, borderTop: "1px dashed #000", paddingTop: 2, marginTop: 2 }}>
+            <span>Due Till Today</span><span>{money(dueTillToday)}</span>
+          </div>
+        )}
+
 
         <div style={{ borderTop: "1px dashed #000", margin: "6px 0" }} />
         {s.footerNote && <div style={{ textAlign: "center", fontSize: 10, whiteSpace: "pre-wrap" }}>{s.footerNote}</div>}
