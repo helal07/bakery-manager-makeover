@@ -3,10 +3,7 @@ import { AppShell, Card, Badge } from "@/components/app-shell";
 import {
   ChefHat,
   Factory,
-  ClipboardList,
   Trash2,
-  ShieldCheck,
-  Tag,
   BarChart3,
   Wheat,
   ArrowRight,
@@ -41,11 +38,8 @@ const primary = [
 ] as const;
 
 const advanced = [
-  { to: "/production/work-orders", label: "Work Orders", desc: "Assign batches to staff", icon: ClipboardList },
-  { to: "/production/qc", label: "Quality Check", desc: "Pass/fail per batch", icon: ShieldCheck },
   { to: "/production/wastage", label: "Wastage / Scrap Log", desc: "Spoilage record", icon: Trash2 },
   { to: "/production/repurpose", label: "Repurpose", desc: "Damaged → new product", icon: Recycle },
-  { to: "/production/recipe-categories", label: "Recipe Categories", desc: "Group recipes", icon: Tag },
   { to: "/production/batches", label: "Batch History", desc: "সমস্ত batch record", icon: History },
   { to: "/production/cost-report", label: "Cost Report", desc: "Batch cost trend", icon: BarChart3 },
   { to: "/production/consumption-report", label: "Consumption Report", desc: "Raw material usage", icon: Wheat },
