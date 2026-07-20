@@ -224,7 +224,7 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
                   <div className="flex justify-between text-base font-bold pt-2 mt-1 border-t-2 border-foreground/70" style={{ color: s.accentColor }}>
                     <span>{s.labelGrandTotal}</span><span className="tabular-nums">{money(grandWithPrev)}</span>
                   </div>
-                  {s.showPaid && <div className="flex justify-between"><span className="text-muted-foreground">Today Payment</span><span className="tabular-nums">- {money(snapshot.paid)}</span></div>}
+                  {s.showPaid && <div className="flex justify-between"><span className="text-muted-foreground">Today Paid</span><span className="tabular-nums">- {money(snapshot.paid)}</span></div>}
                   {dueTillToday > 0 && (
                     <div className="flex justify-between font-bold pt-1.5 border-t border-border text-destructive">
                       <span>Due Till Today</span><span className="tabular-nums">{money(dueTillToday)}</span>
