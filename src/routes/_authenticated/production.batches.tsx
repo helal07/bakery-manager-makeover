@@ -47,6 +47,7 @@ function Production() {
       setBatches(
         (data ?? []).map((r) => ({
           id: (r.id as string).slice(0, 8).toUpperCase(),
+          fullId: r.id as string,
           product: (r as { products?: { name?: string } | null }).products?.name ?? "—",
           qty: Number(r.qty ?? 0),
           date: (r.created_at as string).slice(0, 10),
