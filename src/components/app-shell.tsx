@@ -105,6 +105,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         permission: "production.access",
         children: [
           { to: "/production", label: "Dashboard", icon: LayoutDashboard, permission: "production.access" },
+          { to: "/production/produce", label: "Produce (New Batch)", icon: Play, permission: "production.access" },
           { to: "/raw-materials", label: "Raw Materials", icon: Wheat, permission: "production.raw_materials.view" },
           { to: "/raw-material-stock", label: "Raw Material Stock", icon: Layers, permission: "production.raw_materials.view" },
           { to: "/recipes", label: "Recipes & BOM", icon: ChefHat, permission: "production.recipes.view" },
