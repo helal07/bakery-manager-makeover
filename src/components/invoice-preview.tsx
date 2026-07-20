@@ -252,7 +252,10 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
               <p className="mt-6 text-center text-xs text-muted-foreground whitespace-pre-wrap">{s.footerNote}</p>
             )}
             {s.showPoweredBy && (
-              <p className="mt-2 text-center text-[10px] text-muted-foreground/70">Powered by {company.name}</p>
+              <p className="mt-2 text-center text-[10px] text-muted-foreground/70">
+                Powered by IT Solution<br />
+                <a href="https://www.itsolution.bd" target="_blank" rel="noreferrer" className="underline">www.itsolution.bd</a>
+              </p>
             )}
           </div>
         </div>
@@ -369,7 +372,9 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
         {s.footerNote && <div style={{ textAlign: "center", fontSize: 10, whiteSpace: "pre-wrap" }}>{s.footerNote}</div>}
         {s.termsText && <div style={{ textAlign: "center", fontSize: 9, marginTop: 3, whiteSpace: "pre-wrap" }}>{s.termsText}</div>}
         {s.showPoweredBy && (
-          <div style={{ textAlign: "center", fontSize: 9, marginTop: 4, opacity: 0.7 }}>Powered by {company.name}</div>
+          <div style={{ textAlign: "center", fontSize: 9, marginTop: 4, opacity: 0.7 }}>
+            Powered by IT Solution<br />www.itsolution.bd
+          </div>
         )}
       </div>
     </div>
