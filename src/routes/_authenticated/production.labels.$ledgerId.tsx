@@ -3,11 +3,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, Card } from "@/components/app-shell";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getCompanyName, pageTitle } from "@/lib/company-settings";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer, ArrowLeft, Eye, X } from "lucide-react";
 import { toast } from "sonner";
 
 type Layout = "a4" | "roll";
+
 
 export const Route = createFileRoute("/_authenticated/production/labels/$ledgerId")({
   head: () => ({ meta: [{ title: pageTitle("Print Labels") }] }),
