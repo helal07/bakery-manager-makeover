@@ -68,6 +68,7 @@ import { Route as AuthenticatedProductionWastageRouteImport } from './routes/_au
 import { Route as AuthenticatedProductionRepurposeRouteImport } from './routes/_authenticated/production.repurpose'
 import { Route as AuthenticatedProductionRecipeCategoriesRouteImport } from './routes/_authenticated/production.recipe-categories'
 import { Route as AuthenticatedProductionQcRouteImport } from './routes/_authenticated/production.qc'
+import { Route as AuthenticatedProductionProduceRouteImport } from './routes/_authenticated/production.produce'
 import { Route as AuthenticatedProductionCostReportRouteImport } from './routes/_authenticated/production.cost-report'
 import { Route as AuthenticatedProductionConsumptionReportRouteImport } from './routes/_authenticated/production.consumption-report'
 import { Route as AuthenticatedProductionBatchesRouteImport } from './routes/_authenticated/production.batches'
@@ -411,6 +412,12 @@ const AuthenticatedProductionQcRoute =
     path: '/qc',
     getParentRoute: () => AuthenticatedProductionRoute,
   } as any)
+const AuthenticatedProductionProduceRoute =
+  AuthenticatedProductionProduceRouteImport.update({
+    id: '/produce',
+    path: '/produce',
+    getParentRoute: () => AuthenticatedProductionRoute,
+  } as any)
 const AuthenticatedProductionCostReportRoute =
   AuthenticatedProductionCostReportRouteImport.update({
     id: '/cost-report',
@@ -522,6 +529,7 @@ export interface FileRoutesByFullPath {
   '/production/batches': typeof AuthenticatedProductionBatchesRoute
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
+  '/production/produce': typeof AuthenticatedProductionProduceRoute
   '/production/qc': typeof AuthenticatedProductionQcRoute
   '/production/recipe-categories': typeof AuthenticatedProductionRecipeCategoriesRoute
   '/production/repurpose': typeof AuthenticatedProductionRepurposeRoute
@@ -593,6 +601,7 @@ export interface FileRoutesByTo {
   '/production/batches': typeof AuthenticatedProductionBatchesRoute
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
+  '/production/produce': typeof AuthenticatedProductionProduceRoute
   '/production/qc': typeof AuthenticatedProductionQcRoute
   '/production/recipe-categories': typeof AuthenticatedProductionRecipeCategoriesRoute
   '/production/repurpose': typeof AuthenticatedProductionRepurposeRoute
@@ -668,6 +677,7 @@ export interface FileRoutesById {
   '/_authenticated/production/batches': typeof AuthenticatedProductionBatchesRoute
   '/_authenticated/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/_authenticated/production/cost-report': typeof AuthenticatedProductionCostReportRoute
+  '/_authenticated/production/produce': typeof AuthenticatedProductionProduceRoute
   '/_authenticated/production/qc': typeof AuthenticatedProductionQcRoute
   '/_authenticated/production/recipe-categories': typeof AuthenticatedProductionRecipeCategoriesRoute
   '/_authenticated/production/repurpose': typeof AuthenticatedProductionRepurposeRoute
@@ -743,6 +753,7 @@ export interface FileRouteTypes {
     | '/production/batches'
     | '/production/consumption-report'
     | '/production/cost-report'
+    | '/production/produce'
     | '/production/qc'
     | '/production/recipe-categories'
     | '/production/repurpose'
@@ -814,6 +825,7 @@ export interface FileRouteTypes {
     | '/production/batches'
     | '/production/consumption-report'
     | '/production/cost-report'
+    | '/production/produce'
     | '/production/qc'
     | '/production/recipe-categories'
     | '/production/repurpose'
@@ -888,6 +900,7 @@ export interface FileRouteTypes {
     | '/_authenticated/production/batches'
     | '/_authenticated/production/consumption-report'
     | '/_authenticated/production/cost-report'
+    | '/_authenticated/production/produce'
     | '/_authenticated/production/qc'
     | '/_authenticated/production/recipe-categories'
     | '/_authenticated/production/repurpose'
@@ -1354,6 +1367,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionQcRouteImport
       parentRoute: typeof AuthenticatedProductionRoute
     }
+    '/_authenticated/production/produce': {
+      id: '/_authenticated/production/produce'
+      path: '/produce'
+      fullPath: '/production/produce'
+      preLoaderRoute: typeof AuthenticatedProductionProduceRouteImport
+      parentRoute: typeof AuthenticatedProductionRoute
+    }
     '/_authenticated/production/cost-report': {
       id: '/_authenticated/production/cost-report'
       path: '/cost-report'
@@ -1487,6 +1507,7 @@ interface AuthenticatedProductionRouteChildren {
   AuthenticatedProductionBatchesRoute: typeof AuthenticatedProductionBatchesRoute
   AuthenticatedProductionConsumptionReportRoute: typeof AuthenticatedProductionConsumptionReportRoute
   AuthenticatedProductionCostReportRoute: typeof AuthenticatedProductionCostReportRoute
+  AuthenticatedProductionProduceRoute: typeof AuthenticatedProductionProduceRoute
   AuthenticatedProductionQcRoute: typeof AuthenticatedProductionQcRoute
   AuthenticatedProductionRecipeCategoriesRoute: typeof AuthenticatedProductionRecipeCategoriesRoute
   AuthenticatedProductionRepurposeRoute: typeof AuthenticatedProductionRepurposeRoute
@@ -1502,6 +1523,7 @@ const AuthenticatedProductionRouteChildren: AuthenticatedProductionRouteChildren
       AuthenticatedProductionConsumptionReportRoute,
     AuthenticatedProductionCostReportRoute:
       AuthenticatedProductionCostReportRoute,
+    AuthenticatedProductionProduceRoute: AuthenticatedProductionProduceRoute,
     AuthenticatedProductionQcRoute: AuthenticatedProductionQcRoute,
     AuthenticatedProductionRecipeCategoriesRoute:
       AuthenticatedProductionRecipeCategoriesRoute,

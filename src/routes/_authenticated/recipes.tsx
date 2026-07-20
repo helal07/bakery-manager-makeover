@@ -183,15 +183,26 @@ function Recipes() {
       title="Recipes & Bill of Materials"
       subtitle="Define recipes on products — production deducts raw materials automatically"
     >
-      <div className="flex items-center justify-end mb-4">
+      <Card className="p-4 mb-4 bg-primary/5 border-primary/20 flex items-start gap-3">
+        <div className="size-8 rounded-md bg-primary/10 text-primary grid place-items-center shrink-0">
+          <ChefHat className="size-4" />
+        </div>
+        <div className="flex-1 text-sm">
+          <div className="font-medium">Recipe (BOM) কী?</div>
+          <div className="text-muted-foreground mt-0.5">
+            একটা product-এর জন্য কোন raw material কতটুকু লাগে সেটা এখানে define করুন। এরপর{" "}
+            <Link to="/production/produce" className="text-primary hover:underline font-medium">Produce</Link>{" "}
+            পেজ থেকে এক ক্লিকে batch বানাতে পারবেন।
+          </div>
+        </div>
         <button
           onClick={openNewRecipe}
           disabled={products.length === 0}
-          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 shrink-0"
         >
           <Plus className="size-4" /> New Recipe
         </button>
-      </div>
+      </Card>
       {withRecipes.length === 0 || !active ? (
         <Card className="p-12 text-center">
           <div className="mx-auto size-12 rounded-full bg-primary/10 grid place-items-center mb-4">
