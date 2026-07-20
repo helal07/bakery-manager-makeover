@@ -1,40 +1,62 @@
 ## লক্ষ্য
-POS চেকআউটের পর invoice window খুললে instant load — কোন spinner-জাল না।
+Production মডিউলটা এমনভাবে সাজানো যেন যেকোনো নতুন ইউজার ৩০ সেকেন্ডে বুঝে ফেলে — শুধু দুইটা কাজ: **রেসিপি বানাও**, তারপর **Produce চাপো**। বাকি সব (Work Order, QC, Wastage, Repurpose, Reports) "Advanced" ভাঁজে লুকানো থাকবে।
 
-## এখন কেন slow
-`invoice.$id.tsx` এর `fetchSaleSnapshot()` সব query **serial** চালায়:
-1. `sales` লুকআপ  →  2. `sale_items`  →  3. `products` enrichment  →  4. `sale_payments`  →  5. `showrooms`  →  6. `customers`  →  7. `previousDue` এর জন্য আরও 2টা query।
+## নতুন Production Home layout
 
-মোট ~7-9 round-trip, তারপর `InvoicePreview` render হয়। VPS latency-এ এটা 2-4s লাগে। যদিও POS ইতিমধ্যে `localStorage.setItem('invoice:<id>', snapshot)` করে, কোডটা DB-first — snapshot শুধু fallback হিসেবে ব্যবহার হয়।
+```text
+┌─────────────────────────────────────────────┐
+│  Production                                 │
+│  Recipe বানান → Produce চাপুন → শেষ         │
+├─────────────────────────────────────────────┤
+│  ┌────────────┐   ┌────────────┐            │
+│  │ 📖 Recipes │   │ 🏭 Produce │  ← বড় ২টা  │
+│  │  & BOM     │   │  (1-click) │    tile    │
+│  └────────────┘   └────────────┘            │
+│                                             │
+│  Recent batches (last 5) — inline preview  │
+│                                             │
+│  ▸ Advanced (collapsed)                     │
+│     Work Orders · QC · Wastage · Repurpose  │
+│     · Recipe Categories · Cost Report       │
+│     · Consumption Report · Batches history  │
+└─────────────────────────────────────────────┘
+```
 
-## সমাধান (৩ স্তর)
+## নতুন "Produce" পেজ (`/production/produce`) — one-click flow
 
-### 1. Instant paint from POS snapshot (frontend only, দুই env-এই কাজ করবে)
-`invoice.$id.tsx`-এ:
-- Mount হওয়ার সাথে সাথেই `localStorage`/`sessionStorage` থেকে snapshot পড়ে **সাথে সাথে render** ও `?ap=1` হলে print trigger করবে।
-- এর পর background-এ DB fetch চালিয়ে fresh data দিয়ে reconcile (previousDue, showroom address etc. accurate করার জন্য)।
-- Company + invoice settings ইতিমধ্যেই `localStorage`-cached — সেটাই sync-ভাবে seed হবে, `await` না করে।
+একটাই screen, একটাই form:
 
-POS side-এ: snapshot-এ `customerAddress` + fresh `showroom` fields সব already আছে, তাই instant paint সম্পূর্ণ accurate।
+1. **Product dropdown** — শুধু যেসব product-এর recipe define করা আছে সেগুলোই দেখাবে (recipe না থাকলে disabled + "Set recipe first" link)।
+2. **Batch quantity** input (default 1)।
+3. Product select করলেই নিচে **auto preview**:
+   - কী কী raw material লাগবে (qty × batch)
+   - প্রতিটার current stock — সবুজ (enough) / লাল (short)
+   - Total estimated cost
+4. **[Produce Now]** — বড় primary বাটন। চাপলে:
+   - Confirm dialog: "X batch of Y produce করবেন? Z raw material কাটা যাবে।"
+   - Yes → existing `commit_production_batch` RPC কল → toast "✓ Produced" → form reset + recent batches list-এ instant append।
+5. যদি কোনো raw material short হয়, Produce বাটন disabled + "Not enough: sugar 2kg short" red banner।
 
-### 2. Parallelize DB reconciliation
-`fetchSaleSnapshot()` কে `Promise.all` দিয়ে items/payments/showroom/customer/priorSales/priorPayments একসাথে fire — sequential await বাদ। এতে reconciliation round-trip 7 → 2।
+এতে Work Order/QC কিছুই লাগবে না — এক ক্লিকেই stock কাটা + finished stock যোগ।
 
-### 3. Single-RPC fast path (optional, দুই env-এ SQL migration লাগবে)
-নতুন SQL function `public.get_invoice_bundle(_sale_id uuid)` যা এক call-এ JSON return করবে: sale + items(+product name/sku) + payments + showroom + customer address + previousDue।
-- Dev: `supabase--migration` দিয়ে apply।
-- VPS: `sql/12_invoice_bundle_rpc.sql` file generate করব — manually SQL editor-এ চালাবেন।
+## Recipes পেজ — minor polish
+- উপরে বড় হেল্প ব্যানার: "একটা product-এর জন্য কোন raw material কতটুকু লাগে সেটা এখানে define করুন। এরপর Produce পেজ থেকে এক ক্লিকে batch বানাতে পারবেন।"
+- প্রতিটা recipe card-এ "▶ Produce" shortcut বাটন — সরাসরি `/production/produce?product=ID` prefill।
 
-তিন স্তর একসাথে হলে print window খোলার **সাথে সাথেই** invoice দৃশ্যমান, DB reconciliation invisible-ভাবে ~150ms-এ শেষ।
+## Advanced section behavior
+- Production home-এ collapsed accordion, default বন্ধ।
+- Expand করলে আগের ৮টা tile grid দেখাবে (Work Orders, QC, Wastage, Repurpose, Recipe Categories, Cost Report, Consumption Report, Batches history)।
+- URLs / routes / permissions — সব unchanged, শুধু visibility চেঞ্জ।
 
-## যে ফাইল বদলাবে
-- `src/routes/invoice.$id.tsx` — snapshot-first render, parallel fetch, RPC try-first with fallback।
-- `sql/12_invoice_bundle_rpc.sql` — নতুন RPC (VPS-এর জন্য)।
-- Dev DB-তে একই RPC migration-এর মাধ্যমে।
+## যে ফাইল বদলাবে / নতুন হবে
+- **নতুন**: `src/routes/_authenticated/production.produce.tsx` — one-click Produce screen।
+- **Rewrite**: `src/routes/_authenticated/production.index.tsx` — নতুন 2-tile + recent batches + collapsed Advanced।
+- **Update**: `src/routes/_authenticated/recipes.tsx` — help banner + per-recipe "Produce" shortcut।
+- **কোনো DB migration লাগবে না** — existing `commit_production_batch` RPC আর tables যথেষ্ট।
 
-## Behavior contracts (unchanged)
-- `?ap=1` থাকলেই auto-print, না থাকলে view-only।
-- Previous Due = strictly prior sales due − prior standalone payments।
-- Print output HTML/CSS একদম unchanged।
+## যা অপরিবর্তিত
+- Work Orders, QC, Wastage, Repurpose, Reports — কোড unchanged, শুধু home থেকে সরাসরি না দেখিয়ে Advanced-এ।
+- RBAC permissions (`production.access`, `production.recipes.view` ইত্যাদি) — same।
+- VPS-এ কিছু চালাতে হবে না।
 
-Approve করলে implement করি।
+Approve করলে implement শুরু করি।
