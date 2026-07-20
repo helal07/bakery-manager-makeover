@@ -36,6 +36,7 @@ import {
   ArrowRightLeft,
   ReceiptText,
   Play,
+  Recycle,
 } from "lucide-react";
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
