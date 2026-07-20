@@ -10,7 +10,7 @@ import { toast } from "sonner";
 type Layout = "a4" | "roll";
 
 export const Route = createFileRoute("/_authenticated/production/labels/$ledgerId")({
-  head: () => ({ meta: [{ title: buildDocTitle("Print Labels") }] }),
+  head: () => ({ meta: [{ title: pageTitle("Print Labels") }] }),
   validateSearch: (s: Record<string, unknown>): { layout?: Layout; qty?: number } => ({
     layout: s.layout === "roll" ? "roll" : "a4",
     qty: s.qty ? Math.max(1, Math.min(500, Number(s.qty))) : undefined,
@@ -35,7 +35,7 @@ function LabelsPage() {
   const [info, setInfo] = useState<BatchInfo | null>(null);
   const [count, setCount] = useState<number>(search.qty ?? 0);
   const [loading, setLoading] = useState(true);
-  const company = getCompanyNameSync();
+  const company = getCompanyName();
 
   useEffect(() => {
     let cancelled = false;
