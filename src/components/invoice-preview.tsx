@@ -204,41 +204,10 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
               </tbody>
             </table>
 
-            {/* Summary: payments left, totals right */}
-            <div className="mt-6 grid sm:grid-cols-2 gap-6">
-              <div className="text-sm">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Payment Received Today</div>
-                {payments.length > 0 ? (
-                  <div className="rounded-lg border border-border overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
-                        <tr>
-                          <th className="text-left py-1.5 px-2 font-semibold">Method</th>
-                          <th className="text-left py-1.5 px-2 font-semibold">Ref</th>
-                          <th className="text-right py-1.5 px-2 font-semibold">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {payments.map((p, i) => (
-                          <tr key={i} className="border-t border-border">
-                            <td className="py-1.5 px-2 capitalize">{methodLabel[p.method] ?? p.method}</td>
-                            <td className="py-1.5 px-2 text-muted-foreground">{p.reference || "—"}</td>
-                            <td className="py-1.5 px-2 text-right tabular-nums">{money(p.amount)}</td>
-                          </tr>
-                        ))}
-                        <tr className="border-t border-border bg-muted/30 font-semibold">
-                          <td className="py-1.5 px-2" colSpan={2}>Total Paid</td>
-                          <td className="py-1.5 px-2 text-right tabular-nums">{money(snapshot.paid)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground text-sm">No payment received today.</div>
-                )}
-              </div>
+            {/* Summary: totals only */}
+            <div className="mt-6 flex justify-end">
+              <div className="text-sm w-full sm:w-1/2">
 
-              <div className="text-sm">
                 <div className="space-y-1.5">
                   {s.showSubtotal && <div className="flex justify-between"><span className="text-muted-foreground">{s.labelSubtotal}</span><span className="tabular-nums">{money(snapshot.subtotal)}</span></div>}
                   {saleDiscount > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span className="tabular-nums">- {money(saleDiscount)}</span></div>}
