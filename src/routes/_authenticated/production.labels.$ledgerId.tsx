@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, Card } from "@/components/app-shell";
-import { getCompanyNameSync, buildDocTitle } from "@/lib/company-settings";
+import { getCompanyName, pageTitle } from "@/lib/company-settings";
 import { Printer, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
