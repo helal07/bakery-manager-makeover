@@ -3,10 +3,7 @@ import { AppShell, Card, Badge } from "@/components/app-shell";
 import {
   ChefHat,
   Factory,
-  ClipboardList,
   Trash2,
-  ShieldCheck,
-  Tag,
   BarChart3,
   Wheat,
   ArrowRight,
