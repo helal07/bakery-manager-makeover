@@ -100,6 +100,7 @@ function Production() {
               <th className="text-right font-medium px-5 py-3">Qty</th>
               <th className="text-left font-medium px-5 py-3">Date</th>
               <th className="text-right font-medium px-5 py-3">Status</th>
+              <th className="text-right font-medium px-5 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -112,12 +113,23 @@ function Production() {
                 <td className="px-5 py-3 text-right">
                   <Badge tone="success">{b.status}</Badge>
                 </td>
+                <td className="px-5 py-3 text-right">
+                  <Link
+                    to="/production/labels/$ledgerId"
+                    params={{ ledgerId: b.fullId }}
+                    search={{ layout: "a4", qty: Math.min(b.qty, 50) }}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded border text-xs hover:bg-muted"
+                  >
+                    <Printer className="size-3.5" /> Labels
+                  </Link>
+                </td>
               </tr>
             ))}
             {batches.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-8 text-sm text-muted-foreground">{loading ? "Loading…" : "No production batches yet. Approve one from Recipes."}</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-sm text-muted-foreground">{loading ? "Loading…" : "No production batches yet. Approve one from Recipes."}</td></tr>
             )}
           </tbody>
+
         </table>
       </Card>
     </AppShell>
