@@ -357,7 +357,7 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
 
         {s.showPaid && (
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
-            <span>Today Payment</span><span>- {money(snapshot.paid)}</span>
+            <span>Today Paid</span><span>- {money(snapshot.paid)}</span>
           </div>
         )}
 
