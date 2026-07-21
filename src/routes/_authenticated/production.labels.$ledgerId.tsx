@@ -260,9 +260,7 @@ function LabelCell({ info, company }: { info: BatchInfo; company: string }) {
     <div className="label-cell">
       <div className="w-full">
         <div className="label-name">{info.productName}</div>
-        <div className="label-meta">
-          <b>B:</b> {info.batchNo}
-        </div>
+        <div className="label-meta">#{info.batchNo}</div>
         <div className="label-meta">
           <b>MFG:</b> {info.mfgDate || "—"} · <b>EXP:</b> {info.expiryDate || "—"}
         </div>
