@@ -23,12 +23,10 @@ function PurchaseList() {
   const [modal, setModal] = useState<{ mode: "view" | "payment" | "invoice"; p: Purchase } | null>(null);
   const [payDraft, setPayDraft] = useState<{ payment: "Paid" | "Due" | "Partial"; paid: number }>({ payment: "Due", paid: 0 });
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [pendingIn, setPendingIn] = useState<number>(0);
   useEffect(() => {
     loadPurchases(currentShowroomId)
       .then(setList)
       .catch((e) => toast.error(e?.message ?? "Failed to load purchases"));
-    countIncomingTransfers(currentShowroomId).then(setPendingIn).catch(() => {});
   }, [currentShowroomId]);
 
   const suppliers = useMemo(() => Array.from(new Set(list.map((p) => p.supplier))).sort(), [list]);
