@@ -214,15 +214,17 @@ function LabelsPage() {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
+          align-items: center;
+          text-align: center;
           overflow: hidden;
           font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         }
-        .label-name { font-size: 8pt; font-weight: 700; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-        .label-meta { font-size: 6pt; line-height: 1.15; color: #334155; }
+        .label-name { width: 100%; font-size: 8pt; font-weight: 700; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .label-meta { width: 100%; font-size: 6pt; line-height: 1.15; color: #334155; }
         .label-meta b { color: #0f172a; }
-        .label-price { font-size: 9pt; font-weight: 800; }
+        .label-price { font-size: 8.5pt; font-weight: 800; }
         .label-barcode { width: 100%; height: 8mm; }
-        .label-company { font-size: 5.5pt; text-align: center; color: #475569; letter-spacing: 0.2px; }
+        .label-company { width: 100%; font-size: 5.5pt; text-align: center; color: #475569; letter-spacing: 0.2px; }
         @media print {
           @page { size: ${layout === "roll" ? "38mm 25mm" : "A4"}; margin: ${layout === "roll" ? "0" : "5mm"}; }
           body * { visibility: hidden !important; }
