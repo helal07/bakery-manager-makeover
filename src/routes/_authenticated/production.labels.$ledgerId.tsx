@@ -57,7 +57,7 @@ function LabelsPage() {
       const qty = Math.max(0, Number(data.qty ?? 0));
       const batchRef = (data.ref_id as string | null) ?? (data.id as string);
       const built: BatchInfo = {
-        batchNo: batchRef.slice(0, 8).toUpperCase(),
+        batchNo: batchRef.slice(0, 6).toUpperCase(),
         productName: p.name ?? "—",
         sku: p.sku ?? "",
         price: Number(p.price ?? 0),
