@@ -737,21 +737,19 @@ function RecipeEditorBody({
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Product
         </label>
-        <select
-          value={productId}
-          onChange={(e) => onChangeProduct(e.target.value)}
-          className="mt-1.5 w-full h-10 px-3 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
-        >
-          <option value="">— Select a product —</option>
-          {products.map((p) => {
-            const has = (recipeMap[p.id]?.length ?? 0) > 0;
-            return (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.sku}){has ? " · has recipe" : ""}
-              </option>
-            );
-          })}
-        </select>
+        <div className="mt-1.5">
+          <ProductSearchPicker
+            options={products.map((p) => ({
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              hint: (recipeMap[p.id]?.length ?? 0) > 0 ? "has recipe" : undefined,
+            }))}
+            value={productId}
+            onChange={onChangeProduct}
+            placeholder="Search a product to define recipe…"
+          />
+        </div>
       </div>
 
       <div>
