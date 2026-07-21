@@ -258,11 +258,11 @@ function Workbench() {
       const sb = supabase as any;
       const { data, error } = await sb
         .from("stock_ledger")
-        .select("id,qty,created_at,ref_id")
+        .select("id,qty,created_at,ref_id,showroom_id,note")
         .eq("kind", "production")
         .eq("product_id", productId)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(50);
       if (error) throw error;
       setBatches((data ?? []) as BatchRow[]);
     } catch (e: any) {
