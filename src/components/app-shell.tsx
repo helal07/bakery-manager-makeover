@@ -547,7 +547,7 @@ function TopBarUser() {
 }
 
 
-function InboxBadge() {
+function TransfersBadge() {
   const { currentShowroomId } = useShowroomScope();
   const [count, setCount] = useState<number>(0);
   useEffect(() => {
@@ -561,22 +561,14 @@ function InboxBadge() {
     const iv = setInterval(load, 60_000);
     return () => { alive = false; clearInterval(iv); };
   }, [currentShowroomId]);
-  if (!currentShowroomId) return null;
+  if (!currentShowroomId || count <= 0) return null;
   return (
-    <Link
-      to="/inbox"
-      title={count > 0 ? `${count} pending transfer(s)` : "Inbox"}
-      className="relative inline-flex items-center justify-center h-9 w-9 rounded-md bg-white/10 hover:bg-white/25 transition-colors"
-    >
-      <InboxIcon className="size-4" />
-      {count > 0 && (
-        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-[10px] font-bold text-black grid place-items-center">
-          {count > 99 ? "99+" : count}
-        </span>
-      )}
-    </Link>
+    <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-400 text-[10px] font-bold text-black">
+      {count > 99 ? "99+" : count}
+    </span>
   );
 }
+
 
 
 
