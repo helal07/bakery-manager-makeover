@@ -397,6 +397,8 @@ function Workbench() {
               productName={active.product.name}
               rows={batches}
               loading={historyLoading}
+              currentUnitCost={unitCost}
+              showroomLookup={Object.fromEntries(showrooms.map((s) => [s.id, s.name]))}
             />
           )}
         </div>
