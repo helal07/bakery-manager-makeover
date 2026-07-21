@@ -123,7 +123,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
           { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: "production.reports.view" },
         ],
       },
-      { to: "/inbox", label: "Inbox", icon: InboxIcon, permission: "inventory.transfer" },
       { to: "/transfers", label: "Transfers", icon: ArrowRightLeft, permission: "inventory.transfer" },
     ],
   },
