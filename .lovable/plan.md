@@ -1,51 +1,54 @@
-## Goal
-Production home (`/production`) কে একটি real "Production Dashboard" বানানো — যেখানে এক নজরে আজকের/মাসের production picture দেখা যাবে, শুধু navigation tile নয়।
 
-## Layout (top → bottom)
+## লক্ষ্য
+`Recipes` এবং `New Production` — দুইটাই একই workflow। এদের একসাথে করে **"Production Workbench"** বানাব (Sample B — Tabbed layout)। "New Production" submenu সরানো হবে।
 
-1. **Date range filter bar** — Today · This Week · This Month · Custom (date-from/to). Default: Today.
-   - Second row: Product filter (optional, all products by default).
+---
 
-2. **KPI cards (grid, 4 per row)**
-   - Total Production (qty units + batch count) — from `stock_ledger` kind=`production`.
-   - Total Transfers Out (qty + transfer count) — from `transfers` / `transfer_items`, factory → showroom.
-   - Wastage (qty + value) — from `wastage_log`.
-   - Current Stock Value — Factory raw material stock value + finished goods stock value (raw_material_stock × cost, product_stock × cost).
-   - Batches: Completed vs Running (from `stock_ledger` production entries; running = today's produce not yet transferred, optional).
-   - Raw Material Consumed (value) — from `raw_stock_ledger` kind=`production_consume` in range.
-   - Avg Cost / Unit — consumed value ÷ produced qty.
-   - Top produced product (name + qty) in range.
+## Final UI — Sample B (Tabbed Workbench)
 
-3. **Charts row**
-   - Bar chart: Daily production qty over selected range (Recharts).
-   - Bar/line: Daily wastage qty.
-   - Donut: Production share by product (top 5 + others).
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Production Workbench                       [+ New Recipe]    │
+├──────────────────────────────────────────────────────────────┤
+│ Product ▾ [ 🍞 Butter Croissant (BC-001) ▾ ]   12 recipes    │
+│                                                              │
+│ ╭ Produce ─╮ ╭ Edit Recipe ╮ ╭ Batch history ╮               │
+│ │                                                          │ │
+│ │  Batch qty  [−] 5 [+]        Unit cost  ৳12.40           │ │
+│ │  Showroom   Factory ▾        Batch cost ৳62.00           │ │
+│ │                                                          │ │
+│ │  Raw material preview                                    │ │
+│ │  Material │ Need │ Stock │ Cost │ Status                 │ │
+│ │  Flour    │1000g │5000g  │৳20   │  OK ✓                  │ │
+│ │  Butter   │ 250g │ 100g  │৳30   │ SHORT ⚠  [Stock In]    │ │
+│ │                                                          │ │
+│ │           [ ▶  PRODUCE NOW  (৳62.00) ]                   │ │
+│ ╰──────────────────────────────────────────────────────────╯ │
+└──────────────────────────────────────────────────────────────┘
+```
 
-4. **Two-column tables**
-   - Recent batches (existing, keep) — last 8, with product, qty, date, cost.
-   - Low stock alerts — raw materials where `raw_material_stock.quantity <= min_stock`.
+- **Product selector** — top of page. Searchable combobox (native `<select>` fallback) listing recipe-সহ product। URL param `?product=<id>` support থাকবে (deep-link)।
+- **Tabs:**
+  - **Produce** (default) — batch qty stepper, showroom selector, ingredient preview table, big Produce CTA, confirm dialog।
+  - **Edit Recipe** — বর্তমান editor dialog-এর content inline; add/remove ingredient, validation (duplicate + zero qty)। Save/Delete buttons ভিতরে।
+  - **Batch history** — এই product-এর last ~20 batches (`stock_ledger` kind=production filter), each row → Labels link।
+- **Empty state** — কোনো recipe না থাকলে বড় card + "Create first recipe" button।
 
-5. **Keep** existing "Advanced" collapsible section for less-used sub-pages (Repurpose, Cost Report, Consumption Report). Remove the two big primary tiles at top (New Production / Recipes already in sidebar) OR keep as small quick-action buttons in the header.
+---
 
-## Data sources (existing tables, no schema change needed)
-- `stock_ledger` (kind=`production`, showroom_id IS NULL) → production qty/batches.
-- `raw_stock_ledger` (kind=`production_consume`) → consumption value (join `raw_materials.cost`).
-- `wastage_log` → wastage qty + value.
-- `product_stock` + `products.cost` → finished stock value.
-- `raw_material_stock` + `raw_materials.cost` → raw stock value + low-stock alerts.
-- `transfers` + `transfer_items` → transfers count/qty in range.
+## Files
 
-All queries client-side via `supabase` client with date filters on `created_at`. Parallel fetch with `Promise.all`, wrapped in a single `useEffect` keyed by date range. No new migration file needed.
+- **Rewrite** `src/routes/_authenticated/recipes.tsx` — tabbed workbench, `?product=` search param support, existing `commitProduction` / `saveRecipe` / validation reuse।
+- **Rewrite** `src/routes/_authenticated/production.produce.tsx` — redirect-only:
+  ```ts
+  beforeLoad: ({ search }) => throw redirect({ to: "/recipes", search })
+  ```
+- **Edit** `src/components/app-shell.tsx` — production submenu থেকে "New Production" entry সরানো; "Recipes" label → **"Recipes & Production"**।
+- **Edit** `src/routes/_authenticated/production.index.tsx` — dashboard-এর "New Production" quick action → "Open Workbench" (`/recipes`)।
 
-## Files to touch
-- `src/routes/_authenticated/production.index.tsx` — full rewrite as dashboard.
-- Optional new component `src/components/production/kpi-card.tsx` for reuse (or inline).
-- Use existing `recharts` (already used elsewhere) for charts.
+---
 
-## Out of scope
-- No schema/DB changes → no new SQL migration file.
-- No changes to sidebar or other production sub-pages.
-- "Running batch" concept — only shown if trivially derivable from existing ledger; otherwise omitted to avoid new tables.
+## যা বদলাবে না
+- Database, RPC (`commit_production_batch`), permissions (`production.recipes.view`, `production.batches`), Batches / Wastage / Cost / Consumption Report pages — সব untouched। কোনো migration লাগবে না।
 
-## Deliverable
-Production dashboard যেখানে দিনের/মাসের production KPI, charts, low-stock alerts, recent batches সব একসাথে দেখা যাবে — filter করে date range change করা যাবে।
+Ready? "Approve plan" চাপলে build mode-এ implement শুরু করব।

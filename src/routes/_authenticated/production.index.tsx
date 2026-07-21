@@ -228,11 +228,8 @@ function ProductionDashboard() {
             </div>
           )}
           <div className="flex-1" />
-          <Link to="/production/produce" className="h-8 inline-flex items-center gap-1.5 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">
-            <Factory className="size-3.5" /> New Production
-          </Link>
-          <Link to="/recipes" className="h-8 inline-flex items-center gap-1.5 px-3 rounded-md bg-muted text-xs font-medium hover:bg-muted/70">
-            <ChefHat className="size-3.5" /> Recipes
+          <Link to="/recipes" className="h-8 inline-flex items-center gap-1.5 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">
+            <Factory className="size-3.5" /> Open Workbench
           </Link>
         </div>
       </Card>
@@ -350,7 +347,7 @@ function ProductionDashboard() {
         {recent.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-6">
             এখনো কোনো batch হয়নি —{" "}
-            <Link to="/production/produce" className="text-primary hover:underline">প্রথম batch বানান</Link>
+            <Link to="/recipes" className="text-primary hover:underline">প্রথম batch বানান</Link>
           </div>
         ) : (
           <div className="divide-y divide-border">
