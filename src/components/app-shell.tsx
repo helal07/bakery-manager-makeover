@@ -1,6 +1,7 @@
 import { Link, useRouterState, useNavigate, Outlet } from "@tanstack/react-router";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { LogOut, Menu, X, Store, Factory, Calendar, ShoppingCart } from "lucide-react";
+import { LogOut, Menu, X, Store, Factory, Calendar, ShoppingCart, Inbox as InboxIcon } from "lucide-react";
+import { countIncomingTransfers } from "@/lib/inbox-store";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
@@ -114,6 +115,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         permission: "production.access",
         children: [
           { to: "/production", label: "Dashboard", icon: LayoutDashboard, permission: "production.access" },
+          { to: "/production/factory-stock", label: "Factory Stock", icon: Boxes, permission: "production.access" },
           { to: "/recipes", label: "Recipes & Production", icon: ChefHat, permission: "production.recipes.view" },
           { to: "/production/batches", label: "Batches", icon: Factory, permission: "production.access" },
           { to: "/production/wastage", label: "Wastage Management", icon: Recycle, permission: "production.wastage.manage" },
@@ -121,6 +123,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
           { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: "production.reports.view" },
         ],
       },
+      { to: "/inbox", label: "Inbox", icon: InboxIcon, permission: "inventory.transfer" },
       { to: "/transfers", label: "Transfers", icon: ArrowRightLeft, permission: "inventory.transfer" },
     ],
   },
@@ -420,6 +423,7 @@ function TopBar({ onOpenMobile, company }: { onOpenMobile: () => void; company: 
           </Link>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <InboxBadge />
           <Link
             to="/pos"
             className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white/15 hover:bg-white/25 text-sm font-semibold transition-colors"
@@ -540,6 +544,38 @@ function TopBarUser() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+
+function InboxBadge() {
+  const { currentShowroomId } = useShowroomScope();
+  const [count, setCount] = useState<number>(0);
+  useEffect(() => {
+    let alive = true;
+    const load = () => {
+      countIncomingTransfers(currentShowroomId)
+        .then((c) => { if (alive) setCount(c); })
+        .catch(() => {});
+    };
+    load();
+    const iv = setInterval(load, 60_000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [currentShowroomId]);
+  if (!currentShowroomId) return null;
+  return (
+    <Link
+      to="/inbox"
+      title={count > 0 ? `${count} pending transfer(s)` : "Inbox"}
+      className="relative inline-flex items-center justify-center h-9 w-9 rounded-md bg-white/10 hover:bg-white/25 transition-colors"
+    >
+      <InboxIcon className="size-4" />
+      {count > 0 && (
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-[10px] font-bold text-black grid place-items-center">
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </Link>
   );
 }
 

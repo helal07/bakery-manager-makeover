@@ -26,6 +26,7 @@ import { Route as AuthenticatedProductStockRouteImport } from './routes/_authent
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
+import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -69,6 +70,7 @@ import { Route as AuthenticatedProductionRepurposeRouteImport } from './routes/_
 import { Route as AuthenticatedProductionRecipeCategoriesRouteImport } from './routes/_authenticated/production.recipe-categories'
 import { Route as AuthenticatedProductionQcRouteImport } from './routes/_authenticated/production.qc'
 import { Route as AuthenticatedProductionProduceRouteImport } from './routes/_authenticated/production.produce'
+import { Route as AuthenticatedProductionFactoryStockRouteImport } from './routes/_authenticated/production.factory-stock'
 import { Route as AuthenticatedProductionCostReportRouteImport } from './routes/_authenticated/production.cost-report'
 import { Route as AuthenticatedProductionConsumptionReportRouteImport } from './routes/_authenticated/production.consumption-report'
 import { Route as AuthenticatedProductionBatchesRouteImport } from './routes/_authenticated/production.batches'
@@ -169,6 +171,11 @@ const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
 const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
@@ -419,6 +426,12 @@ const AuthenticatedProductionProduceRoute =
     path: '/produce',
     getParentRoute: () => AuthenticatedProductionRoute,
   } as any)
+const AuthenticatedProductionFactoryStockRoute =
+  AuthenticatedProductionFactoryStockRouteImport.update({
+    id: '/factory-stock',
+    path: '/factory-stock',
+    getParentRoute: () => AuthenticatedProductionRoute,
+  } as any)
 const AuthenticatedProductionCostReportRoute =
   AuthenticatedProductionCostReportRouteImport.update({
     id: '/cost-report',
@@ -516,6 +529,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteWithChildren
+  '/inbox': typeof AuthenticatedInboxRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/pos': typeof AuthenticatedPosRoute
@@ -536,6 +550,7 @@ export interface FileRoutesByFullPath {
   '/production/batches': typeof AuthenticatedProductionBatchesRoute
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
+  '/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
   '/production/produce': typeof AuthenticatedProductionProduceRoute
   '/production/qc': typeof AuthenticatedProductionQcRoute
   '/production/recipe-categories': typeof AuthenticatedProductionRecipeCategoriesRoute
@@ -591,6 +606,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteWithChildren
+  '/inbox': typeof AuthenticatedInboxRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/pos': typeof AuthenticatedPosRoute
@@ -609,6 +625,7 @@ export interface FileRoutesByTo {
   '/production/batches': typeof AuthenticatedProductionBatchesRoute
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
+  '/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
   '/production/produce': typeof AuthenticatedProductionProduceRoute
   '/production/qc': typeof AuthenticatedProductionQcRoute
   '/production/recipe-categories': typeof AuthenticatedProductionRecipeCategoriesRoute
@@ -666,6 +683,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRouteWithChildren
+  '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/pos': typeof AuthenticatedPosRoute
@@ -686,6 +704,7 @@ export interface FileRoutesById {
   '/_authenticated/production/batches': typeof AuthenticatedProductionBatchesRoute
   '/_authenticated/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/_authenticated/production/cost-report': typeof AuthenticatedProductionCostReportRoute
+  '/_authenticated/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
   '/_authenticated/production/produce': typeof AuthenticatedProductionProduceRoute
   '/_authenticated/production/qc': typeof AuthenticatedProductionQcRoute
   '/_authenticated/production/recipe-categories': typeof AuthenticatedProductionRecipeCategoriesRoute
@@ -743,6 +762,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/employees'
     | '/expenses'
+    | '/inbox'
     | '/inventory'
     | '/orders'
     | '/pos'
@@ -763,6 +783,7 @@ export interface FileRouteTypes {
     | '/production/batches'
     | '/production/consumption-report'
     | '/production/cost-report'
+    | '/production/factory-stock'
     | '/production/produce'
     | '/production/qc'
     | '/production/recipe-categories'
@@ -818,6 +839,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/employees'
     | '/expenses'
+    | '/inbox'
     | '/inventory'
     | '/orders'
     | '/pos'
@@ -836,6 +858,7 @@ export interface FileRouteTypes {
     | '/production/batches'
     | '/production/consumption-report'
     | '/production/cost-report'
+    | '/production/factory-stock'
     | '/production/produce'
     | '/production/qc'
     | '/production/recipe-categories'
@@ -892,6 +915,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/employees'
     | '/_authenticated/expenses'
+    | '/_authenticated/inbox'
     | '/_authenticated/inventory'
     | '/_authenticated/orders'
     | '/_authenticated/pos'
@@ -912,6 +936,7 @@ export interface FileRouteTypes {
     | '/_authenticated/production/batches'
     | '/_authenticated/production/consumption-report'
     | '/_authenticated/production/cost-report'
+    | '/_authenticated/production/factory-stock'
     | '/_authenticated/production/produce'
     | '/_authenticated/production/qc'
     | '/_authenticated/production/recipe-categories'
@@ -1084,6 +1109,13 @@ declare module '@tanstack/react-router' {
       path: '/inventory'
       fullPath: '/inventory'
       preLoaderRoute: typeof AuthenticatedInventoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/inbox': {
+      id: '/_authenticated/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AuthenticatedInboxRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/expenses': {
@@ -1387,6 +1419,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionProduceRouteImport
       parentRoute: typeof AuthenticatedProductionRoute
     }
+    '/_authenticated/production/factory-stock': {
+      id: '/_authenticated/production/factory-stock'
+      path: '/factory-stock'
+      fullPath: '/production/factory-stock'
+      preLoaderRoute: typeof AuthenticatedProductionFactoryStockRouteImport
+      parentRoute: typeof AuthenticatedProductionRoute
+    }
     '/_authenticated/production/cost-report': {
       id: '/_authenticated/production/cost-report'
       path: '/cost-report'
@@ -1527,6 +1566,7 @@ interface AuthenticatedProductionRouteChildren {
   AuthenticatedProductionBatchesRoute: typeof AuthenticatedProductionBatchesRoute
   AuthenticatedProductionConsumptionReportRoute: typeof AuthenticatedProductionConsumptionReportRoute
   AuthenticatedProductionCostReportRoute: typeof AuthenticatedProductionCostReportRoute
+  AuthenticatedProductionFactoryStockRoute: typeof AuthenticatedProductionFactoryStockRoute
   AuthenticatedProductionProduceRoute: typeof AuthenticatedProductionProduceRoute
   AuthenticatedProductionQcRoute: typeof AuthenticatedProductionQcRoute
   AuthenticatedProductionRecipeCategoriesRoute: typeof AuthenticatedProductionRecipeCategoriesRoute
@@ -1544,6 +1584,8 @@ const AuthenticatedProductionRouteChildren: AuthenticatedProductionRouteChildren
       AuthenticatedProductionConsumptionReportRoute,
     AuthenticatedProductionCostReportRoute:
       AuthenticatedProductionCostReportRoute,
+    AuthenticatedProductionFactoryStockRoute:
+      AuthenticatedProductionFactoryStockRoute,
     AuthenticatedProductionProduceRoute: AuthenticatedProductionProduceRoute,
     AuthenticatedProductionQcRoute: AuthenticatedProductionQcRoute,
     AuthenticatedProductionRecipeCategoriesRoute:
@@ -1593,6 +1635,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRouteWithChildren
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRouteWithChildren
+  AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
@@ -1640,6 +1683,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRouteWithChildren,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRouteWithChildren,
+  AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPosRoute: AuthenticatedPosRoute,
