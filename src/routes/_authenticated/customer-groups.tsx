@@ -46,7 +46,7 @@ function CustomerGroupsPage() {
     const [{ data, error }, { data: spgData }] = await Promise.all([
       sb
       .from("customer_groups")
-      .select('id, name, discount_pct, is_default, pricing_mode:mode::text, selling_price_group_id')
+      .select("id, name, discount_pct, is_default, pricing_mode, selling_price_group_id")
       .eq("is_active", true)
       .order("is_default", { ascending: false })
       .order("discount_pct", { ascending: true }),
@@ -60,7 +60,7 @@ function CustomerGroupsPage() {
           name: r.name as string,
           discountPct: Number(r.discount_pct ?? 0),
           isDefault: Boolean(r.is_default),
-          mode: (r.pricing_mode ?? r.mode ?? "percentage") as "percentage" | "price_group",
+          mode: (r.pricing_mode ?? "percentage") as "percentage" | "price_group",
           sellingPriceGroupId: (r.selling_price_group_id ?? null) as string | null,
         })),
       );
@@ -79,10 +79,10 @@ function CustomerGroupsPage() {
       const raw = Number(f.discountPct);
       if (!Number.isFinite(raw)) return { ok: false, msg: "Percentage must be a number" };
       if (raw < -100 || raw > 100) return { ok: false, msg: "Percentage must be between -100 and 100" };
-      return { ok: true, payload: { name, mode: "percentage", discount_pct: raw, selling_price_group_id: null } };
+      return { ok: true, payload: { name, pricing_mode: "percentage", discount_pct: raw, selling_price_group_id: null } };
     }
     if (!f.sellingPriceGroupId) return { ok: false, msg: "Select a selling price group" };
-    return { ok: true, payload: { name, mode: "price_group", discount_pct: 0, selling_price_group_id: f.sellingPriceGroupId } };
+    return { ok: true, payload: { name, pricing_mode: "price_group", discount_pct: 0, selling_price_group_id: f.sellingPriceGroupId } };
   };
 
   const submit = async (e: React.FormEvent) => {

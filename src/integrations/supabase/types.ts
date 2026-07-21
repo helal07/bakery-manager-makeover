@@ -168,6 +168,8 @@ export type Database = {
           is_active: boolean
           is_default: boolean
           name: string
+          pricing_mode: string
+          selling_price_group_id: string | null
           updated_at: string
         }
         Insert: {
@@ -177,6 +179,8 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name: string
+          pricing_mode?: string
+          selling_price_group_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -186,9 +190,19 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name?: string
+          pricing_mode?: string
+          selling_price_group_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customer_groups_selling_price_group_id_fkey"
+            columns: ["selling_price_group_id"]
+            isOneToOne: false
+            referencedRelation: "selling_price_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_payments: {
         Row: {
