@@ -874,7 +874,7 @@ function PosPage() {
 
 
           {/* Product search + scan/browse toggle */}
-          <div className="shrink-0 border-b border-border px-2 py-1.5 flex items-center gap-2">
+          <div className="shrink-0 border-b border-border pl-4 pr-2 sm:pl-6 sm:pr-4 py-1.5 flex items-center gap-2">
             <div className="flex-1 min-w-0">
               <ProductSearchBox
                 inputRef={searchRef}
