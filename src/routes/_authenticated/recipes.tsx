@@ -58,6 +58,8 @@ type BatchRow = {
   qty: number;
   created_at: string;
   ref_id: string | null;
+  showroom_id: string | null;
+  note: string | null;
 };
 
 function Workbench() {
