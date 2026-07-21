@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate, Outlet } from "@tanstack/react-router";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { LogOut, Menu, X, Store, Factory } from "lucide-react";
+import { LogOut, Menu, X, Store, Factory, Calendar, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
