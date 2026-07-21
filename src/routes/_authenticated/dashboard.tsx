@@ -110,22 +110,7 @@ function Dashboard() {
     <AppShell
       title="Dashboard"
       subtitle="Overview of your bakery operations"
-      actions={
-        <>
-          <button
-            onClick={() => setAddOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-background text-sm hover:bg-accent"
-          >
-            <Plus className="size-4" /> Add Item
-          </button>
-          <Link
-            to="/pos"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-base font-semibold hover:bg-primary/90 shadow-md"
-          >
-            <ScanBarcode className="size-5" /> New Sale
-          </Link>
-        </>
-      }
+    
     >
       {/* KPI strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
