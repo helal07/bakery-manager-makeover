@@ -72,7 +72,6 @@ import { Route as AuthenticatedProductionProduceRouteImport } from './routes/_au
 import { Route as AuthenticatedProductionFactoryStockRouteImport } from './routes/_authenticated/production.factory-stock'
 import { Route as AuthenticatedProductionCostReportRouteImport } from './routes/_authenticated/production.cost-report'
 import { Route as AuthenticatedProductionConsumptionReportRouteImport } from './routes/_authenticated/production.consumption-report'
-import { Route as AuthenticatedProductionBatchesRouteImport } from './routes/_authenticated/production.batches'
 import { Route as AuthenticatedExpensesReportRouteImport } from './routes/_authenticated/expenses.report'
 import { Route as AuthenticatedExpensesNewRouteImport } from './routes/_authenticated/expenses.new'
 import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authenticated/expenses.list'
@@ -439,12 +438,6 @@ const AuthenticatedProductionConsumptionReportRoute =
     path: '/consumption-report',
     getParentRoute: () => AuthenticatedProductionRoute,
   } as any)
-const AuthenticatedProductionBatchesRoute =
-  AuthenticatedProductionBatchesRouteImport.update({
-    id: '/batches',
-    path: '/batches',
-    getParentRoute: () => AuthenticatedProductionRoute,
-  } as any)
 const AuthenticatedExpensesReportRoute =
   AuthenticatedExpensesReportRouteImport.update({
     id: '/report',
@@ -547,7 +540,6 @@ export interface FileRoutesByFullPath {
   '/expenses/list': typeof AuthenticatedExpensesListRoute
   '/expenses/new': typeof AuthenticatedExpensesNewRoute
   '/expenses/report': typeof AuthenticatedExpensesReportRoute
-  '/production/batches': typeof AuthenticatedProductionBatchesRoute
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
@@ -622,7 +614,6 @@ export interface FileRoutesByTo {
   '/expenses/list': typeof AuthenticatedExpensesListRoute
   '/expenses/new': typeof AuthenticatedExpensesNewRoute
   '/expenses/report': typeof AuthenticatedExpensesReportRoute
-  '/production/batches': typeof AuthenticatedProductionBatchesRoute
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
@@ -701,7 +692,6 @@ export interface FileRoutesById {
   '/_authenticated/expenses/list': typeof AuthenticatedExpensesListRoute
   '/_authenticated/expenses/new': typeof AuthenticatedExpensesNewRoute
   '/_authenticated/expenses/report': typeof AuthenticatedExpensesReportRoute
-  '/_authenticated/production/batches': typeof AuthenticatedProductionBatchesRoute
   '/_authenticated/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/_authenticated/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/_authenticated/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
@@ -780,7 +770,6 @@ export interface FileRouteTypes {
     | '/expenses/list'
     | '/expenses/new'
     | '/expenses/report'
-    | '/production/batches'
     | '/production/consumption-report'
     | '/production/cost-report'
     | '/production/factory-stock'
@@ -855,7 +844,6 @@ export interface FileRouteTypes {
     | '/expenses/list'
     | '/expenses/new'
     | '/expenses/report'
-    | '/production/batches'
     | '/production/consumption-report'
     | '/production/cost-report'
     | '/production/factory-stock'
@@ -933,7 +921,6 @@ export interface FileRouteTypes {
     | '/_authenticated/expenses/list'
     | '/_authenticated/expenses/new'
     | '/_authenticated/expenses/report'
-    | '/_authenticated/production/batches'
     | '/_authenticated/production/consumption-report'
     | '/_authenticated/production/cost-report'
     | '/_authenticated/production/factory-stock'
@@ -1434,13 +1421,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionConsumptionReportRouteImport
       parentRoute: typeof AuthenticatedProductionRoute
     }
-    '/_authenticated/production/batches': {
-      id: '/_authenticated/production/batches'
-      path: '/batches'
-      fullPath: '/production/batches'
-      preLoaderRoute: typeof AuthenticatedProductionBatchesRouteImport
-      parentRoute: typeof AuthenticatedProductionRoute
-    }
     '/_authenticated/expenses/report': {
       id: '/_authenticated/expenses/report'
       path: '/report'
@@ -1564,7 +1544,6 @@ const AuthenticatedExpensesRouteWithChildren =
   )
 
 interface AuthenticatedProductionRouteChildren {
-  AuthenticatedProductionBatchesRoute: typeof AuthenticatedProductionBatchesRoute
   AuthenticatedProductionConsumptionReportRoute: typeof AuthenticatedProductionConsumptionReportRoute
   AuthenticatedProductionCostReportRoute: typeof AuthenticatedProductionCostReportRoute
   AuthenticatedProductionFactoryStockRoute: typeof AuthenticatedProductionFactoryStockRoute
@@ -1580,7 +1559,6 @@ interface AuthenticatedProductionRouteChildren {
 
 const AuthenticatedProductionRouteChildren: AuthenticatedProductionRouteChildren =
   {
-    AuthenticatedProductionBatchesRoute: AuthenticatedProductionBatchesRoute,
     AuthenticatedProductionConsumptionReportRoute:
       AuthenticatedProductionConsumptionReportRoute,
     AuthenticatedProductionCostReportRoute:
