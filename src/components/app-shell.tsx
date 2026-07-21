@@ -597,7 +597,8 @@ function NavEntry({ item, pathname, hash, openMenu, setOpenMenu }: {
         )}
       >
         <Icon className="size-4" />
-        {item.label}
+        <span className="flex-1">{item.label}</span>
+        {item.to === "/transfers" && <TransfersBadge />}
       </Link>
     );
   }
