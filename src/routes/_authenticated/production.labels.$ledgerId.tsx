@@ -258,7 +258,7 @@ function LabelCell({ info, company }: { info: BatchInfo; company: string }) {
 
   return (
     <div className="label-cell">
-      <div>
+      <div className="w-full">
         <div className="label-name">{info.productName}</div>
         <div className="label-meta">
           <b>B:</b> {info.batchNo}
@@ -267,10 +267,8 @@ function LabelCell({ info, company }: { info: BatchInfo; company: string }) {
           <b>MFG:</b> {info.mfgDate || "—"} · <b>EXP:</b> {info.expiryDate || "—"}
         </div>
       </div>
-      <div className="flex items-end justify-between gap-1">
-        <svg ref={ref} className="label-barcode" />
-        <div className="label-price">৳{info.price.toFixed(0)}</div>
-      </div>
+      <div className="label-price">MRP: ৳{info.price.toFixed(2)}</div>
+      <svg ref={ref} className="label-barcode" />
       <div className="label-company">{company}</div>
     </div>
   );
