@@ -134,9 +134,9 @@ function PosPage() {
     (async () => {
       const { data } = await sb
         .from("customer_groups")
-        .select('id,name,discount_pct,mode:mode::text,selling_price_group_id')
+        .select("id,name,discount_pct,pricing_mode,selling_price_group_id")
         .order("name");
-      setGroups((data ?? []) as GroupLite[]);
+      setGroups((data ?? []).map((g: any) => ({ ...g, mode: g.pricing_mode ?? "percentage" })) as GroupLite[]);
     })();
   }, []);
 
