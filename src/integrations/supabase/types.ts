@@ -704,30 +704,30 @@ export type Database = {
           created_at: string
           id: string
           price: number
-          price_group_id: string | null
           product_id: string
+          selling_price_group_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
           price?: number
-          price_group_id?: string | null
           product_id: string
+          selling_price_group_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           price?: number
-          price_group_id?: string | null
           product_id?: string
+          selling_price_group_id?: string | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "product_selling_prices_price_group_id_fkey"
-            columns: ["price_group_id"]
+            columns: ["selling_price_group_id"]
             isOneToOne: false
             referencedRelation: "selling_price_groups"
             referencedColumns: ["id"]
