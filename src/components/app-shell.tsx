@@ -11,6 +11,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   LayoutDashboard,
   ScanBarcode,
   ChefHat,
@@ -293,7 +300,7 @@ export function AppShellFrame() {
     <PageMetaContext.Provider value={metaCtx}>
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         {/* Sticky global top bar */}
-        <TopBar onOpenMobile={() => setMobileOpen(true)} />
+        <TopBar onOpenMobile={() => setMobileOpen(true)} company={company} />
 
         <div className="flex flex-1 min-h-0">
           {/* Mobile overlay */}
@@ -313,26 +320,12 @@ export function AppShellFrame() {
               mobileOpen ? "translate-x-0" : "-translate-x-full",
             )}
           >
-            <div className="px-5 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
-              <div className="size-9 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center overflow-hidden">
-                {company.logoDataUrl ? (
-                  <img src={company.logoDataUrl} alt="" className="size-full object-cover" />
-                ) : (
-                  <Wheat className="size-5" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold tracking-tight truncate">
-                  {company.name || defaultCompany.name}
-                </div>
-                <div className="text-[11px] text-sidebar-foreground/60 truncate">
-                  {company.tagline || company.address || ""}
-                </div>
-              </div>
+            <div className="md:hidden px-4 py-3 flex items-center justify-between border-b border-sidebar-border">
+              <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">Menu</span>
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="md:hidden p-1.5 rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent"
+                className="p-1.5 rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent"
                 aria-label="Close menu"
               >
                 <X className="size-4" />
@@ -359,7 +352,6 @@ export function AppShellFrame() {
                 </div>
               ))}
             </nav>
-            <UserMenu />
           </aside>
 
           {/* Main */}
@@ -388,7 +380,7 @@ export function AppShellFrame() {
   );
 }
 
-function TopBar({ onOpenMobile }: { onOpenMobile: () => void }) {
+function TopBar({ onOpenMobile, company }: { onOpenMobile: () => void; company: CompanySettings }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -411,6 +403,23 @@ function TopBar({ onOpenMobile }: { onOpenMobile: () => void }) {
           >
             <Menu className="size-5" />
           </button>
+          <Link to="/dashboard" className="flex items-center gap-2.5 min-w-0 rounded-md px-1.5 py-1 hover:bg-white/10 transition-colors">
+            <div className="size-9 shrink-0 rounded-md bg-white/15 grid place-items-center overflow-hidden">
+              {company.logoDataUrl ? (
+                <img src={company.logoDataUrl} alt="" className="size-full object-cover" />
+              ) : (
+                <Wheat className="size-5" />
+              )}
+            </div>
+            <div className="min-w-0 leading-tight hidden sm:block">
+              <div className="text-sm font-semibold truncate">
+                {company.name || defaultCompany.name}
+              </div>
+              <div className="text-[11px] text-primary-foreground/70 truncate max-w-[260px]">
+                {company.tagline || company.address || ""}
+              </div>
+            </div>
+          </Link>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
           <Link
@@ -421,7 +430,7 @@ function TopBar({ onOpenMobile }: { onOpenMobile: () => void }) {
             <ShoppingCart className="size-4" />
             <span className="hidden sm:inline">POS</span>
           </Link>
-          <div className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white/10 text-sm font-medium">
+          <div className="hidden sm:inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white/10 text-sm font-medium">
             <Calendar className="size-4 opacity-80" />
             <span className="tabular-nums">{dateStr}</span>
           </div>
@@ -433,38 +442,109 @@ function TopBar({ onOpenMobile }: { onOpenMobile: () => void }) {
 }
 
 function TopBarUser() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState<string>(() => {
     try { return localStorage.getItem("user-email-cache-v1") ?? ""; } catch { return ""; }
   });
+  const [role, setRole] = useState<string>(() => {
+    try { return localStorage.getItem("user-role-cache-v1") ?? ""; } catch { return ""; }
+  });
   const [profile, setProfile] = useState<UserProfile | null>(() => getCachedProfile());
+
   useEffect(() => {
     let mounted = true;
     getProfile().then((p) => { if (mounted) setProfile(p); }).catch(() => {});
-    supabase.auth.getUser().then(({ data }) => {
-      if (mounted && data.user?.email) setEmail(data.user.email);
-    }).catch(() => {});
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!mounted || !data.user) return;
+      const em = data.user.email ?? "";
+      setEmail(em);
+      try { localStorage.setItem("user-email-cache-v1", em); } catch { /* ignore */ }
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      if (mounted && roles && roles.length) {
+        setRole(roles[0].role);
+        try { localStorage.setItem("user-role-cache-v1", roles[0].role); } catch { /* ignore */ }
+      }
+    })().catch(() => {});
     const handler = () => getProfile().then((p) => { if (mounted) setProfile(p); }).catch(() => {});
     window.addEventListener("user-profile-updated", handler);
     return () => { mounted = false; window.removeEventListener("user-profile-updated", handler); };
   }, []);
+
+  const signOut = async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    try {
+      localStorage.removeItem("user-profile-cache-v1");
+      localStorage.removeItem("user-email-cache-v1");
+      localStorage.removeItem("user-role-cache-v1");
+    } catch { /* ignore */ }
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
   const name = profile?.name || email || "User";
   const initials = (profile?.name || email || "··")
     .split(/\s+/).map(s => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "··";
+
   return (
-    <Link
-      to="/profile"
-      className="inline-flex items-center gap-2 h-9 pl-2 pr-3 rounded-md bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors"
-      title="Open profile"
-    >
-      <span className="size-7 rounded-full bg-white/20 grid place-items-center text-xs font-semibold overflow-hidden">
-        {profile?.avatarDataUrl
-          ? <img src={profile.avatarDataUrl} alt="" className="size-full object-cover" />
-          : initials}
-      </span>
-      <span className="hidden sm:inline max-w-[140px] truncate">{name}</span>
-    </Link>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 h-9 pl-1 pr-2.5 rounded-md bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors"
+        >
+          <span className="size-7 rounded-full bg-white/20 grid place-items-center text-xs font-semibold overflow-hidden">
+            {profile?.avatarDataUrl
+              ? <img src={profile.avatarDataUrl} alt="" className="size-full object-cover" />
+              : initials}
+          </span>
+          <span className="hidden sm:inline max-w-[140px] truncate">{name}</span>
+          <ChevronDown className="size-3.5 opacity-80" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <div className="px-2 py-2 flex items-center gap-2.5">
+          <div className="size-10 rounded-full bg-muted grid place-items-center text-xs font-semibold overflow-hidden">
+            {profile?.avatarDataUrl
+              ? <img src={profile.avatarDataUrl} alt="" className="size-full object-cover" />
+              : initials}
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-medium truncate">{name}</div>
+            <div className="text-[11px] text-muted-foreground truncate">{email}</div>
+            {role && <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 mt-0.5">{role}</div>}
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+            <UserCog className="size-4" /> My Profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
+            <Settings className="size-4" /> Settings
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/employees" className="flex items-center gap-2 cursor-pointer">
+            <Users className="size-4" /> Teams & Roles
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={(e) => { e.preventDefault(); signOut(); }}
+          className="text-destructive focus:text-destructive cursor-pointer"
+        >
+          <LogOut className="size-4" /> Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
+
 
 
 function NavEntry({ item, pathname, hash, openMenu, setOpenMenu }: {
