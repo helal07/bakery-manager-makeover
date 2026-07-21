@@ -219,7 +219,7 @@ function LabelsPage() {
           overflow: hidden;
           font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         }
-        .label-name { width: 100%; font-size: 8pt; font-weight: 700; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .label-name { width: 100%; font-size: clamp(6pt, 2.2vw, 8.5pt); font-weight: 700; line-height: 1.05; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; hyphens: auto; }
         .label-meta { width: 100%; font-size: 6pt; line-height: 1.15; color: #334155; }
         .label-meta b { color: #0f172a; }
         .label-price { font-size: 8.5pt; font-weight: 800; }
