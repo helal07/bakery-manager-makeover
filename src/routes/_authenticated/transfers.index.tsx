@@ -266,8 +266,10 @@ function TransfersPage() {
                 </>
               )}
               {openView.status === "sent" && (
-                <Button onClick={() => receiveTransfer(openView)}>
-                  <PackageCheck className="w-4 h-4 mr-2" /> Receive
+                <Button asChild>
+                  <Link to="/transfers/receive/$id" params={{ id: openView.id }}>
+                    <PackageCheck className="w-4 h-4 mr-2" /> Open to Receive
+                  </Link>
                 </Button>
               )}
             </DialogFooter>
