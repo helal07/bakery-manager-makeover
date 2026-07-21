@@ -422,7 +422,7 @@ function TopBar({ onOpenMobile, company }: { onOpenMobile: () => void; company: 
           </Link>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <InboxBadge />
+
           <Link
             to="/pos"
             className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white/15 hover:bg-white/25 text-sm font-semibold transition-colors"
