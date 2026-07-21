@@ -15,6 +15,10 @@ import {
   Tag,
   Pencil,
   Save,
+  Search,
+  ChevronDown,
+  Check,
+  Clock,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -58,10 +62,12 @@ type BatchRow = {
   qty: number;
   created_at: string;
   ref_id: string | null;
+  showroom_id: string | null;
+  note: string | null;
 };
 
 function Workbench() {
-  const { currentShowroomId } = useShowroomScope();
+  const { currentShowroomId, showrooms } = useShowroomScope();
   const navigate = useNavigate();
   const search = Route.useSearch();
 
@@ -256,11 +262,11 @@ function Workbench() {
       const sb = supabase as any;
       const { data, error } = await sb
         .from("stock_ledger")
-        .select("id,qty,created_at,ref_id")
+        .select("id,qty,created_at,ref_id,showroom_id,note")
         .eq("kind", "production")
         .eq("product_id", productId)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(50);
       if (error) throw error;
       setBatches((data ?? []) as BatchRow[]);
     } catch (e: any) {
@@ -320,10 +326,10 @@ function Workbench() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Product selector */}
+          {/* Product selector — searchable */}
           <Card className="p-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <div className="size-9 rounded-md bg-primary/10 text-primary grid place-items-center">
                   <ChefHat className="size-4" />
                 </div>
@@ -336,20 +342,20 @@ function Workbench() {
                   </div>
                 </div>
               </div>
-              <select
-                value={activeId}
-                onChange={(e) => setActiveId(e.target.value)}
-                className="flex-1 min-w-[240px] h-10 px-3 rounded-md border border-border bg-background text-sm font-medium outline-none focus:border-primary"
-              >
-                {withRecipes.map((r) => (
-                  <option key={r.product.id} value={r.product.id}>
-                    {r.product.name} · {r.product.sku}
-                  </option>
-                ))}
-              </select>
-              {active && (
-                <Badge tone="primary">{active.product.category}</Badge>
-              )}
+              <div className="flex-1 min-w-[260px]">
+                <ProductSearchPicker
+                  options={withRecipes.map((r) => ({
+                    id: r.product.id,
+                    name: r.product.name,
+                    sku: r.product.sku,
+                    hint: r.product.category,
+                  }))}
+                  value={activeId}
+                  onChange={setActiveId}
+                  placeholder="Search product by name or SKU…"
+                />
+              </div>
+              {active && <Badge tone="primary">{active.product.category}</Badge>}
             </div>
           </Card>
 
@@ -395,6 +401,8 @@ function Workbench() {
               productName={active.product.name}
               rows={batches}
               loading={historyLoading}
+              currentUnitCost={unitCost}
+              showroomLookup={Object.fromEntries(showrooms.map((s) => [s.id, s.name]))}
             />
           )}
         </div>
@@ -733,21 +741,19 @@ function RecipeEditorBody({
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Product
         </label>
-        <select
-          value={productId}
-          onChange={(e) => onChangeProduct(e.target.value)}
-          className="mt-1.5 w-full h-10 px-3 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
-        >
-          <option value="">— Select a product —</option>
-          {products.map((p) => {
-            const has = (recipeMap[p.id]?.length ?? 0) > 0;
-            return (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.sku}){has ? " · has recipe" : ""}
-              </option>
-            );
-          })}
-        </select>
+        <div className="mt-1.5">
+          <ProductSearchPicker
+            options={products.map((p) => ({
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              hint: (recipeMap[p.id]?.length ?? 0) > 0 ? "has recipe" : undefined,
+            }))}
+            value={productId}
+            onChange={onChangeProduct}
+            placeholder="Search a product to define recipe…"
+          />
+        </div>
       </div>
 
       <div>
@@ -831,56 +837,275 @@ function RecipeEditorBody({
   );
 }
 
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  const mo = Math.floor(d / 30);
+  return `${mo}mo ago`;
+}
+
 function HistoryTab({
   productName,
   rows,
   loading,
+  currentUnitCost,
+  showroomLookup,
 }: {
   productName: string;
   rows: BatchRow[];
   loading: boolean;
+  currentUnitCost: number;
+  showroomLookup: Record<string, string>;
 }) {
+  const totalQty = rows.reduce((s, r) => s + Number(r.qty || 0), 0);
+  const totalCost = rows.reduce((s, r) => s + Number(r.qty || 0) * currentUnitCost, 0);
+  const first = rows[rows.length - 1];
+  const last = rows[0];
+
   return (
-    <Card className="overflow-hidden">
-      <div className="p-5 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-2">
-          <History className="size-4 text-primary" />
-          <h3 className="text-sm font-semibold">Recent batches — {productName}</h3>
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">Last 20 production entries</p>
+    <div className="space-y-4">
+      {/* Summary strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="p-4">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Batches</div>
+          <div className="text-2xl font-semibold mt-1">{rows.length}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">Last 50 shown</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Total produced</div>
+          <div className="text-2xl font-semibold mt-1">{totalQty}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">units of {productName}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Est. cost</div>
+          <div className="text-2xl font-semibold mt-1">৳{totalCost.toFixed(2)}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">@ ৳{currentUnitCost.toFixed(2)}/unit today</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Latest</div>
+          <div className="text-2xl font-semibold mt-1">
+            {last ? relativeTime(last.created_at) : "—"}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">
+            First: {first ? first.created_at.slice(0, 10) : "—"}
+          </div>
+        </Card>
       </div>
-      {loading ? (
-        <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
-      ) : rows.length === 0 ? (
-        <div className="p-8 text-center text-sm text-muted-foreground">
-          এখনো কোনো batch হয়নি
+
+      {/* Detailed table */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <History className="size-4 text-primary" />
+            <h3 className="text-sm font-semibold">Batch history — {productName}</h3>
+          </div>
+          <span className="text-[11px] text-muted-foreground">Newest first</span>
         </div>
-      ) : (
-        <div className="divide-y divide-border">
-          {rows.map((r) => (
-            <div key={r.id} className="flex items-center justify-between px-5 py-3 text-sm">
-              <div className="min-w-0">
-                <div className="font-mono text-xs text-muted-foreground">
-                  #{r.id.slice(0, 8).toUpperCase()} · {r.created_at.slice(0, 10)}
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge tone="success">+{Number(r.qty)}</Badge>
-                <Link
-                  to="/production/labels/$ledgerId"
-                  params={{ ledgerId: r.id }}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                >
-                  <Tag className="size-3" /> Labels
-                </Link>
-              </div>
+        {loading ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
+        ) : rows.length === 0 ? (
+          <div className="p-10 text-center">
+            <div className="mx-auto size-12 rounded-full bg-muted grid place-items-center mb-3">
+              <History className="size-5 text-muted-foreground" />
             </div>
-          ))}
-        </div>
-      )}
-    </Card>
+            <div className="text-sm font-medium">No batches yet</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Produce your first batch from the Produce tab.
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground bg-muted/20">
+                <tr>
+                  <th className="text-left font-medium px-4 py-2.5">Batch</th>
+                  <th className="text-left font-medium px-4 py-2.5">Date &amp; time</th>
+                  <th className="text-left font-medium px-4 py-2.5">Location</th>
+                  <th className="text-right font-medium px-4 py-2.5">Qty</th>
+                  <th className="text-right font-medium px-4 py-2.5">Est. unit</th>
+                  <th className="text-right font-medium px-4 py-2.5">Est. total</th>
+                  <th className="text-left font-medium px-4 py-2.5">Note</th>
+                  <th className="text-right font-medium px-4 py-2.5">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((r) => {
+                  const dt = new Date(r.created_at);
+                  const qty = Number(r.qty || 0);
+                  const line = qty * currentUnitCost;
+                  const loc = r.showroom_id ? (showroomLookup[r.showroom_id] ?? "Showroom") : "Factory";
+                  return (
+                    <tr key={r.id} className="hover:bg-muted/20">
+                      <td className="px-4 py-3">
+                        <div className="font-mono text-xs font-semibold">
+                          #{r.id.slice(0, 6).toUpperCase()}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {relativeTime(r.created_at)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-xs font-medium">{dt.toLocaleDateString()}</div>
+                        <div className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+                          <Clock className="size-3" />
+                          {dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge tone={r.showroom_id ? "primary" : "success"}>{loc}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold">+{qty}</td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">
+                        ৳{currentUnitCost.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium">৳{line.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px] truncate">
+                        {r.note ?? "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          to="/production/labels/$ledgerId"
+                          params={{ ledgerId: r.id }}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                        >
+                          <Tag className="size-3" /> Labels
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }
+
+function ProductSearchPicker({
+  options,
+  value,
+  onChange,
+  placeholder,
+}: {
+  options: Array<{ id: string; name: string; sku: string; hint?: string }>;
+  value: string;
+  onChange: (id: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const selected = options.find((o) => o.id === value);
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return options.slice(0, 50);
+    return options
+      .filter(
+        (o) =>
+          o.name.toLowerCase().includes(s) ||
+          o.sku.toLowerCase().includes(s),
+      )
+      .slice(0, 50);
+  }, [q, options]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm font-medium flex items-center justify-between gap-2 hover:border-primary/60 focus:border-primary outline-none"
+      >
+        <span className="truncate text-left">
+          {selected ? (
+            <>
+              {selected.name}
+              <span className="text-muted-foreground font-normal"> · {selected.sku}</span>
+            </>
+          ) : (
+            <span className="text-muted-foreground font-normal">{placeholder ?? "Search…"}</span>
+          )}
+        </span>
+        <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute z-50 mt-1 left-0 right-0 rounded-md border border-border bg-popover shadow-lg overflow-hidden">
+            <div className="p-2 border-b border-border">
+              <div className="relative">
+                <Search className="size-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  autoFocus
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={placeholder ?? "Search…"}
+                  className="w-full h-9 pl-8 pr-3 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+            <div className="max-h-72 overflow-auto py-1">
+              {filtered.length === 0 ? (
+                <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  No products match “{q}”
+                </div>
+              ) : (
+                filtered.map((o) => {
+                  const active = o.id === value;
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => {
+                        onChange(o.id);
+                        setOpen(false);
+                        setQ("");
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-accent ${
+                        active ? "bg-accent/60" : ""
+                      }`}
+                    >
+                      <Check
+                        className={`size-3.5 shrink-0 ${
+                          active ? "text-primary" : "text-transparent"
+                        }`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium truncate">{o.name}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {o.sku}
+                          {o.hint ? ` · ${o.hint}` : ""}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 
 function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
