@@ -84,7 +84,7 @@ function LabelsPage() {
       subtitle={info ? `${info.productName} · Batch ${info.batchNo}` : "Loading…"}
       actions={
         <div className="flex items-center gap-2 print:hidden">
-          <Link to="/production/batches" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm hover:bg-muted">
+          <Link to="/recipes" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm hover:bg-muted">
             <ArrowLeft className="size-4" /> Back
           </Link>
           <button

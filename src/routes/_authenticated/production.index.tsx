@@ -342,7 +342,7 @@ function ProductionDashboard() {
             <History className="size-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold">Recent Batches</h3>
           </div>
-          <Link to="/production/batches" className="text-xs text-primary hover:underline">View all →</Link>
+          <Link to="/recipes" className="text-xs text-primary hover:underline">View all →</Link>
         </div>
         {recent.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-6">
@@ -370,7 +370,7 @@ function ProductionDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         <QuickLink to="/production/wastage" icon={Trash2} label="Wastage Log" />
         <QuickLink to="/production/repurpose" icon={Recycle} label="Wastage Management" />
-        <QuickLink to="/production/batches" icon={History} label="Batches" />
+        
         <QuickLink to="/production/cost-report" icon={BarChart3} label="Cost Report" />
         <QuickLink to="/production/consumption-report" icon={Wheat} label="Consumption" />
       </div>
