@@ -12,6 +12,7 @@ export type IncomingTransfer = {
   kind: "normal" | "damaged_return" | null;
   created_at: string;
   sent_at: string | null;
+  received_at?: string | null;
 };
 
 export type IncomingTransferItem = {
