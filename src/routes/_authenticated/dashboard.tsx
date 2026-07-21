@@ -195,7 +195,7 @@ function Dashboard() {
       </div>
 
       {saleOpen && <QuickSaleModal onClose={() => setSaleOpen(false)} />}
-      {addOpen && <AddItemModal onClose={() => setAddOpen(false)} />}
+      
     </AppShell>
   );
 }
