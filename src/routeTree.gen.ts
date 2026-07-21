@@ -79,6 +79,7 @@ import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authent
 import { Route as AuthenticatedExpensesCategoriesRouteImport } from './routes/_authenticated/expenses.categories'
 import { Route as AuthenticatedEmployeesNewRouteImport } from './routes/_authenticated/employees.new'
 import { Route as AuthenticatedCrmIdIndexRouteImport } from './routes/_authenticated/crm.$id.index'
+import { Route as AuthenticatedTransfersReceiveIdRouteImport } from './routes/_authenticated/transfers.receive.$id'
 import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
 import { Route as AuthenticatedProductionLabelsLedgerIdRouteImport } from './routes/_authenticated/production.labels.$ledgerId'
@@ -479,6 +480,12 @@ const AuthenticatedCrmIdIndexRoute = AuthenticatedCrmIdIndexRouteImport.update({
   path: '/crm/$id/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTransfersReceiveIdRoute =
+  AuthenticatedTransfersReceiveIdRouteImport.update({
+    id: '/transfers/receive/$id',
+    path: '/transfers/receive/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTransfersDamagedNewRoute =
   AuthenticatedTransfersDamagedNewRouteImport.update({
     id: '/transfers/damaged/new',
@@ -584,6 +591,7 @@ export interface FileRoutesByFullPath {
   '/production/labels/$ledgerId': typeof AuthenticatedProductionLabelsLedgerIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
+  '/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
   '/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -658,6 +666,7 @@ export interface FileRoutesByTo {
   '/production/labels/$ledgerId': typeof AuthenticatedProductionLabelsLedgerIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
+  '/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
   '/crm/$id': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesById {
@@ -736,6 +745,7 @@ export interface FileRoutesById {
   '/_authenticated/production/labels/$ledgerId': typeof AuthenticatedProductionLabelsLedgerIdRoute
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
+  '/_authenticated/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
   '/_authenticated/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -814,6 +824,7 @@ export interface FileRouteTypes {
     | '/production/labels/$ledgerId'
     | '/products/edit/$id'
     | '/transfers/damaged/new'
+    | '/transfers/receive/$id'
     | '/crm/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -888,6 +899,7 @@ export interface FileRouteTypes {
     | '/production/labels/$ledgerId'
     | '/products/edit/$id'
     | '/transfers/damaged/new'
+    | '/transfers/receive/$id'
     | '/crm/$id'
   id:
     | '__root__'
@@ -965,6 +977,7 @@ export interface FileRouteTypes {
     | '/_authenticated/production/labels/$ledgerId'
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/transfers/damaged/new'
+    | '/_authenticated/transfers/receive/$id'
     | '/_authenticated/crm/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -1470,6 +1483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/transfers/receive/$id': {
+      id: '/_authenticated/transfers/receive/$id'
+      path: '/transfers/receive/$id'
+      fullPath: '/transfers/receive/$id'
+      preLoaderRoute: typeof AuthenticatedTransfersReceiveIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/transfers/damaged/new': {
       id: '/_authenticated/transfers/damaged/new'
       path: '/transfers/damaged/new'
@@ -1651,6 +1671,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCrmIdLedgerRoute: typeof AuthenticatedCrmIdLedgerRoute
   AuthenticatedProductsEditIdRoute: typeof AuthenticatedProductsEditIdRoute
   AuthenticatedTransfersDamagedNewRoute: typeof AuthenticatedTransfersDamagedNewRoute
+  AuthenticatedTransfersReceiveIdRoute: typeof AuthenticatedTransfersReceiveIdRoute
   AuthenticatedCrmIdIndexRoute: typeof AuthenticatedCrmIdIndexRoute
 }
 
@@ -1700,6 +1721,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCrmIdLedgerRoute: AuthenticatedCrmIdLedgerRoute,
   AuthenticatedProductsEditIdRoute: AuthenticatedProductsEditIdRoute,
   AuthenticatedTransfersDamagedNewRoute: AuthenticatedTransfersDamagedNewRoute,
+  AuthenticatedTransfersReceiveIdRoute: AuthenticatedTransfersReceiveIdRoute,
   AuthenticatedCrmIdIndexRoute: AuthenticatedCrmIdIndexRoute,
 }
 
