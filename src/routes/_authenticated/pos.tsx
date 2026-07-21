@@ -894,7 +894,7 @@ function PosPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-[1fr_130px_100px_32px] sm:grid-cols-[1fr_170px_130px_36px] text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 pl-4 pr-2 sm:pl-6 sm:pr-4 py-2 border-b-2 border-primary/40 bg-slate-100 dark:bg-slate-800/60">
+          <div className="grid grid-cols-[1fr_130px_100px_32px] sm:grid-cols-[1fr_170px_130px_36px] text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 pl-8 pr-2 sm:pl-10 sm:pr-4 py-2 border-b-2 border-primary/40 bg-slate-100 dark:bg-slate-800/60">
             <span>Product</span>
             <span className="text-center">Qty</span>
             <span className="text-right">Subtotal</span>
