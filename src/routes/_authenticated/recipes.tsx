@@ -322,10 +322,10 @@ function Workbench() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Product selector */}
+          {/* Product selector — searchable */}
           <Card className="p-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <div className="size-9 rounded-md bg-primary/10 text-primary grid place-items-center">
                   <ChefHat className="size-4" />
                 </div>
@@ -338,20 +338,20 @@ function Workbench() {
                   </div>
                 </div>
               </div>
-              <select
-                value={activeId}
-                onChange={(e) => setActiveId(e.target.value)}
-                className="flex-1 min-w-[240px] h-10 px-3 rounded-md border border-border bg-background text-sm font-medium outline-none focus:border-primary"
-              >
-                {withRecipes.map((r) => (
-                  <option key={r.product.id} value={r.product.id}>
-                    {r.product.name} · {r.product.sku}
-                  </option>
-                ))}
-              </select>
-              {active && (
-                <Badge tone="primary">{active.product.category}</Badge>
-              )}
+              <div className="flex-1 min-w-[260px]">
+                <ProductSearchPicker
+                  options={withRecipes.map((r) => ({
+                    id: r.product.id,
+                    name: r.product.name,
+                    sku: r.product.sku,
+                    hint: r.product.category,
+                  }))}
+                  value={activeId}
+                  onChange={setActiveId}
+                  placeholder="Search product by name or SKU…"
+                />
+              </div>
+              {active && <Badge tone="primary">{active.product.category}</Badge>}
             </div>
           </Card>
 
