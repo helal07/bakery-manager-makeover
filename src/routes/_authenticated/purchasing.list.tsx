@@ -64,6 +64,20 @@ function PurchaseList() {
 
   return (
     <AppShell title="Purchase List" subtitle="All supplier purchase orders">
+      {pendingIn > 0 && (
+        <Link
+          to="/inbox"
+          className="mb-4 flex items-center justify-between gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm hover:bg-amber-500/15 transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            <InboxIcon className="w-4 h-4 text-amber-600" />
+            <span>
+              <b>{pendingIn}</b> pending incoming transfer{pendingIn === 1 ? "" : "s"} from the factory — receive them in the Inbox (kept separate from supplier purchases).
+            </span>
+          </span>
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Open Inbox →</span>
+        </Link>
+      )}
       <Card className="p-4 mb-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <div className="relative sm:col-span-2 lg:col-span-6 xl:col-span-2">
