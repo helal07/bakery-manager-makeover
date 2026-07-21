@@ -909,7 +909,7 @@ function PosPage() {
               items.map(({ p, qty }) => {
                 const shown = priceFor(p);
                 return (
-                  <div key={p.id} className="grid grid-cols-[1fr_130px_100px_32px] sm:grid-cols-[1fr_170px_130px_36px] items-center pl-4 pr-2 sm:pl-6 sm:pr-4 py-2 border-b border-border hover:bg-accent/30">
+                  <div key={p.id} className="grid grid-cols-[1fr_130px_100px_32px] sm:grid-cols-[1fr_170px_130px_36px] items-center pl-8 pr-2 sm:pl-10 sm:pr-4 py-2 border-b border-border hover:bg-accent/30">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="size-8 rounded-md bg-gradient-to-br from-accent to-secondary overflow-hidden shrink-0">
                         {p.imageUrl ? <img src={p.imageUrl} alt="" className="size-full object-cover" /> : null}
