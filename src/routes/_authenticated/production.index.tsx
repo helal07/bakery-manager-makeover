@@ -347,7 +347,7 @@ function ProductionDashboard() {
         {recent.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-6">
             এখনো কোনো batch হয়নি —{" "}
-            <Link to="/production/produce" className="text-primary hover:underline">প্রথম batch বানান</Link>
+            <Link to="/recipes" className="text-primary hover:underline">প্রথম batch বানান</Link>
           </div>
         ) : (
           <div className="divide-y divide-border">
