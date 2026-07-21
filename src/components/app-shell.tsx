@@ -291,105 +291,181 @@ export function AppShellFrame() {
 
   return (
     <PageMetaContext.Provider value={metaCtx}>
-      <div className="flex min-h-screen bg-background text-foreground">
-        {/* Mobile overlay */}
-        <div
-          className={cn(
-            "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
-            mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-          )}
-          onClick={() => setMobileOpen(false)}
-          aria-hidden="true"
-        />
+      <div className="flex flex-col min-h-screen bg-background text-foreground">
+        {/* Sticky global top bar */}
+        <TopBar onOpenMobile={() => setMobileOpen(true)} />
 
-        {/* Sidebar */}
-        <aside
-          className={cn(
-            "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transform-gpu transition-transform duration-300 ease-in-out will-change-transform md:static md:translate-x-0",
-            mobileOpen ? "translate-x-0" : "-translate-x-full",
-          )}
-        >
-          <div className="px-5 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
-            <div className="size-9 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center overflow-hidden">
-              {company.logoDataUrl ? (
-                <img src={company.logoDataUrl} alt="" className="size-full object-cover" />
-              ) : (
-                <Wheat className="size-5" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold tracking-tight truncate">
-                {company.name || defaultCompany.name}
+        <div className="flex flex-1 min-h-0">
+          {/* Mobile overlay */}
+          <div
+            className={cn(
+              "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
+              mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+            )}
+            onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Sidebar */}
+          <aside
+            className={cn(
+              "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transform-gpu transition-transform duration-300 ease-in-out will-change-transform md:sticky md:top-14 md:translate-x-0 md:h-[calc(100vh-3.5rem)]",
+              mobileOpen ? "translate-x-0" : "-translate-x-full",
+            )}
+          >
+            <div className="px-5 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
+              <div className="size-9 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground grid place-items-center overflow-hidden">
+                {company.logoDataUrl ? (
+                  <img src={company.logoDataUrl} alt="" className="size-full object-cover" />
+                ) : (
+                  <Wheat className="size-5" />
+                )}
               </div>
-              <div className="text-[11px] text-sidebar-foreground/60 truncate">
-                {company.tagline || company.address || ""}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setMobileOpen(false)}
-              className="md:hidden p-1.5 rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent"
-              aria-label="Close menu"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
-          <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
-            {visibleGroups.map((g) => (
-              <div key={g.label}>
-                <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
-                  {g.label}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold tracking-tight truncate">
+                  {company.name || defaultCompany.name}
                 </div>
-                <div className="space-y-0.5">
-                  {g.items.map((n) => (
-                    <NavEntry
-                      key={n.to}
-                      item={n}
-                      pathname={pathname}
-                      hash={hash}
-                      openMenu={openMenu}
-                      setOpenMenu={setOpenMenu}
-                    />
-                  ))}
+                <div className="text-[11px] text-sidebar-foreground/60 truncate">
+                  {company.tagline || company.address || ""}
                 </div>
               </div>
-            ))}
-          </nav>
-          <UserMenu />
-        </aside>
-
-        {/* Main */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Page header */}
-          <div className="px-4 md:px-8 pt-5 md:pt-7 pb-4 flex flex-wrap items-end justify-between gap-4 border-b border-border">
-            <div className="flex items-center gap-3 min-w-0">
               <button
                 type="button"
-                onClick={() => setMobileOpen(true)}
-                className="md:hidden p-2 -ml-2 rounded-md text-foreground/70 hover:bg-accent"
-                aria-label="Open menu"
+                onClick={() => setMobileOpen(false)}
+                className="md:hidden p-1.5 rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent"
+                aria-label="Close menu"
               >
-                <Menu className="size-5" />
+                <X className="size-4" />
               </button>
-              <div className="min-w-0">
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">{meta.title}</h1>
-                {meta.subtitle && <p className="text-sm text-muted-foreground mt-1">{meta.subtitle}</p>}
-              </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <ShowroomSwitcher />
-              {meta.actions}
-            </div>
-          </div>
+            <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+              {visibleGroups.map((g) => (
+                <div key={g.label}>
+                  <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
+                    {g.label}
+                  </div>
+                  <div className="space-y-0.5">
+                    {g.items.map((n) => (
+                      <NavEntry
+                        key={n.to}
+                        item={n}
+                        pathname={pathname}
+                        hash={hash}
+                        openMenu={openMenu}
+                        setOpenMenu={setOpenMenu}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </nav>
+            <UserMenu />
+          </aside>
 
-          <main className="flex-1 px-4 md:px-8 py-6">
-            <Outlet />
-          </main>
+          {/* Main */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Page header */}
+            {(meta.title || meta.actions) && (
+              <div className="px-4 md:px-8 pt-5 md:pt-7 pb-4 flex flex-wrap items-end justify-between gap-4 border-b border-border">
+                <div className="min-w-0">
+                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">{meta.title}</h1>
+                  {meta.subtitle && <p className="text-sm text-muted-foreground mt-1">{meta.subtitle}</p>}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <ShowroomSwitcher />
+                  {meta.actions}
+                </div>
+              </div>
+            )}
+
+            <main className="flex-1 px-4 md:px-8 py-6">
+              <Outlet />
+            </main>
+          </div>
         </div>
       </div>
     </PageMetaContext.Provider>
   );
 }
+
+function TopBar({ onOpenMobile }: { onOpenMobile: () => void }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  const dateStr = `${dd}-${mm}-${yyyy}`;
+
+  return (
+    <header className="sticky top-0 z-40 h-14 bg-primary text-primary-foreground border-b border-primary/40 shadow-sm">
+      <div className="h-full px-3 md:px-5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            onClick={onOpenMobile}
+            className="md:hidden p-2 -ml-1 rounded-md hover:bg-white/10"
+            aria-label="Open menu"
+          >
+            <Menu className="size-5" />
+          </button>
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Link
+            to="/pos"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white/15 hover:bg-white/25 text-sm font-semibold transition-colors"
+            title="Open POS"
+          >
+            <ShoppingCart className="size-4" />
+            <span className="hidden sm:inline">POS</span>
+          </Link>
+          <div className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white/10 text-sm font-medium">
+            <Calendar className="size-4 opacity-80" />
+            <span className="tabular-nums">{dateStr}</span>
+          </div>
+          <TopBarUser />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function TopBarUser() {
+  const [email, setEmail] = useState<string>(() => {
+    try { return localStorage.getItem("user-email-cache-v1") ?? ""; } catch { return ""; }
+  });
+  const [profile, setProfile] = useState<UserProfile | null>(() => getCachedProfile());
+  useEffect(() => {
+    let mounted = true;
+    getProfile().then((p) => { if (mounted) setProfile(p); }).catch(() => {});
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted && data.user?.email) setEmail(data.user.email);
+    }).catch(() => {});
+    const handler = () => getProfile().then((p) => { if (mounted) setProfile(p); }).catch(() => {});
+    window.addEventListener("user-profile-updated", handler);
+    return () => { mounted = false; window.removeEventListener("user-profile-updated", handler); };
+  }, []);
+  const name = profile?.name || email || "User";
+  const initials = (profile?.name || email || "··")
+    .split(/\s+/).map(s => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "··";
+  return (
+    <Link
+      to="/profile"
+      className="inline-flex items-center gap-2 h-9 pl-2 pr-3 rounded-md bg-white/10 hover:bg-white/20 text-sm font-medium transition-colors"
+      title="Open profile"
+    >
+      <span className="size-7 rounded-full bg-white/20 grid place-items-center text-xs font-semibold overflow-hidden">
+        {profile?.avatarDataUrl
+          ? <img src={profile.avatarDataUrl} alt="" className="size-full object-cover" />
+          : initials}
+      </span>
+      <span className="hidden sm:inline max-w-[140px] truncate">{name}</span>
+    </Link>
+  );
+}
+
 
 function NavEntry({ item, pathname, hash, openMenu, setOpenMenu }: {
   item: NavItem;
