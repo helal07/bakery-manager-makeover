@@ -805,7 +805,7 @@ function PosPage() {
         {/* Cart column (60%) — full width on mobile (Ultimate POS style) */}
         <section className={`${mobileTab === "cart" ? "flex" : "hidden"} lg:flex flex-col overflow-hidden bg-card border-r border-border`}>
           {/* Toolbar inside 60% split: Customer | Price Group | Invoice Date */}
-          <div className="shrink-0 border-b border-border px-2 py-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          <div className="shrink-0 border-b border-border pl-4 pr-2 sm:pl-6 sm:pr-4 py-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             <div className="flex gap-1.5">
               <div className="relative flex-1" ref={custWrapRef}>
                 <User className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
