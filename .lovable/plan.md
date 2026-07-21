@@ -1,54 +1,57 @@
+# Factory Stock + Showroom Inbox (Incoming Goods)
 
-## লক্ষ্য
-`Recipes` এবং `New Production` — দুইটাই একই workflow। এদের একসাথে করে **"Production Workbench"** বানাব (Sample B — Tabbed layout)। "New Production" submenu সরানো হবে।
+## Goal
+Factory-only production রাখা, showroom-এ transfer receive workflow যোগ করা, এবং Purchase ও Transfer আলাদা রেখে একটা unified "Incoming Goods" view দেওয়া।
 
----
+## Scope
 
-## Final UI — Sample B (Tabbed Workbench)
+### 1. Production menu — Factory Stock views
+- `Production` sidebar-এ ২টা নতুন submenu:
+  - **Factory Raw Stock** — `raw_material_stock` (showroom = factory) list with value (qty × cost)
+  - **Factory Product Stock** — `product_stock` (showroom = factory) list with value (qty × price)
+- Total valuation KPI উপরে।
+- Factory = `showrooms.code = 'FACTORY'` (বা `is_factory` flag; existing convention follow করবো)।
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ Production Workbench                       [+ New Recipe]    │
-├──────────────────────────────────────────────────────────────┤
-│ Product ▾ [ 🍞 Butter Croissant (BC-001) ▾ ]   12 recipes    │
-│                                                              │
-│ ╭ Produce ─╮ ╭ Edit Recipe ╮ ╭ Batch history ╮               │
-│ │                                                          │ │
-│ │  Batch qty  [−] 5 [+]        Unit cost  ৳12.40           │ │
-│ │  Showroom   Factory ▾        Batch cost ৳62.00           │ │
-│ │                                                          │ │
-│ │  Raw material preview                                    │ │
-│ │  Material │ Need │ Stock │ Cost │ Status                 │ │
-│ │  Flour    │1000g │5000g  │৳20   │  OK ✓                  │ │
-│ │  Butter   │ 250g │ 100g  │৳30   │ SHORT ⚠  [Stock In]    │ │
-│ │                                                          │ │
-│ │           [ ▶  PRODUCE NOW  (৳62.00) ]                   │ │
-│ ╰──────────────────────────────────────────────────────────╯ │
-└──────────────────────────────────────────────────────────────┘
-```
+### 2. Showroom Inbox (Incoming Transfers)
+- নতুন route: `src/routes/_authenticated/inbox.tsx`
+- Current user-এর active showroom-এ pending transfers (`transfers.status = 'sent'`, `to_showroom_id = current`) list করবে।
+- প্রতিটা transfer-এ: from factory, date, items (product, qty), "Receive" button।
+- Receive হলে:
+  - প্রতিটা `transfer_items`-এর জন্য `commit_stock_movement(product_id, to_showroom, +qty, 'transfer_in', 'transfer', transfer_id)`
+  - `transfers.status = 'received'`, `received_at = now()`, `received_by = user`
+  - Missing product row auto-insert হয় (existing RPC behavior) — showroom-এ product আগে না থাকলেও কাজ করবে।
 
-- **Product selector** — top of page. Searchable combobox (native `<select>` fallback) listing recipe-সহ product। URL param `?product=<id>` support থাকবে (deep-link)।
-- **Tabs:**
-  - **Produce** (default) — batch qty stepper, showroom selector, ingredient preview table, big Produce CTA, confirm dialog।
-  - **Edit Recipe** — বর্তমান editor dialog-এর content inline; add/remove ingredient, validation (duplicate + zero qty)। Save/Delete buttons ভিতরে।
-  - **Batch history** — এই product-এর last ~20 batches (`stock_ledger` kind=production filter), each row → Labels link।
-- **Empty state** — কোনো recipe না থাকলে বড় card + "Create first recipe" button।
+### 3. Notifications
+- Sidebar-এ `Inbox` menu item-এর পাশে pending count badge।
+- Topbar-এ ছোট bell/badge (pending transfer count)।
+- Count query: `transfers` where `to_showroom_id = current AND status = 'sent'`.
 
----
+### 4. Purchase vs Transfer separation
+- Purchase List-এ transfer **mix করবো না** (double liability এড়াতে)।
+- Purchase List page-এর উপরে একটা hint banner: "X pending incoming transfers — Open Inbox" → `/inbox`.
+- Optional: Dashboard-এ "Incoming Goods" widget with 2 tabs (Purchases / Transfers) — এই plan-এ শুধু banner + Inbox, widget পরে।
+
+### 5. Missing product edge case
+- Existing `commit_stock_movement` RPC `product_stock`-এ row না থাকলে auto-insert করে — কোনো schema change লাগবে না।
+- Showroom-এ product first time এলে সেটা automatic ওই showroom-এর catalog-এ visible হবে (product master global, stock per-showroom)।
 
 ## Files
 
-- **Rewrite** `src/routes/_authenticated/recipes.tsx` — tabbed workbench, `?product=` search param support, existing `commitProduction` / `saveRecipe` / validation reuse।
-- **Rewrite** `src/routes/_authenticated/production.produce.tsx` — redirect-only:
-  ```ts
-  beforeLoad: ({ search }) => throw redirect({ to: "/recipes", search })
-  ```
-- **Edit** `src/components/app-shell.tsx` — production submenu থেকে "New Production" entry সরানো; "Recipes" label → **"Recipes & Production"**।
-- **Edit** `src/routes/_authenticated/production.index.tsx` — dashboard-এর "New Production" quick action → "Open Workbench" (`/recipes`)।
+**New**
+- `src/routes/_authenticated/inbox.tsx` — pending transfers list + receive action
+- `src/routes/_authenticated/production.factory-stock.tsx` — raw + product stock tabs
+- `sql/14_inbox_helpers.sql` — (only if we need a `get_pending_transfers_count` RPC; otherwise skip)
 
----
+**Modified**
+- `src/components/app-shell.tsx` — add Inbox menu + badge, add Factory Stock under Production
+- `src/routes/_authenticated/production.index.tsx` — sidebar entry for Factory Stock
+- `src/routes/_authenticated/purchasing.list.tsx` — hint banner linking to Inbox
 
-## যা বদলাবে না
-- Database, RPC (`commit_production_batch`), permissions (`production.recipes.view`, `production.batches`), Batches / Wastage / Cost / Consumption Report pages — সব untouched। কোনো migration লাগবে না।
+## Migrations
+- সম্ভবত schema change লাগবে না (transfers/status/received_at fields already আছে ধরে নিচ্ছি — verify করে confirm করবো implementation-এ)।
+- লাগলে `sql/14_transfer_receive.sql` numbered file দেব manual import-এর জন্য।
 
-Ready? "Approve plan" চাপলে build mode-এ implement শুরু করব।
+## Out of scope (এই plan-এ না)
+- Full "Incoming Goods" dashboard widget
+- Partial receive / discrepancy reporting
+- Auto-create purchase entry from transfer (accounting-এর জন্য পরে আলাদা plan)
