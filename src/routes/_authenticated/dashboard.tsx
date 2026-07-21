@@ -93,7 +93,7 @@ function Dashboard() {
   const saleOpen = !!sale;
   const setSaleOpen = (v: boolean) =>
     navigate({ search: v ? { sale: 1 } : {}, replace: true });
-  const [addOpen, setAddOpen] = useState(false);
+  
   const data = useDashboardData();
   const delta = data.prevWeek > 0
     ? `${(((data.week - data.prevWeek) / data.prevWeek) * 100).toFixed(0)}%`
@@ -195,7 +195,7 @@ function Dashboard() {
       </div>
 
       {saleOpen && <QuickSaleModal onClose={() => setSaleOpen(false)} />}
-      {addOpen && <AddItemModal onClose={() => setAddOpen(false)} />}
+      
     </AppShell>
   );
 }
