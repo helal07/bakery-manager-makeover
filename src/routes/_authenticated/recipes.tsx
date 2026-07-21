@@ -63,7 +63,7 @@ type BatchRow = {
 };
 
 function Workbench() {
-  const { currentShowroomId } = useShowroomScope();
+  const { currentShowroomId, showrooms } = useShowroomScope();
   const navigate = useNavigate();
   const search = Route.useSearch();
 
