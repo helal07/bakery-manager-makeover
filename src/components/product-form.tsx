@@ -411,7 +411,7 @@ export function ProductForm({ editId }: { editId?: string }) {
                       <Input
                         type="number"
                         min={0}
-                        step="0.01"
+                        step="0.0001"
                         value={ing.qty}
                         onChange={(e) => updateIngredient(idx, { qty: Number(e.target.value) || 0 })}
                         className="w-24"

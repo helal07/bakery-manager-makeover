@@ -801,7 +801,7 @@ function RecipeEditorBody({
                   <input
                     type="number"
                     min={0}
-                    step="0.001"
+                    step="0.0001"
                     value={it.qty}
                     onChange={(e) =>
                       setItems((arr) =>
