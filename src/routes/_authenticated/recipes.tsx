@@ -96,7 +96,17 @@ function Workbench() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorProductId, setEditorProductId] = useState<string>("");
   const [editorItems, setEditorItems] = useState<Ingredient[]>([]);
+  const [editorOverheads, setEditorOverheads] = useState<RecipeOverhead[]>([]);
   const [editorSaving, setEditorSaving] = useState(false);
+
+  // Overhead categories master list
+  const [overheadCats, setOverheadCats] = useState<OverheadCategory[]>([]);
+
+  // Recipe-level default overheads for the currently active product
+  const [activeRecipeOverheads, setActiveRecipeOverheads] = useState<RecipeOverhead[]>([]);
+
+  // Per-produce overrides (starts from recipe defaults, user can add/edit/remove)
+  const [produceOverheads, setProduceOverheads] = useState<BatchOverhead[]>([]);
 
   // Batch history
   const [batches, setBatches] = useState<BatchRow[]>([]);
@@ -104,14 +114,16 @@ function Workbench() {
 
   const refresh = async () => {
     try {
-      const [ps, rms, rm] = await Promise.all([
+      const [ps, rms, rm, ocs] = await Promise.all([
         loadProducts(currentShowroomId ?? null),
         loadRawMaterials(null), // factory-only raw stock
         loadRecipes(),
+        loadOverheadCategories(),
       ]);
       setProducts(ps);
       setRawMaterials(rms);
       setRecipeMap(rm);
+      setOverheadCats(ocs);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to load");
     } finally {
