@@ -461,9 +461,30 @@ function Products() {
         )}
 
         {tab === "stock" && (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            Stock Report — switch to the Reports → Stock page for a detailed view.
-          </div>
+          <StockReportPanel
+            rows={filtered}
+            loading={loading}
+            locationName={currentShowroomName}
+            onExport={() => {
+              const headers = ["SKU", "Product", "Category", "Location", "Unit Price", "Selling Price", "Current Stock", "Stock Value", "Potential Revenue"];
+              const csvRows = filtered.map((p) => [
+                p.sku, p.name, p.category, currentShowroomName,
+                p.cost.toFixed(2), p.price.toFixed(2), p.stock,
+                (p.stock * p.cost).toFixed(2), (p.stock * p.price).toFixed(2),
+              ]);
+              const csv = [headers, ...csvRows]
+                .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+                .join("\n");
+              const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "stock-report.csv";
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            onPrint={() => window.print()}
+          />
         )}
       </Card>
 
