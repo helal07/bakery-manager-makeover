@@ -18,7 +18,7 @@ type Props = {
  * effective permissions from `usePermissions()` — no hard-coded roles.
  */
 export function PermissionGate({ anyOf, title = "Access", subtitle, children }: Props) {
-  const { loading, isSuperadmin, permissions } = usePermissions();
+  const { loading, isSuperadmin, permissions, scopedPermissions } = usePermissions();
 
   if (loading) {
     return (
@@ -30,8 +30,14 @@ export function PermissionGate({ anyOf, title = "Access", subtitle, children }: 
     );
   }
 
-  const allowed = isSuperadmin || anyOf.some((k) => permissions.has(k));
+  const hasAny = (k: string) => {
+    if (permissions.has(k)) return true;
+    for (const s of scopedPermissions.values()) if (s.has(k)) return true;
+    return false;
+  };
+  const allowed = isSuperadmin || anyOf.some(hasAny);
   if (allowed) return <>{children}</>;
+
 
   return (
     <AppShell title="Not authorized" subtitle="You don't have permission to view this page">
