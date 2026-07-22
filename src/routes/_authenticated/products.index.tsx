@@ -79,16 +79,20 @@ function Products() {
   const [labelSize, setLabelSize] = useState<LabelSize>("38x25");
   const [labelQty, setLabelQty] = useState(1);
 
+  const aggregateAll = filters.businessLocation === "All";
   const effectiveShowroomId = useMemo(() => {
-    if (filters.businessLocation === "All") return currentShowroomId ?? null;
+    if (filters.businessLocation === "All") return null;
     const match = showrooms.find((s) => s.name === filters.businessLocation);
-    return match?.id ?? currentShowroomId ?? null;
-  }, [filters.businessLocation, showrooms, currentShowroomId]);
+    return match?.id ?? null;
+  }, [filters.businessLocation, showrooms]);
 
   const refresh = async () => {
     try {
       const [ps, cs] = await Promise.all([
-        loadProducts(effectiveShowroomId, { includeInactive: filters.notForSelling }),
+        loadProducts(effectiveShowroomId, {
+          includeInactive: filters.notForSelling,
+          aggregateAll,
+        }),
         loadCategories(),
       ]);
       setList(ps);
@@ -104,7 +108,7 @@ function Products() {
     setLoading(true);
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveShowroomId, filters.notForSelling]);
+  }, [effectiveShowroomId, filters.notForSelling, aggregateAll]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash === "#new") {
