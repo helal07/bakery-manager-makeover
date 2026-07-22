@@ -70,6 +70,14 @@ export function usePermissions() {
   }, [reload]);
 
   const can = (key: string) => state.isSuperadmin || state.permissions.has(key);
+  const hasAny = (key: string) => {
+    if (state.isSuperadmin) return true;
+    if (state.permissions.has(key)) return true;
+    for (const set of state.scopedPermissions.values()) {
+      if (set.has(key)) return true;
+    }
+    return false;
+  };
   const canIn = (showroomId: string | null, key: string) => {
     if (state.isSuperadmin) return true;
     if (state.permissions.has(key)) return true;
@@ -77,5 +85,6 @@ export function usePermissions() {
     return state.scopedPermissions.get(showroomId)?.has(key) ?? false;
   };
 
-  return { ...state, can, canIn, reload };
+  return { ...state, can, canIn, hasAny, reload };
 }
+
