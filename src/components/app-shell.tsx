@@ -524,16 +524,6 @@ function TopBarUser() {
             <UserCog className="size-4" /> My Profile
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-            <Settings className="size-4" /> Settings
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/employees" className="flex items-center gap-2 cursor-pointer">
-            <Users className="size-4" /> Teams & Roles
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onSelect={(e) => { e.preventDefault(); signOut(); }}
