@@ -39,6 +39,7 @@ import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports.index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedProductionIndexRouteImport } from './routes/_authenticated/production.index'
+import { Route as AuthenticatedEmployeesIndexRouteImport } from './routes/_authenticated/employees.index'
 import { Route as AuthenticatedCrmIndexRouteImport } from './routes/_authenticated/crm.index'
 import { Route as ApiPublicSupabaseProxyRouteImport } from './routes/api/public/supabase-proxy'
 import { Route as AuthenticatedTransfersNewRouteImport } from './routes/_authenticated/transfers.new'
@@ -242,6 +243,12 @@ const AuthenticatedProductionIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedProductionRoute,
+  } as any)
+const AuthenticatedEmployeesIndexRoute =
+  AuthenticatedEmployeesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedEmployeesRoute,
   } as any)
 const AuthenticatedCrmIndexRoute = AuthenticatedCrmIndexRouteImport.update({
   id: '/crm/',
@@ -573,6 +580,7 @@ export interface FileRoutesByFullPath {
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/crm/': typeof AuthenticatedCrmIndexRoute
+  '/employees/': typeof AuthenticatedEmployeesIndexRoute
   '/production/': typeof AuthenticatedProductionIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
@@ -597,7 +605,6 @@ export interface FileRoutesByTo {
   '/catalog': typeof AuthenticatedCatalogRoute
   '/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteWithChildren
   '/inventory': typeof AuthenticatedInventoryRoute
   '/orders': typeof AuthenticatedOrdersRoute
@@ -647,6 +654,7 @@ export interface FileRoutesByTo {
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/crm': typeof AuthenticatedCrmIndexRoute
+  '/employees': typeof AuthenticatedEmployeesIndexRoute
   '/production': typeof AuthenticatedProductionIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
@@ -725,6 +733,7 @@ export interface FileRoutesById {
   '/_authenticated/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/_authenticated/crm/': typeof AuthenticatedCrmIndexRoute
+  '/_authenticated/employees/': typeof AuthenticatedEmployeesIndexRoute
   '/_authenticated/production/': typeof AuthenticatedProductionIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
@@ -803,6 +812,7 @@ export interface FileRouteTypes {
     | '/transfers/new'
     | '/api/public/supabase-proxy'
     | '/crm/'
+    | '/employees/'
     | '/production/'
     | '/products/'
     | '/reports/'
@@ -827,7 +837,6 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/customer-groups'
     | '/dashboard'
-    | '/employees'
     | '/expenses'
     | '/inventory'
     | '/orders'
@@ -877,6 +886,7 @@ export interface FileRouteTypes {
     | '/transfers/new'
     | '/api/public/supabase-proxy'
     | '/crm'
+    | '/employees'
     | '/production'
     | '/products'
     | '/reports'
@@ -954,6 +964,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transfers/new'
     | '/api/public/supabase-proxy'
     | '/_authenticated/crm/'
+    | '/_authenticated/employees/'
     | '/_authenticated/production/'
     | '/_authenticated/products/'
     | '/_authenticated/reports/'
@@ -1189,6 +1200,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/production/'
       preLoaderRoute: typeof AuthenticatedProductionIndexRouteImport
       parentRoute: typeof AuthenticatedProductionRoute
+    }
+    '/_authenticated/employees/': {
+      id: '/_authenticated/employees/'
+      path: '/'
+      fullPath: '/employees/'
+      preLoaderRoute: typeof AuthenticatedEmployeesIndexRouteImport
+      parentRoute: typeof AuthenticatedEmployeesRoute
     }
     '/_authenticated/crm/': {
       id: '/_authenticated/crm/'
@@ -1510,12 +1528,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedEmployeesRouteChildren {
   AuthenticatedEmployeesNewRoute: typeof AuthenticatedEmployeesNewRoute
+  AuthenticatedEmployeesIndexRoute: typeof AuthenticatedEmployeesIndexRoute
   AuthenticatedEmployeesEditIdRoute: typeof AuthenticatedEmployeesEditIdRoute
 }
 
 const AuthenticatedEmployeesRouteChildren: AuthenticatedEmployeesRouteChildren =
   {
     AuthenticatedEmployeesNewRoute: AuthenticatedEmployeesNewRoute,
+    AuthenticatedEmployeesIndexRoute: AuthenticatedEmployeesIndexRoute,
     AuthenticatedEmployeesEditIdRoute: AuthenticatedEmployeesEditIdRoute,
   }
 
@@ -1718,3 +1738,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
