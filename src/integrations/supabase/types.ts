@@ -422,45 +422,85 @@ export type Database = {
       }
       employees: {
         Row: {
+          address: string | null
           attendance: number | null
+          avatar_url: string | null
           created_at: string
+          date_of_birth: string | null
+          designation: string | null
           email: string | null
+          emergency_contact: string | null
+          emergency_phone: string | null
+          gender: string | null
           id: string
           is_active: boolean
+          joining_date: string | null
           name: string
+          national_id: string | null
+          notes: string | null
           phone: string | null
           role: string | null
+          role_id: string | null
           salary: number | null
           showroom_id: string | null
           updated_at: string
         }
         Insert: {
+          address?: string | null
           attendance?: number | null
+          avatar_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          designation?: string | null
           email?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          gender?: string | null
           id?: string
           is_active?: boolean
+          joining_date?: string | null
           name: string
+          national_id?: string | null
+          notes?: string | null
           phone?: string | null
           role?: string | null
+          role_id?: string | null
           salary?: number | null
           showroom_id?: string | null
           updated_at?: string
         }
         Update: {
+          address?: string | null
           attendance?: number | null
+          avatar_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          designation?: string | null
           email?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          gender?: string | null
           id?: string
           is_active?: boolean
+          joining_date?: string | null
           name?: string
+          national_id?: string | null
+          notes?: string | null
           phone?: string | null
           role?: string | null
+          role_id?: string | null
           salary?: number | null
           showroom_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "employees_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "app_roles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "employees_showroom_id_fkey"
             columns: ["showroom_id"]
@@ -1968,6 +2008,7 @@ export type Database = {
           manager_name: string | null
           name: string
           phone: string | null
+          settings: Json
           updated_at: string
         }
         Insert: {
@@ -1982,6 +2023,7 @@ export type Database = {
           manager_name?: string | null
           name: string
           phone?: string | null
+          settings?: Json
           updated_at?: string
         }
         Update: {
@@ -1996,6 +2038,7 @@ export type Database = {
           manager_name?: string | null
           name?: string
           phone?: string | null
+          settings?: Json
           updated_at?: string
         }
         Relationships: []
@@ -2599,6 +2642,10 @@ export type Database = {
         Returns: string
       }
       find_user_id_by_email: { Args: { _email: string }; Returns: string }
+      get_effective_invoice_settings: {
+        Args: { _showroom_id: string }
+        Returns: Json
+      }
       get_invoice_bundle: { Args: { _sale_id: string }; Returns: Json }
       has_role: {
         Args: {
