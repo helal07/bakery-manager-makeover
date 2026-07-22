@@ -79,10 +79,16 @@ function Products() {
   const [labelSize, setLabelSize] = useState<LabelSize>("38x25");
   const [labelQty, setLabelQty] = useState(1);
 
+  const effectiveShowroomId = useMemo(() => {
+    if (filters.businessLocation === "All") return currentShowroomId ?? null;
+    const match = showrooms.find((s) => s.name === filters.businessLocation);
+    return match?.id ?? currentShowroomId ?? null;
+  }, [filters.businessLocation, showrooms, currentShowroomId]);
+
   const refresh = async () => {
     try {
       const [ps, cs] = await Promise.all([
-        loadProducts(currentShowroomId ?? null),
+        loadProducts(effectiveShowroomId, { includeInactive: filters.notForSelling }),
         loadCategories(),
       ]);
       setList(ps);
@@ -98,7 +104,7 @@ function Products() {
     setLoading(true);
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentShowroomId]);
+  }, [effectiveShowroomId, filters.notForSelling]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash === "#new") {
@@ -118,14 +124,23 @@ function Products() {
   }, [actionOpen]);
 
   const currentShowroomName = useMemo(() => {
-    if (!currentShowroomId) return "IT Solution";
-    return showrooms.find((s) => s.id === currentShowroomId)?.name ?? "IT Solution";
-  }, [currentShowroomId, showrooms]);
+    if (!effectiveShowroomId) return "All Locations";
+    return showrooms.find((s) => s.id === effectiveShowroomId)?.name ?? "All Locations";
+  }, [effectiveShowroomId, showrooms]);
+
+  const unitOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of list) if (p.unit) set.add(p.unit);
+    return ["All", ...Array.from(set).sort()];
+  }, [list]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return list.filter((p) => {
       if (filters.category !== "All" && p.category !== filters.category) return false;
+      if (filters.unit !== "All" && (p.unit ?? "") !== filters.unit) return false;
+      if (filters.productType === "Variable") return false; // no variants in schema yet
+      if (filters.notForSelling && p.isActive !== false) return false;
       if (q && !(p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))) return false;
       return true;
     });
