@@ -444,6 +444,7 @@ export type Database = {
           salary: number | null
           showroom_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           address?: string | null
@@ -468,6 +469,7 @@ export type Database = {
           salary?: number | null
           showroom_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           address?: string | null
@@ -492,6 +494,7 @@ export type Database = {
           salary?: number | null
           showroom_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2772,6 +2775,7 @@ export type Database = {
         Returns: Json
       }
       get_invoice_bundle: { Args: { _sale_id: string }; Returns: Json }
+      has_any_user: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
