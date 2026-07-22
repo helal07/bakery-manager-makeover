@@ -146,30 +146,38 @@ function RolesTab() {
   };
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div>
           <div className="text-base font-semibold">Roles</div>
-          <div className="text-sm text-muted-foreground">Create custom roles and toggle them on/off.</div>
+          <div className="text-sm text-muted-foreground">Create custom roles and toggle them on / off.</div>
         </div>
         <Button onClick={openNew}><Plus className="size-4 mr-1" /> New role</Button>
       </div>
       {loading ? (
-        <div className="py-10 text-center text-muted-foreground">Loading…</div>
+        <div className="py-16 text-center text-muted-foreground text-sm">Loading…</div>
+      ) : roles.length === 0 ? (
+        <div className="py-16 text-center text-muted-foreground text-sm">No roles yet — create your first role.</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-muted-foreground border-b">
-              <tr><th className="text-left py-2 pr-4">Name</th><th className="text-left py-2 pr-4">Description</th><th className="text-left py-2 pr-4">Type</th><th className="text-left py-2 pr-4">Status</th><th className="text-right py-2">Actions</th></tr>
+            <thead className="text-xs uppercase text-muted-foreground bg-muted/40">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium">Name</th>
+                <th className="text-left px-4 py-3 font-medium">Description</th>
+                <th className="text-left px-4 py-3 font-medium">Type</th>
+                <th className="text-left px-4 py-3 font-medium">Status</th>
+                <th className="text-right px-4 py-3 font-medium">Actions</th>
+              </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border">
               {roles.map((r) => (
-                <tr key={r.id} className="border-b last:border-0">
-                  <td className="py-2 pr-4 font-medium">{r.name}</td>
-                  <td className="py-2 pr-4 text-muted-foreground">{r.description || "—"}</td>
-                  <td className="py-2 pr-4">{r.is_system ? <Badge variant="secondary">Built-in</Badge> : <Badge>Custom</Badge>}</td>
-                  <td className="py-2 pr-4">{r.is_active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Disabled</Badge>}</td>
-                  <td className="py-2 text-right">
+                <tr key={r.id} className="hover:bg-muted/30">
+                  <td className="px-4 py-3 font-medium">{r.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{r.description || "—"}</td>
+                  <td className="px-4 py-3">{r.is_system ? <Badge variant="secondary">Built-in</Badge> : <Badge>Custom</Badge>}</td>
+                  <td className="px-4 py-3">{r.is_active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Disabled</Badge>}</td>
+                  <td className="px-4 py-3 text-right">
                     <Button size="sm" variant="ghost" onClick={() => openEdit(r)}><Pencil className="size-4" /></Button>
                     <Button size="sm" variant="ghost" onClick={() => remove(r)} disabled={r.is_system}><Trash2 className="size-4" /></Button>
                   </td>
