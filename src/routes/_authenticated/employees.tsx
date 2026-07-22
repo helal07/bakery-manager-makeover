@@ -206,6 +206,7 @@ function EmployeesPage() {
                 <th className="text-left font-medium px-5 py-3">Role</th>
                 <th className="text-left font-medium px-5 py-3">Branch</th>
                 <th className="text-left font-medium px-5 py-3">Contact</th>
+                <th className="text-left font-medium px-5 py-3">Login</th>
                 <th className="text-right font-medium px-5 py-3">Attendance</th>
                 <th className="text-right font-medium px-5 py-3">Salary</th>
                 <th className="text-right font-medium px-5 py-3 w-24">Actions</th>
