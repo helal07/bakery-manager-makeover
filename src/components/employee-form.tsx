@@ -101,7 +101,7 @@ export function EmployeeForm({ initial, mode }: { initial: EmployeeDraft; mode: 
         (supabase as any).from("app_roles").select("id, name").eq("is_active", true).order("name"),
         supabase.from("showrooms").select("id, name").eq("is_active", true).order("name"),
       ]);
-      setRoles((r.data ?? []) as Role[]);
+      setRoles(((r.data ?? []) as Role[]).filter((x) => x.name?.toLowerCase() !== "superadmin"));
       setShowrooms((s.data ?? []) as Showroom[]);
     })();
   }, []);
