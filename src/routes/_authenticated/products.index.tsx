@@ -246,20 +246,8 @@ function Products() {
             <FilterSelect
               label="Unit:"
               value={filters.unit}
-              options={["All", "Pieces", "Kg", "Box"]}
+              options={unitOptions}
               onChange={(v) => setFilters({ ...filters, unit: v })}
-            />
-            <FilterSelect
-              label="Tax:"
-              value={filters.tax}
-              options={["All", "None", "VAT 5%", "VAT 15%"]}
-              onChange={(v) => setFilters({ ...filters, tax: v })}
-            />
-            <FilterSelect
-              label="Brand:"
-              value={filters.brand}
-              options={["All"]}
-              onChange={(v) => setFilters({ ...filters, brand: v })}
             />
             <FilterSelect
               label="Business Location:"
