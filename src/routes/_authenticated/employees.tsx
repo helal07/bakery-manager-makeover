@@ -76,17 +76,18 @@ function EmployeesPage() {
     const [emp, sr] = await Promise.all([
       supabase
         .from("employees")
-        .select("id, name, role, showroom_id, email, phone, salary, attendance, is_active")
+        .select("id, name, role, showroom_id, email, phone, salary, attendance, is_active, user_id")
         .order("created_at", { ascending: false }),
       supabase.from("showrooms").select("id, name").eq("is_active", true).order("name"),
     ]);
     if (emp.error) toast.error(emp.error.message);
     else
       setList(
-        (emp.data ?? []).map((r) => ({
+        (emp.data ?? []).map((r: any) => ({
           ...r,
           salary: Number(r.salary ?? 0),
           attendance: Number(r.attendance ?? 0),
+          user_id: r.user_id ?? null,
         })) as Employee[],
       );
     if (!sr.error) setShowrooms((sr.data ?? []) as Showroom[]);
