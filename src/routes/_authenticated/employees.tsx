@@ -265,7 +265,7 @@ function EmployeesPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-10 text-muted-foreground text-sm">
+                  <td colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
                     {loading ? "Loading…" : "No employees yet"}
                   </td>
                 </tr>
