@@ -76,7 +76,7 @@ function PurchaseReport() {
       </div>
 
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
           <thead className="text-xs text-muted-foreground bg-muted/50">
             <tr>
               <th className="text-left font-medium px-4 py-2.5">Ref</th>
@@ -106,7 +106,7 @@ function PurchaseReport() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </Card>
     </AppShell>
   );

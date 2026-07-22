@@ -185,7 +185,7 @@ function TransfersPage() {
           <p className="text-sm text-muted-foreground">No transfers yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[640px]">
               <thead>
                 <tr className="border-b text-left">
                   <th className="py-2 px-2">Code</th>
@@ -234,7 +234,7 @@ function TransfersPage() {
                 <div><Badge className={statusColor(openView.status)}>{openView.status}</Badge></div>
               </div>
               {openView.note && <p className="text-muted-foreground">{openView.note}</p>}
-              <table className="w-full">
+              <div className="overflow-x-auto"><table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b text-left">
                     <th className="py-2">Product</th>
@@ -252,7 +252,7 @@ function TransfersPage() {
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             </div>
             <DialogFooter className="gap-2">
               {openView.status === "draft" && (

@@ -227,7 +227,7 @@ function AddPurchase() {
               </div>
             ) : (
               <div className="overflow-hidden border border-border rounded-md">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
                   <thead className="text-xs text-muted-foreground bg-muted/40">
                     <tr>
                       <th className="text-left font-medium px-3 py-2">Material</th>
@@ -301,7 +301,7 @@ function AddPurchase() {
                       <td></td>
                     </tr>
                   </tfoot>
-                </table>
+                </table></div>
               </div>
             )}
           </div>

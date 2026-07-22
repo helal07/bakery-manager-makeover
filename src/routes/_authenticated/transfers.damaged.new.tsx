@@ -152,7 +152,7 @@ function DamagedReturnPage() {
                 <p className="text-sm text-muted-foreground py-6">No damaged stock at this showroom.</p>
               ) : (
                 <div className="rounded-lg border overflow-hidden">
-                  <table className="w-full text-sm">
+                  <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
                     <thead className="bg-muted/60">
                       <tr className="text-left">
                         <th className="px-3 py-2">Product</th>
@@ -181,7 +181,7 @@ function DamagedReturnPage() {
                         );
                       })}
                     </tbody>
-                  </table>
+                  </table></div>
                 </div>
               )}
             </div>

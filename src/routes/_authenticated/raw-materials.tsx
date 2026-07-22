@@ -247,7 +247,7 @@ function RawMaterials() {
         />
       </div>
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
           <thead className="text-xs text-muted-foreground bg-muted/40">
             <tr>
               <th className="text-left font-medium px-5 py-3">Material</th>
@@ -308,7 +308,7 @@ function RawMaterials() {
               );
             })}
           </tbody>
-        </table>
+        </table></div>
       </Card>
       <p className="text-xs text-muted-foreground mt-3">
         See <Link to="/suppliers" className="text-primary hover:underline">suppliers</Link> and <Link to="/purchasing" className="text-primary hover:underline">purchase orders</Link>.

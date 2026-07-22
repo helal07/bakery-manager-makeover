@@ -85,7 +85,7 @@ function ConsumptionReportPage() {
       </div>
 
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
           <thead className="text-xs text-muted-foreground bg-muted/40">
             <tr>
               <th className="text-left font-medium px-5 py-3">Material</th>
@@ -109,7 +109,7 @@ function ConsumptionReportPage() {
               <tr><td colSpan={5} className="text-center py-8 text-sm text-muted-foreground">{loading ? "Loading…" : "No consumption or wastage in this range."}</td></tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </Card>
     </AppShell>
   );
