@@ -8,9 +8,15 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 import { toast } from "sonner";
 import { sendLoginSetupEmail } from "@/lib/auth-invite.functions";
 
+import { PermissionGate } from "@/components/permission-gate";
+
 export const Route = createFileRoute("/_authenticated/employees/")({
   head: () => ({ meta: [{ title: "Teams · Muzahid Food" }] }),
-  component: EmployeesPage,
+  component: () => (
+    <PermissionGate anyOf={["employees.view", "employees.manage"]} title="Employees">
+      <EmployeesPage />
+    </PermissionGate>
+  ),
 });
 
 type Employee = {
