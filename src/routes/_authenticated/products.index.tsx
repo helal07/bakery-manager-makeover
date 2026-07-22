@@ -632,7 +632,7 @@ function StockReportPanel({
                   <td className="px-3 py-2.5 text-right tabular-nums">৳{(p.stock * p.cost).toFixed(0)}</td>
                   <td className="px-3 py-2.5 text-right tabular-nums font-semibold">৳{(p.stock * p.price).toFixed(0)}</td>
                   <td className="px-3 py-2.5">
-                    {out ? <Badge tone="destructive">Out</Badge> : low ? <Badge tone="warning">Low</Badge> : <Badge tone="success">OK</Badge>}
+                    {out ? <Badge tone="danger">Out</Badge> : low ? <Badge tone="warning">Low</Badge> : <Badge tone="success">OK</Badge>}
                   </td>
                 </tr>
               );
