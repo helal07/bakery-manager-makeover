@@ -398,12 +398,14 @@ export function ProductForm({ editId }: { editId?: string }) {
               <div className="space-y-2">
                 {ingredients.map((ing, idx) => {
                   const mat = rawMaterials.find((r) => r.id === ing.materialId);
+                  const usedIds = new Set(ingredients.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean));
                   return (
                     <div key={idx} className="flex items-center gap-2">
                       <IngredientPicker
                         materials={rawMaterials}
                         value={ing.materialId}
                         onChange={(id) => updateIngredient(idx, { materialId: id })}
+                        disabledIds={usedIds}
                       />
                       <Input
                         type="number"
