@@ -124,12 +124,12 @@ export const updateEmployeeAccess = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await ensureAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
+    const del = (supabaseAdmin as any)
       .from("user_role_assignments")
       .delete()
-      .eq("user_id", data.userId)
-      .is("showroom_id", data.showroomId ?? null);
-    const { error } = await supabaseAdmin.from("user_role_assignments").insert({
+      .eq("user_id", data.userId);
+    await (data.showroomId ? del.eq("showroom_id", data.showroomId) : del.is("showroom_id", null));
+    const { error } = await (supabaseAdmin as any).from("user_role_assignments").insert({
       user_id: data.userId,
       role_id: data.roleId,
       showroom_id: data.showroomId,
