@@ -55,7 +55,7 @@ function mapRow(r: any, stockMap: Map<string, { qty: number; min: number }>): Pr
 
 export async function loadProducts(
   showroomId?: string | null,
-  opts?: { includeInactive?: boolean },
+  opts?: { includeInactive?: boolean; aggregateAll?: boolean },
 ): Promise<Product[]> {
   let q = sb
     .from("products")
@@ -66,14 +66,22 @@ export async function loadProducts(
   if (error) throw error;
 
   let stockQ = sb.from("product_stock").select("product_id,showroom_id,quantity,min_stock");
-  if (showroomId) stockQ = stockQ.eq("showroom_id", showroomId);
-  else stockQ = stockQ.is("showroom_id", null);
+  if (opts?.aggregateAll) {
+    // no filter — sum across factory + all showrooms
+  } else if (showroomId) {
+    stockQ = stockQ.eq("showroom_id", showroomId);
+  } else {
+    stockQ = stockQ.is("showroom_id", null);
+  }
   const { data: stocks, error: e2 } = await stockQ;
   if (e2) throw e2;
 
   const stockMap = new Map<string, { qty: number; min: number }>();
   for (const s of (stocks ?? []) as any[]) {
-    stockMap.set(s.product_id, { qty: Number(s.quantity) || 0, min: Number(s.min_stock) || 0 });
+    const prev = stockMap.get(s.product_id);
+    const qty = (prev?.qty ?? 0) + (Number(s.quantity) || 0);
+    const min = Math.max(prev?.min ?? 0, Number(s.min_stock) || 0);
+    stockMap.set(s.product_id, { qty, min });
   }
   return ((rows ?? []) as any[]).map((r) => mapRow(r, stockMap));
 }
