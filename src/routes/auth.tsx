@@ -142,16 +142,18 @@ function AuthPage() {
             </p>
           </div>
 
-        <div className="flex rounded-lg border border-border bg-muted/40 p-1 text-sm mb-5">
-          <button type="button" onClick={() => setMode("signin")}
-            className={`flex-1 py-1.5 rounded-md transition ${mode === "signin" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-            Existing account
-          </button>
-          <button type="button" onClick={() => setMode("signup")}
-            className={`flex-1 py-1.5 rounded-md transition ${mode === "signup" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-            Create account
-          </button>
-        </div>
+        {signupAllowed && (
+          <div className="flex rounded-lg border border-border bg-muted/40 p-1 text-sm mb-5">
+            <button type="button" onClick={() => setMode("signin")}
+              className={`flex-1 py-1.5 rounded-md transition ${mode === "signin" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              Existing account
+            </button>
+            <button type="button" onClick={() => setMode("signup")}
+              className={`flex-1 py-1.5 rounded-md transition ${mode === "signup" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              Create owner account
+            </button>
+          </div>
+        )}
 
         <form onSubmit={submit} className="space-y-3 text-sm">
           <label className="block">
@@ -174,10 +176,10 @@ function AuthPage() {
           </label>
           {error && <p className="text-xs text-destructive">{error}</p>}
           {info && <p className="text-xs text-muted-foreground">{info}</p>}
-          <button type="submit" disabled={busy}
+          <button type="submit" disabled={busy || checkingSignup}
             className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-60">
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {mode === "signin" ? "Sign in to dashboard" : "Create account"}
+            {mode === "signin" ? "Sign in to dashboard" : "Create owner account"}
           </button>
           {mode === "signin" && (
             <div className="text-right">
@@ -188,11 +190,17 @@ function AuthPage() {
           )}
         </form>
 
-        {mode === "signup" && (
+        {mode === "signup" && signupAllowed && (
           <p className="mt-4 text-xs text-muted-foreground text-center">
-            The first person to sign up becomes the <b>owner</b>. Additional users need a role assigned by the owner or an admin before they can access the app.
+            You are creating the very first account — it becomes the <b>owner / superadmin</b>. After this, new users are added by the owner from <b>Teams</b>.
           </p>
         )}
+        {!signupAllowed && !checkingSignup && (
+          <p className="mt-4 text-xs text-muted-foreground text-center">
+            New accounts can only be created by the owner from <b>Teams › Add Employee</b>.
+          </p>
+        )}
+
         </div>
       </div>
     </div>
