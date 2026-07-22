@@ -23,6 +23,7 @@ type Employee = {
   salary: number;
   attendance: number;
   is_active: boolean;
+  user_id: string | null;
 };
 
 type Showroom = { id: string; name: string };
