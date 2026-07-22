@@ -70,12 +70,12 @@ export const createEmployeeLogin = createServerFn({ method: "POST" })
 
     if (data.roleId) {
       // Replace any existing assignment for this (user, scope) with the new role.
-      await supabaseAdmin
+      const del = (supabaseAdmin as any)
         .from("user_role_assignments")
         .delete()
-        .eq("user_id", userId)
-        .is("showroom_id", data.showroomId ?? null);
-      const { error } = await supabaseAdmin.from("user_role_assignments").insert({
+        .eq("user_id", userId);
+      await (data.showroomId ? del.eq("showroom_id", data.showroomId) : del.is("showroom_id", null));
+      const { error } = await (supabaseAdmin as any).from("user_role_assignments").insert({
         user_id: userId,
         role_id: data.roleId,
         showroom_id: data.showroomId,
@@ -84,7 +84,7 @@ export const createEmployeeLogin = createServerFn({ method: "POST" })
     }
 
     if (data.employeeId) {
-      const { error } = await supabaseAdmin
+      const { error } = await (supabaseAdmin as any)
         .from("employees")
         .update({ user_id: userId, email: data.email })
         .eq("id", data.employeeId);
