@@ -23,6 +23,7 @@ type Employee = {
   salary: number;
   attendance: number;
   is_active: boolean;
+  user_id: string | null;
 };
 
 type Showroom = { id: string; name: string };
@@ -75,17 +76,18 @@ function EmployeesPage() {
     const [emp, sr] = await Promise.all([
       supabase
         .from("employees")
-        .select("id, name, role, showroom_id, email, phone, salary, attendance, is_active")
+        .select("id, name, role, showroom_id, email, phone, salary, attendance, is_active, user_id")
         .order("created_at", { ascending: false }),
       supabase.from("showrooms").select("id, name").eq("is_active", true).order("name"),
     ]);
     if (emp.error) toast.error(emp.error.message);
     else
       setList(
-        (emp.data ?? []).map((r) => ({
+        (emp.data ?? []).map((r: any) => ({
           ...r,
           salary: Number(r.salary ?? 0),
           attendance: Number(r.attendance ?? 0),
+          user_id: r.user_id ?? null,
         })) as Employee[],
       );
     if (!sr.error) setShowrooms((sr.data ?? []) as Showroom[]);
@@ -204,6 +206,7 @@ function EmployeesPage() {
                 <th className="text-left font-medium px-5 py-3">Role</th>
                 <th className="text-left font-medium px-5 py-3">Branch</th>
                 <th className="text-left font-medium px-5 py-3">Contact</th>
+                <th className="text-left font-medium px-5 py-3">Login</th>
                 <th className="text-right font-medium px-5 py-3">Attendance</th>
                 <th className="text-right font-medium px-5 py-3">Salary</th>
                 <th className="text-right font-medium px-5 py-3 w-24">Actions</th>
@@ -224,6 +227,15 @@ function EmployeesPage() {
                     {u.email && <div>{u.email}</div>}
                     {u.phone && <div>{u.phone}</div>}
                     {!u.email && !u.phone && "—"}
+                  </td>
+                  <td className="px-5 py-3">
+                    {u.user_id ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <ShieldCheck className="size-3" /> Active
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-right">{u.attendance}%</td>
                   <td className="px-5 py-3 text-right">৳{u.salary.toLocaleString()}</td>
@@ -253,7 +265,7 @@ function EmployeesPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-10 text-muted-foreground text-sm">
+                  <td colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
                     {loading ? "Loading…" : "No employees yet"}
                   </td>
                 </tr>

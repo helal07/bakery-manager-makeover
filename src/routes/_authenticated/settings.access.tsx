@@ -38,7 +38,15 @@ function AccessControlPage() {
   if (permLoading) {
     return (
       <AppShell title="Access Control" subtitle="Roles & permissions">
-        <Card><div className="py-10 text-center text-muted-foreground">Loading…</div></Card>
+        <div className="max-w-6xl mx-auto">
+          <Card className="p-8">
+            <div className="animate-pulse space-y-3">
+              <div className="h-4 w-40 bg-muted rounded" />
+              <div className="h-4 w-64 bg-muted rounded" />
+              <div className="h-32 bg-muted/60 rounded-lg mt-4" />
+            </div>
+          </Card>
+        </div>
       </AppShell>
     );
   }
@@ -46,16 +54,20 @@ function AccessControlPage() {
   if (!isSuperadmin) {
     return (
       <AppShell title="Access Control" subtitle="Roles & permissions">
-        <Card>
-          <div className="py-14 flex flex-col items-center gap-3 text-center">
-            <Lock className="size-8 text-muted-foreground" />
-            <div className="text-base font-medium">Superadmin only</div>
-            <div className="text-sm text-muted-foreground max-w-md">
-              Access Control is restricted to the Superadmin. Ask your Superadmin to
-              grant you a role that includes the permissions you need.
+        <div className="max-w-2xl mx-auto">
+          <Card className="p-10">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="size-14 rounded-full bg-muted grid place-items-center">
+                <Lock className="size-6 text-muted-foreground" />
+              </div>
+              <div className="text-lg font-semibold">Superadmin only</div>
+              <div className="text-sm text-muted-foreground max-w-md">
+                Access Control is restricted to the Superadmin. Ask your Superadmin to
+                grant you a role that includes the permissions you need.
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </AppShell>
     );
   }
@@ -66,16 +78,18 @@ function AccessControlPage() {
       subtitle="Create custom roles and control what each role can do"
       actions={<Badge variant="secondary" className="gap-1"><ShieldCheck className="size-3" /> Superadmin</Badge>}
     >
-      <Tabs defaultValue="roles">
-        <TabsList>
-          <TabsTrigger value="roles">Roles</TabsTrigger>
-          <TabsTrigger value="matrix">Permission Matrix</TabsTrigger>
-          <TabsTrigger value="assignments">User Assignments</TabsTrigger>
-        </TabsList>
-        <TabsContent value="roles" className="mt-4"><RolesTab /></TabsContent>
-        <TabsContent value="matrix" className="mt-4"><MatrixTab /></TabsContent>
-        <TabsContent value="assignments" className="mt-4"><AssignmentsTab /></TabsContent>
-      </Tabs>
+      <div className="max-w-6xl mx-auto">
+        <Tabs defaultValue="roles">
+          <TabsList className="mb-5">
+            <TabsTrigger value="roles">Roles</TabsTrigger>
+            <TabsTrigger value="matrix">Permission Matrix</TabsTrigger>
+            <TabsTrigger value="assignments">User Assignments</TabsTrigger>
+          </TabsList>
+          <TabsContent value="roles"><RolesTab /></TabsContent>
+          <TabsContent value="matrix"><MatrixTab /></TabsContent>
+          <TabsContent value="assignments"><AssignmentsTab /></TabsContent>
+        </Tabs>
+      </div>
     </AppShell>
   );
 }
@@ -132,30 +146,38 @@ function RolesTab() {
   };
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div>
           <div className="text-base font-semibold">Roles</div>
-          <div className="text-sm text-muted-foreground">Create custom roles and toggle them on/off.</div>
+          <div className="text-sm text-muted-foreground">Create custom roles and toggle them on / off.</div>
         </div>
         <Button onClick={openNew}><Plus className="size-4 mr-1" /> New role</Button>
       </div>
       {loading ? (
-        <div className="py-10 text-center text-muted-foreground">Loading…</div>
+        <div className="py-16 text-center text-muted-foreground text-sm">Loading…</div>
+      ) : roles.length === 0 ? (
+        <div className="py-16 text-center text-muted-foreground text-sm">No roles yet — create your first role.</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-muted-foreground border-b">
-              <tr><th className="text-left py-2 pr-4">Name</th><th className="text-left py-2 pr-4">Description</th><th className="text-left py-2 pr-4">Type</th><th className="text-left py-2 pr-4">Status</th><th className="text-right py-2">Actions</th></tr>
+            <thead className="text-xs uppercase text-muted-foreground bg-muted/40">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium">Name</th>
+                <th className="text-left px-4 py-3 font-medium">Description</th>
+                <th className="text-left px-4 py-3 font-medium">Type</th>
+                <th className="text-left px-4 py-3 font-medium">Status</th>
+                <th className="text-right px-4 py-3 font-medium">Actions</th>
+              </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border">
               {roles.map((r) => (
-                <tr key={r.id} className="border-b last:border-0">
-                  <td className="py-2 pr-4 font-medium">{r.name}</td>
-                  <td className="py-2 pr-4 text-muted-foreground">{r.description || "—"}</td>
-                  <td className="py-2 pr-4">{r.is_system ? <Badge variant="secondary">Built-in</Badge> : <Badge>Custom</Badge>}</td>
-                  <td className="py-2 pr-4">{r.is_active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Disabled</Badge>}</td>
-                  <td className="py-2 text-right">
+                <tr key={r.id} className="hover:bg-muted/30">
+                  <td className="px-4 py-3 font-medium">{r.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{r.description || "—"}</td>
+                  <td className="px-4 py-3">{r.is_system ? <Badge variant="secondary">Built-in</Badge> : <Badge>Custom</Badge>}</td>
+                  <td className="px-4 py-3">{r.is_active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Disabled</Badge>}</td>
+                  <td className="px-4 py-3 text-right">
                     <Button size="sm" variant="ghost" onClick={() => openEdit(r)}><Pencil className="size-4" /></Button>
                     <Button size="sm" variant="ghost" onClick={() => remove(r)} disabled={r.is_system}><Trash2 className="size-4" /></Button>
                   </td>
@@ -259,49 +281,64 @@ function MatrixTab() {
     setSaving(false); load();
   };
 
-  if (loading) return <Card><div className="py-10 text-center text-muted-foreground">Loading…</div></Card>;
+  if (loading) return <Card className="p-6"><div className="py-16 text-center text-muted-foreground text-sm">Loading…</div></Card>;
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Label className="text-sm">Role:</Label>
+          <Label className="text-sm">Role</Label>
           <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Choose role" /></SelectTrigger>
+            <SelectTrigger className="w-64"><SelectValue placeholder="Choose role" /></SelectTrigger>
             <SelectContent>
               {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? " (built-in)" : ""}</SelectItem>)}
             </SelectContent>
           </Select>
           {isSuperadminRole && <Badge variant="secondary">Full access</Badge>}
+          {!isSuperadminRole && selectedRole && (
+            <span className="text-xs text-muted-foreground">
+              {checked.size} of {perms.length} permissions
+            </span>
+          )}
         </div>
         <Button onClick={save} disabled={saving || dirty.size === 0 || isSuperadminRole}>
-          {saving ? "Saving…" : dirty.size > 0 ? `Save ${dirty.size} change${dirty.size === 1 ? "" : "s"}` : "Save"}
+          {saving ? "Saving…" : dirty.size > 0 ? `Save ${dirty.size} change${dirty.size === 1 ? "" : "s"}` : "Saved"}
         </Button>
       </div>
 
       {isSuperadminRole && (
-        <div className="text-sm text-muted-foreground mb-4">Superadmin always has every permission — this role cannot be edited.</div>
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 mb-5 text-sm text-muted-foreground">
+          Superadmin always has every permission — this role cannot be edited.
+        </div>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {modules.map(([module, list]) => (
-          <div key={module} className="border rounded-lg p-3">
-            <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">{module}</div>
-            <div className="space-y-1.5">
-              {list.map((p) => (
-                <label key={p.permission_key} className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={isSuperadminRole || checked.has(p.permission_key)}
-                    disabled={isSuperadminRole}
-                    onCheckedChange={() => toggle(p.permission_key)}
-                  />
-                  <span>{p.label}</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground font-mono">{p.permission_key}</span>
-                </label>
-              ))}
+        {modules.map(([module, list]) => {
+          const enabledCount = list.filter((p) => checked.has(p.permission_key)).length;
+          return (
+            <div key={module} className="border border-border rounded-xl p-4 bg-card">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{module}</div>
+                <span className="text-[11px] text-muted-foreground">
+                  {isSuperadminRole ? list.length : enabledCount}/{list.length}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {list.map((p) => (
+                  <label key={p.permission_key} className="flex items-center gap-2 text-sm rounded-md px-2 py-1.5 hover:bg-muted/40">
+                    <Checkbox
+                      checked={isSuperadminRole || checked.has(p.permission_key)}
+                      disabled={isSuperadminRole}
+                      onCheckedChange={() => toggle(p.permission_key)}
+                    />
+                    <span className="flex-1">{p.label}</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">{p.permission_key}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
@@ -373,8 +410,8 @@ function AssignmentsTab() {
   };
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div>
           <div className="text-base font-semibold">User role assignments</div>
           <div className="text-sm text-muted-foreground">Assign roles to users. Leave showroom blank for factory / global scope.</div>
@@ -383,22 +420,27 @@ function AssignmentsTab() {
       </div>
 
       {loading ? (
-        <div className="py-10 text-center text-muted-foreground">Loading…</div>
+        <div className="py-16 text-center text-muted-foreground text-sm">Loading…</div>
       ) : assignments.length === 0 ? (
-        <div className="py-10 text-center text-muted-foreground">No assignments yet.</div>
+        <div className="py-16 text-center text-muted-foreground text-sm">No assignments yet.</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-muted-foreground border-b">
-              <tr><th className="text-left py-2 pr-4">User ID</th><th className="text-left py-2 pr-4">Role</th><th className="text-left py-2 pr-4">Scope</th><th className="text-right py-2">Actions</th></tr>
+            <thead className="text-xs uppercase text-muted-foreground bg-muted/40">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium">User ID</th>
+                <th className="text-left px-4 py-3 font-medium">Role</th>
+                <th className="text-left px-4 py-3 font-medium">Scope</th>
+                <th className="text-right px-4 py-3 font-medium">Actions</th>
+              </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border">
               {assignments.map((a) => (
-                <tr key={a.id} className="border-b last:border-0">
-                  <td className="py-2 pr-4 font-mono text-xs">{a.user_id}</td>
-                  <td className="py-2 pr-4">{a.role_name}</td>
-                  <td className="py-2 pr-4">{a.showroom_name ?? <span className="text-muted-foreground">Global / Factory</span>}</td>
-                  <td className="py-2 text-right">
+                <tr key={a.id} className="hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono text-xs">{a.user_id}</td>
+                  <td className="px-4 py-3">{a.role_name}</td>
+                  <td className="px-4 py-3">{a.showroom_name ?? <span className="text-muted-foreground">Global / Factory</span>}</td>
+                  <td className="px-4 py-3 text-right">
                     <Button size="sm" variant="ghost" onClick={() => revoke(a.id)}><Trash2 className="size-4" /></Button>
                   </td>
                 </tr>

@@ -1,12 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/app-shell";
 import { toast } from "sonner";
-import { Save, X } from "lucide-react";
+import { Save, X, KeyRound, Eye, EyeOff, Copy, RefreshCcw, ShieldOff, ShieldCheck } from "lucide-react";
+import {
+  createEmployeeLogin,
+  resetEmployeePassword,
+  updateEmployeeAccess,
+  disableEmployeeLogin,
+} from "@/lib/employee-access.functions";
 
 export type EmployeeDraft = {
   id?: string;
+  user_id?: string | null;
   name: string;
   role: string;
   role_id: string | null;
@@ -48,10 +56,27 @@ export const emptyEmployee: EmployeeDraft = {
   salary: 0,
   attendance: 100,
   is_active: true,
+  user_id: null,
 };
 
 type Role = { id: string; name: string };
 type Showroom = { id: string; name: string };
+
+function generatePassword(len = 12): string {
+  const upper = "ABCDEFGHJKMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnpqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%&*";
+  const all = upper + lower + digits + symbols;
+  const arr = [
+    upper[Math.floor(Math.random() * upper.length)],
+    lower[Math.floor(Math.random() * lower.length)],
+    digits[Math.floor(Math.random() * digits.length)],
+    symbols[Math.floor(Math.random() * symbols.length)],
+  ];
+  for (let i = arr.length; i < len; i++) arr.push(all[Math.floor(Math.random() * all.length)]);
+  return arr.sort(() => Math.random() - 0.5).join("");
+}
 
 export function EmployeeForm({ initial, mode }: { initial: EmployeeDraft; mode: "new" | "edit" }) {
   const navigate = useNavigate();
@@ -59,6 +84,16 @@ export function EmployeeForm({ initial, mode }: { initial: EmployeeDraft; mode: 
   const [roles, setRoles] = useState<Role[]>([]);
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [saving, setSaving] = useState(false);
+
+  // Account & Access state
+  const [allowLogin, setAllowLogin] = useState<boolean>(!!initial.user_id);
+  const [password, setPassword] = useState<string>("");
+  const [showPw, setShowPw] = useState(false);
+
+  const createLogin = useServerFn(createEmployeeLogin);
+  const resetPw = useServerFn(resetEmployeePassword);
+  const updateAccess = useServerFn(updateEmployeeAccess);
+  const disableLogin = useServerFn(disableEmployeeLogin);
 
   useEffect(() => {
     (async () => {
@@ -99,14 +134,85 @@ export function EmployeeForm({ initial, mode }: { initial: EmployeeDraft; mode: 
       attendance: Number(draft.attendance) || 0,
       is_active: draft.is_active,
     };
-    const { error } =
-      mode === "edit" && draft.id
-        ? await (supabase as any).from("employees").update(payload).eq("id", draft.id)
-        : await (supabase as any).from("employees").insert(payload);
+
+    let employeeId = draft.id;
+    if (mode === "edit" && employeeId) {
+      const { error } = await (supabase as any).from("employees").update(payload).eq("id", employeeId);
+      if (error) { setSaving(false); return toast.error(error.message); }
+    } else {
+      const { data, error } = await (supabase as any).from("employees").insert(payload).select("id").single();
+      if (error) { setSaving(false); return toast.error(error.message); }
+      employeeId = data.id;
+    }
+
+    // Create login if requested and none exists yet.
+    if (allowLogin && !draft.user_id) {
+      if (!draft.email.trim()) { setSaving(false); return toast.error("Login requires an email"); }
+      if (!password || password.length < 8) { setSaving(false); return toast.error("Set a password (min 8 chars)"); }
+      if (!draft.role_id) { setSaving(false); return toast.error("Pick a role for the login"); }
+      try {
+        await createLogin({
+          data: {
+            email: draft.email.trim(),
+            password,
+            employeeId: employeeId!,
+            roleId: draft.role_id,
+            showroomId: draft.showroom_id,
+          },
+        });
+        toast.success("Login created — share the password with the employee");
+      } catch (err) {
+        setSaving(false);
+        return toast.error(err instanceof Error ? err.message : "Could not create login");
+      }
+    }
+
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success(mode === "edit" ? "Employee updated" : "Employee added");
     navigate({ to: "/employees" });
+  };
+
+  const handleResetPassword = async () => {
+    if (!draft.user_id) return;
+    if (!password || password.length < 8) return toast.error("New password must be at least 8 characters");
+    try {
+      await resetPw({ data: { userId: draft.user_id, newPassword: password } });
+      toast.success("Password reset. Share the new password.");
+      setPassword("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reset password");
+    }
+  };
+
+  const handleUpdateAccess = async () => {
+    if (!draft.user_id) return;
+    if (!draft.role_id) return toast.error("Pick a role");
+    try {
+      await updateAccess({
+        data: { userId: draft.user_id, roleId: draft.role_id, showroomId: draft.showroom_id },
+      });
+      toast.success("Access updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update access");
+    }
+  };
+
+  const handleDisableLogin = async () => {
+    if (!draft.user_id) return;
+    if (!confirm("Disable this login? The user will not be able to sign in.")) return;
+    try {
+      await disableLogin({ data: { userId: draft.user_id } });
+      toast.success("Login disabled");
+      set("user_id", null);
+      setAllowLogin(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to disable login");
+    }
+  };
+
+  const copyPw = async () => {
+    if (!password) return;
+    try { await navigator.clipboard.writeText(password); toast.success("Password copied"); } catch { /* ignore */ }
   };
 
   return (
@@ -184,6 +290,124 @@ export function EmployeeForm({ initial, mode }: { initial: EmployeeDraft; mode: 
             <input className="input" value={draft.emergency_phone} onChange={(e) => set("emergency_phone", e.target.value)} />
           </Field>
         </div>
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <KeyRound className="size-4 text-primary" />
+              Account & Access
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {draft.user_id
+                ? "This employee has an active login. Use the actions below to change credentials or access."
+                : "Create a login so this employee can sign in with credentials you set."}
+            </p>
+          </div>
+          {draft.user_id ? (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <ShieldCheck className="size-3" /> Login active
+            </span>
+          ) : (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={allowLogin}
+                onChange={(e) => {
+                  const v = e.target.checked;
+                  setAllowLogin(v);
+                  if (v && !password) setPassword(generatePassword());
+                }}
+              />
+              Allow this employee to log in
+            </label>
+          )}
+        </div>
+
+        {(allowLogin || draft.user_id) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {!draft.user_id && (
+              <Field label="Login email">
+                <input
+                  type="email"
+                  className="input"
+                  value={draft.email}
+                  onChange={(e) => set("email", e.target.value)}
+                  placeholder="employee@example.com"
+                />
+              </Field>
+            )}
+            <Field label={draft.user_id ? "New password" : "Temporary password"}>
+              <div className="relative flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type={showPw ? "text" : "password"}
+                    className="input w-full pr-9"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min 8 characters"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPw ? "Hide password" : "Show password"}
+                  >
+                    {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPassword(generatePassword())}
+                  className="inline-flex items-center gap-1 px-2 py-2 rounded-md border border-border text-xs hover:bg-muted"
+                  title="Generate strong password"
+                >
+                  <RefreshCcw className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={copyPw}
+                  className="inline-flex items-center gap-1 px-2 py-2 rounded-md border border-border text-xs hover:bg-muted"
+                  title="Copy password"
+                >
+                  <Copy className="size-3.5" />
+                </button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Share this with the employee — it will not be shown again.
+              </p>
+            </Field>
+
+            {draft.user_id && (
+              <div className="md:col-span-2 flex flex-wrap gap-2 pt-2 border-t border-border">
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  disabled={!password}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50"
+                >
+                  <KeyRound className="size-4" /> Reset password
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUpdateAccess}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-border text-sm hover:bg-muted"
+                >
+                  <ShieldCheck className="size-4" /> Update role & scope
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDisableLogin}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-destructive/40 text-destructive text-sm hover:bg-destructive/10 ml-auto"
+                >
+                  <ShieldOff className="size-4" /> Disable login
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       <Card className="p-5">

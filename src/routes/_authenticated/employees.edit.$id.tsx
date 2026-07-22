@@ -47,6 +47,7 @@ function EditEmployeePage() {
           salary: Number(data.salary ?? 0),
           attendance: Number(data.attendance ?? 0),
           is_active: !!data.is_active,
+          user_id: data.user_id ?? null,
         });
       }
       setLoading(false);
