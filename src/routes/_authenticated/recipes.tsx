@@ -186,10 +186,46 @@ function Workbench() {
   });
 
   const shortRows = rows.filter((r) => !r.ok);
-  const batchCost = rows.reduce((s, r) => s + r.lineCost, 0);
+  const materialCost = rows.reduce((s, r) => s + r.lineCost, 0);
+  const overheadCost = produceOverheads.reduce((s, o) => s + (Number(o.amount) || 0), 0);
+  const batchCost = materialCost + overheadCost;
   const unitCost = batch > 0 ? batchCost / batch : 0;
+  const materialUnitCost = batch > 0 ? materialCost / batch : 0;
+  const overheadUnitCost = batch > 0 ? overheadCost / batch : 0;
   const canProduce =
     !!active && rows.length > 0 && shortRows.length === 0 && !busy;
+
+  // Load recipe overheads for the active product, and derive produce-tab
+  // overheads from them (per_unit lines auto-scale with batch qty).
+  useEffect(() => {
+    let cancel = false;
+    if (!activeId) {
+      setActiveRecipeOverheads([]);
+      return;
+    }
+    loadRecipeOverheads(activeId)
+      .then((rows) => {
+        if (cancel) return;
+        setActiveRecipeOverheads(rows);
+      })
+      .catch(() => {
+        if (!cancel) setActiveRecipeOverheads([]);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [activeId]);
+
+  // Rebuild produceOverheads from defaults when active product or batch changes.
+  // User edits after this reset are preserved until the product/batch changes again.
+  useEffect(() => {
+    const derived: BatchOverhead[] = activeRecipeOverheads.map((r) => ({
+      categoryId: r.categoryId,
+      amount: r.mode === "per_unit" ? r.amount * batch : r.amount,
+      note: undefined,
+    }));
+    setProduceOverheads(derived);
+  }, [activeRecipeOverheads, batch]);
 
   const produce = async () => {
     if (!active || !canProduce) return;
@@ -200,6 +236,7 @@ function Workbench() {
         showroomId: currentShowroomId ?? null,
         batch,
         ingredients: items,
+        overheads: produceOverheads,
       });
       toast.success(`✓ Produced ${batch} × ${active.product.name}`);
       setConfirmOpen(false);
@@ -218,12 +255,14 @@ function Workbench() {
     const firstFree = products.find((p) => !(recipeMap[p.id]?.length));
     setEditorProductId(firstFree?.id ?? products[0]?.id ?? "");
     setEditorItems([{ materialId: "", qty: 1 }]);
+    setEditorOverheads([]);
     setEditorOpen(true);
   };
   const openEditActive = () => {
     if (!active) return;
     setEditorProductId(active.product.id);
     setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 1 }]);
+    setEditorOverheads(activeRecipeOverheads.map((r) => ({ ...r })));
     setTab("recipe");
   };
   const saveEditor = async (opts?: { closeDialog?: boolean }) => {
@@ -243,12 +282,30 @@ function Workbench() {
       }
       seen.add(i.materialId);
     }
+    // Validate overheads: no duplicate (category, mode); positive amounts only kept
+    const seenOv = new Set<string>();
+    const cleanOverheads = editorOverheads.filter((o) => o.categoryId && Number(o.amount) > 0);
+    for (const o of cleanOverheads) {
+      const key = `${o.categoryId}::${o.mode}`;
+      if (seenOv.has(key)) {
+        const cat = overheadCats.find((c) => c.id === o.categoryId);
+        return toast.error(`Duplicate overhead: ${cat?.name ?? o.categoryId} (${o.mode})`);
+      }
+      seenOv.add(key);
+    }
     setEditorSaving(true);
     try {
       await saveRecipe(editorProductId, populated);
+      await saveRecipeOverheads(editorProductId, cleanOverheads);
       toast.success("Recipe saved");
       if (opts?.closeDialog) setEditorOpen(false);
       setActiveId(editorProductId);
+      // Refresh the active recipe overheads if we just edited the active product
+      if (editorProductId === activeId) {
+        try {
+          setActiveRecipeOverheads(await loadRecipeOverheads(editorProductId));
+        } catch { /* ignore */ }
+      }
       await refresh();
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save recipe");
@@ -262,6 +319,7 @@ function Workbench() {
     if (!confirm(`Delete recipe for "${active.product.name}"?`)) return;
     try {
       await saveRecipe(active.product.id, []);
+      await saveRecipeOverheads(active.product.id, []);
       toast.success("Recipe deleted");
       await refresh();
     } catch (e: any) {
@@ -269,13 +327,14 @@ function Workbench() {
     }
   };
 
-  // Load recipe items into editor whenever entering Edit Recipe tab
+  // Load recipe items + overheads into editor whenever entering Edit Recipe tab
   useEffect(() => {
     if (tab !== "recipe" || !active) return;
     setEditorProductId(active.product.id);
     setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 1 }]);
+    setEditorOverheads(activeRecipeOverheads.map((r) => ({ ...r })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, activeId]);
+  }, [tab, activeId, activeRecipeOverheads]);
 
   // ── Batch history ────────────────────────────────────────────────
   const loadHistory = async (productId: string) => {
@@ -302,6 +361,8 @@ function Workbench() {
     if (tab === "history" && activeId) loadHistory(activeId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, activeId]);
+
+
 
   // ── Render ───────────────────────────────────────────────────────
   return (
