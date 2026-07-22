@@ -330,6 +330,96 @@ export type Database = {
           },
         ]
       }
+      damaged_ledger: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          product_id: string
+          qty: number
+          ref_id: string | null
+          ref_type: string | null
+          showroom_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          note?: string | null
+          product_id: string
+          qty: number
+          ref_id?: string | null
+          ref_type?: string | null
+          showroom_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          product_id?: string
+          qty?: number
+          ref_id?: string | null
+          ref_type?: string | null
+          showroom_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "damaged_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "damaged_ledger_showroom_id_fkey"
+            columns: ["showroom_id"]
+            isOneToOne: false
+            referencedRelation: "showrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      damaged_stock: {
+        Row: {
+          id: string
+          product_id: string
+          quantity: number
+          showroom_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          quantity?: number
+          showroom_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          quantity?: number
+          showroom_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "damaged_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "damaged_stock_showroom_id_fkey"
+            columns: ["showroom_id"]
+            isOneToOne: false
+            referencedRelation: "showrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           attendance: number | null
@@ -1437,6 +1527,80 @@ export type Database = {
           },
         ]
       }
+      repurpose_queue: {
+        Row: {
+          converted_material_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          processed_at: string | null
+          product_id: string
+          qty: number
+          source_showroom_id: string | null
+          status: string
+          transfer_id: string | null
+          wastage_qty: number | null
+          yield_qty: number | null
+        }
+        Insert: {
+          converted_material_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          processed_at?: string | null
+          product_id: string
+          qty: number
+          source_showroom_id?: string | null
+          status?: string
+          transfer_id?: string | null
+          wastage_qty?: number | null
+          yield_qty?: number | null
+        }
+        Update: {
+          converted_material_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          processed_at?: string | null
+          product_id?: string
+          qty?: number
+          source_showroom_id?: string | null
+          status?: string
+          transfer_id?: string | null
+          wastage_qty?: number | null
+          yield_qty?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repurpose_queue_converted_material_id_fkey"
+            columns: ["converted_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repurpose_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repurpose_queue_source_showroom_id_fkey"
+            columns: ["source_showroom_id"]
+            isOneToOne: false
+            referencedRelation: "showrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repurpose_queue_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -1563,6 +1727,7 @@ export type Database = {
       }
       sale_return_items: {
         Row: {
+          condition: string | null
           created_at: string
           id: string
           line_total: number
@@ -1574,6 +1739,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          condition?: string | null
           created_at?: string
           id?: string
           line_total?: number
@@ -1585,6 +1751,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          condition?: string | null
           created_at?: string
           id?: string
           line_total?: number
@@ -1797,6 +1964,7 @@ export type Database = {
           created_by: string | null
           id: string
           is_active: boolean
+          is_factory: boolean | null
           manager_name: string | null
           name: string
           phone: string | null
@@ -1810,6 +1978,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          is_factory?: boolean | null
           manager_name?: string | null
           name: string
           phone?: string | null
@@ -1823,6 +1992,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          is_factory?: boolean | null
           manager_name?: string | null
           name?: string
           phone?: string | null
@@ -2369,6 +2539,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      commit_damaged_movement: {
+        Args: {
+          _kind: string
+          _note?: string
+          _product_id: string
+          _qty: number
+          _ref_id?: string
+          _ref_type?: string
+          _showroom_id: string
+        }
+        Returns: string
+      }
+      commit_damaged_transfer_approve: {
+        Args: { _transfer_id: string }
+        Returns: undefined
+      }
       commit_production_batch: {
         Args: {
           _batch: number
@@ -2389,6 +2575,16 @@ export type Database = {
           _showroom_id: string
         }
         Returns: string
+      }
+      commit_repurpose: {
+        Args: {
+          _material_id: string
+          _note?: string
+          _queue_id: string
+          _wastage_qty: number
+          _yield_qty: number
+        }
+        Returns: undefined
       }
       commit_stock_movement: {
         Args: {
