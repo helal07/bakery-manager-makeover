@@ -241,13 +241,19 @@ export function AppShellFrame() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
-  const { loading: permLoading, isSuperadmin, permissions } = usePermissions();
+  const { loading: permLoading, isSuperadmin, permissions, scopedPermissions } = usePermissions();
 
   const [meta, setMetaState] = useState<PageMeta>({ title: "" });
   const setMeta = useCallback((m: PageMeta) => setMetaState(m), []);
   const metaCtx = useMemo<PageMetaCtx>(() => ({ meta, setMeta }), [meta, setMeta]);
 
-  const can = (key?: string) => !key || isSuperadmin || permissions.has(key);
+  const can = (key?: string) => {
+    if (!key) return true;
+    if (isSuperadmin) return true;
+    if (permissions.has(key)) return true;
+    for (const set of scopedPermissions.values()) if (set.has(key)) return true;
+    return false;
+  };
   const visibleGroups = useMemo(() => (permLoading
     ? []
     : navGroups
@@ -265,7 +271,8 @@ export function AppShellFrame() {
         })
         .filter((g) => g.items.length > 0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [permLoading, isSuperadmin, permissions]);
+  ), [permLoading, isSuperadmin, permissions, scopedPermissions]);
+
 
   useEffect(() => {
     let mounted = true;
