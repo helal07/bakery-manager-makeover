@@ -1,32 +1,42 @@
-## Issues
+## Scope
 
-**1. "IT Solution" label** — hardcoded fallback in `src/routes/_authenticated/products.index.tsx` lines 125–126 when no showroom is selected (factory / all scope). It's not from settings; just a stray literal.
+**Cloud DB only. Your VPS production schema will NOT be touched** — I have no access to it and won't generate anything that runs against it. `sql/applied.md` is just a local checklist file; ignore it if you want, or leave your VPS ticks as they are.
 
-**2. Stock Report tab ignores most Filter-card fields.** Only `category` + the search box actually filter rows today (see `filtered`, lines 129–136). `Product Type`, `Unit`, `Tax`, `Brand`, `Business Location`, and `Not for selling` are inert. In particular, the **Business Location** filter does not re-scope stock to the picked showroom — stock is loaded once from `currentShowroomId` and never re-queried.
+## Problem (verified against cloud DB)
 
-## Plan
+Cloud is still on the legacy schema. Confirmed missing pieces:
 
-### A. Fix the "IT Solution" label
-- Replace the hardcoded fallback with `"All Locations"` when scope is factory/global (no showroom selected). Use the actual showroom name when one is picked. No settings dependency needed.
+- `units.code` + `units.is_active` (still has `short_name`) → this is the exact "column units.code does not exist" error on Edit Product
+- `employees` missing designation, address, national_id, joining_date, dob, gender, emergency contacts, notes, avatar_url, role_id
+- `user_profiles` missing `software` (jsonb)
+- `expense_categories` / `purchase_categories` missing `is_active`
+- `customer_payments` / `supplier_payments` / `sale_returns` missing `created_by`; `purchase_returns` missing `invoice_ref` / `note` / `created_by`
+- `showrooms` missing `settings` (jsonb) and `is_factory`
+- RPCs / permission rows from sql/05, 06, 09, 12 likely absent
 
-### B. Make the Filter card actually filter the Products list and Stock Report
+The code already matches the aligned schema (your VPS proves it). Only cloud is drifted.
 
-Client-side filters (applied to `filtered`, so both tabs react):
-- **Category** — already works.
-- **Product Type** — `products` has no variants today, so map `All` → no-op, `Single` → show all, `Variable` → empty (documented placeholder until variants ship).
-- **Unit** — filter by `products.unit` (already selected in `reports.stock.tsx`; add `unit` to the `loadProducts` select and to the `Product` type).
-- **Tax** — `products` has no tax column; hide the Tax select for now (keeps UI honest) OR leave it and make it no-op. Recommend hiding to avoid dead controls.
-- **Brand** — same story, no `brand` column. Hide for now.
-- **Not for selling** — filter by `products.is_active = false`. Requires loading inactive rows too when the box is checked (today `loadProducts` hardcodes `is_active = true`). Add an `includeInactive` option to `loadProducts` and re-fetch when the toggle flips.
+## Plan — apply the existing idempotent patches to cloud only
 
-Server-side re-scope (needs a refetch, not just a client filter):
-- **Business Location** — when the user picks a specific location, refetch products/stock scoped to that `showroom_id` instead of `currentShowroomId`. When `All`, fall back to `currentShowroomId` (preserves the top-bar showroom switcher behavior). Wire this by adding a `locationOverride` state that feeds `loadProducts(locationOverride ?? currentShowroomId)` inside the existing `useEffect`.
+Run each existing `sql/*.sql` via the migration tool, one approval per file, in order:
 
-### C. Keep the display label in sync
-- `currentShowroomName` (used in the Stock Report header and CSV "Location" column) should reflect the effective scope: overridden location name if set, else the current showroom's name, else `"All Locations"`.
+1. `sql/02_align_code_schema.sql` — fixes units.code, categories.is_active, transfers renames, user_profiles fields, etc. **This one fixes the Edit Product crash.**
+2. `sql/05_factory_only_production.sql`
+3. `sql/06_reverse_logistics.sql`
+4. `sql/07_sales_shipping.sql`
+5. `sql/08_employees_extended.sql`
+6. `sql/09_showroom_settings.sql`
+7. `sql/10_raw_materials_min_stock.sql`
+8. `sql/11_transfers_align.sql`
+9. `sql/12_invoice_bundle_rpc.sql`
+10. `sql/13_image_storage_buckets.sql`
 
-## Technical notes
+All are `IF NOT EXISTS` / `DO $$ ... IF NOT EXISTS`, so re-runs are safe. After each, a quick `information_schema` check to confirm.
 
-- Files touched: `src/routes/_authenticated/products.index.tsx`, `src/lib/product-store.ts` (add `unit`, `is_active` to the projection + `includeInactive` option).
-- No schema changes. No new SQL migration.
-- Tax / Brand selects are removed from the Filters card until the schema grows those columns — cleaner than shipping controls that do nothing.
+## Not doing
+
+- No changes to your VPS.
+- No code changes.
+- No new SQL files.
+
+OK to start with `sql/02_align_code_schema.sql` on cloud?
