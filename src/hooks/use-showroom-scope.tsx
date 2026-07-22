@@ -9,9 +9,10 @@ export type Showroom = {
 
 type ScopeState = {
   loading: boolean;
-  showrooms: Showroom[];       // all showrooms the user can access
-  hasGlobalAccess: boolean;    // superadmin / owner / admin / global assignment
-  currentShowroomId: string | null; // null = factory / all
+  showrooms: Showroom[];              // showrooms the user is allowed to see
+  assignedShowroomIds: string[];      // outlets explicitly assigned to the user
+  hasGlobalAccess: boolean;           // superadmin / global assignment
+  currentShowroomId: string | null;   // null = factory / all (global users only)
   setCurrentShowroomId: (id: string | null) => void;
   refresh: () => Promise<void>;
 };
@@ -22,61 +23,74 @@ const STORAGE_KEY = "mf.currentShowroomId";
 export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
+  const [assignedShowroomIds, setAssignedShowroomIds] = useState<string[]>([]);
   const [hasGlobalAccess, setHasGlobalAccess] = useState(false);
   const [currentShowroomId, setCurrentShowroomIdState] = useState<string | null>(null);
 
   const setCurrentShowroomId = useCallback((id: string | null) => {
+    // Guard: only global users may set null (All / Factory); scoped users must stay in an assigned outlet.
+    if (id === null && !hasGlobalAccess) return;
+    if (id !== null && !hasGlobalAccess && !assignedShowroomIds.includes(id)) return;
     setCurrentShowroomIdState(id);
     if (typeof window !== "undefined") {
       if (id) localStorage.setItem(STORAGE_KEY, id);
       else localStorage.removeItem(STORAGE_KEY);
     }
-  }, []);
+  }, [hasGlobalAccess, assignedShowroomIds]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
     if (!user) {
-      setShowrooms([]); setHasGlobalAccess(false); setLoading(false); return;
+      setShowrooms([]); setAssignedShowroomIds([]); setHasGlobalAccess(false); setLoading(false); return;
     }
 
-    // Global access via legacy user_roles bridge (superadmin/owner/admin)
+    // Legacy bootstrap superadmin
     const { data: legacy } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
     const legacyRoles = (legacy ?? []).map((r) => String(r.role).toLowerCase());
-    let globalAccess = legacyRoles.some((r) => r === "superadmin" || r === "owner" || r === "admin");
+    let globalAccess = legacyRoles.some((r) => r === "superadmin" || r === "owner");
 
-    // Or a global (showroom_id IS NULL) assignment
-    if (!globalAccess) {
-      const { data: ga } = await (supabase as any)
-        .from("user_role_assignments")
-        .select("id")
-        .eq("user_id", user.id)
-        .is("showroom_id", null)
-        .limit(1);
-      if (ga && ga.length > 0) globalAccess = true;
+    // All role assignments — a NULL showroom_id means global
+    const { data: assignments } = await (supabase as any)
+      .from("user_role_assignments")
+      .select("showroom_id, role_id")
+      .eq("user_id", user.id);
+    const assignedIds: string[] = [];
+    for (const a of (assignments ?? []) as Array<{ showroom_id: string | null }>) {
+      if (a.showroom_id === null) globalAccess = true;
+      else if (a.showroom_id) assignedIds.push(a.showroom_id);
     }
 
-    // RLS on showrooms already restricts to accessible ones for scoped users;
-    // for global users this returns all active rows.
+    // Superadmin role via app_roles → also global
+    if (!globalAccess && assignments && assignments.length > 0) {
+      const roleIds = Array.from(new Set(((assignments as any[]) ?? []).map((a) => a.role_id).filter(Boolean)));
+      if (roleIds.length > 0) {
+        const { data: roles } = await (supabase as any)
+          .from("app_roles").select("name").in("id", roleIds);
+        if ((roles ?? []).some((r: any) => String(r.name).toLowerCase() === "superadmin")) globalAccess = true;
+      }
+    }
+
+    // Load showrooms — RLS now filters to the user's assigned outlets automatically.
     const { data: rooms } = await supabase
       .from("showrooms")
       .select("id, name, code, address, city, phone, manager_name")
       .eq("is_active", true)
       .order("name");
 
-
     const list = (rooms ?? []) as Showroom[];
     setShowrooms(list);
+    setAssignedShowroomIds(Array.from(new Set(assignedIds)));
     setHasGlobalAccess(globalAccess);
 
-    // Restore or pick default
+    // Pick current scope
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    const validStored = stored && list.some((s) => s.id === stored) ? stored : null;
-    if (validStored) {
-      setCurrentShowroomIdState(validStored);
+    const storedValid = stored && list.some((s) => s.id === stored);
+    if (storedValid) {
+      setCurrentShowroomIdState(stored);
     } else if (globalAccess) {
-      setCurrentShowroomIdState(null); // default to "All / Factory"
+      setCurrentShowroomIdState(null);
     } else if (list.length > 0) {
       setCurrentShowroomIdState(list[0].id);
       if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, list[0].id);
@@ -90,7 +104,7 @@ export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
   useEffect(() => { refresh(); }, [refresh]);
 
   return (
-    <Ctx.Provider value={{ loading, showrooms, hasGlobalAccess, currentShowroomId, setCurrentShowroomId, refresh }}>
+    <Ctx.Provider value={{ loading, showrooms, assignedShowroomIds, hasGlobalAccess, currentShowroomId, setCurrentShowroomId, refresh }}>
       {children}
     </Ctx.Provider>
   );
