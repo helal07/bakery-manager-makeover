@@ -790,24 +790,22 @@ function RecipeEditorBody({
           <div className="space-y-2">
             {items.map((it, idx) => {
               const raw = rawMaterials.find((r) => r.id === it.materialId);
+              const usedIds = new Set(
+                items.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean),
+              );
+              const lineCost = (raw?.cost ?? 0) * (Number(it.qty) || 0);
               return (
                 <div key={idx} className="flex items-center gap-2">
-                  <select
+                  <IngredientPicker
+                    materials={rawMaterials}
                     value={it.materialId}
-                    onChange={(e) =>
+                    onChange={(id) =>
                       setItems((arr) =>
-                        arr.map((x, i) => (i === idx ? { ...x, materialId: e.target.value } : x)),
+                        arr.map((x, i) => (i === idx ? { ...x, materialId: id } : x)),
                       )
                     }
-                    className="flex-1 h-9 px-2 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
-                  >
-                    <option value="">— Select material —</option>
-                    {rawMaterials.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} ({r.unit})
-                      </option>
-                    ))}
-                  </select>
+                    disabledIds={usedIds}
+                  />
                   <input
                     type="number"
                     min={0}
@@ -820,14 +818,17 @@ function RecipeEditorBody({
                         ),
                       )
                     }
-                    className="w-24 h-9 px-2 rounded-md border border-border bg-background text-sm text-right outline-none focus:border-primary"
+                    className="w-24 h-10 px-2 rounded-md border border-border bg-background text-sm text-right outline-none focus:border-primary tabular-nums"
                   />
-                  <span className="text-xs text-muted-foreground w-10">{raw?.unit ?? ""}</span>
+                  <span className="text-xs text-muted-foreground w-10 shrink-0">{raw?.unit ?? ""}</span>
+                  <span className="text-xs text-muted-foreground w-20 text-right shrink-0 tabular-nums">
+                    {raw ? `৳${lineCost.toFixed(2)}` : ""}
+                  </span>
                   <button
                     onClick={() =>
                       setItems((arr) => arr.filter((_, i) => i !== idx))
                     }
-                    className="size-9 grid place-items-center rounded-md hover:bg-destructive/10 text-destructive"
+                    className="size-9 grid place-items-center rounded-md hover:bg-destructive/10 text-destructive shrink-0"
                     aria-label="Remove ingredient"
                   >
                     <Trash2 className="size-3.5" />
