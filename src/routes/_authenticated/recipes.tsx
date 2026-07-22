@@ -27,6 +27,15 @@ import {
   saveRecipe,
   type Ingredient,
 } from "@/lib/recipe-store";
+import {
+  loadOverheadCategories,
+  loadRecipeOverheads,
+  saveRecipeOverheads,
+  addOverheadCategory,
+  type OverheadCategory,
+  type RecipeOverhead,
+  type BatchOverhead,
+} from "@/lib/production-overhead-store";
 import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
@@ -34,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PermissionGate } from "@/components/permission-gate";
 import { pageTitle } from "@/lib/company-settings";
+import { IngredientPicker } from "@/components/ingredient-picker";
 
 type Search = { product?: string; tab?: "produce" | "recipe" | "history" };
 
