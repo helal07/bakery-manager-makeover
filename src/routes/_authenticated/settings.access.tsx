@@ -38,7 +38,15 @@ function AccessControlPage() {
   if (permLoading) {
     return (
       <AppShell title="Access Control" subtitle="Roles & permissions">
-        <Card><div className="py-10 text-center text-muted-foreground">Loading…</div></Card>
+        <div className="max-w-6xl mx-auto">
+          <Card className="p-8">
+            <div className="animate-pulse space-y-3">
+              <div className="h-4 w-40 bg-muted rounded" />
+              <div className="h-4 w-64 bg-muted rounded" />
+              <div className="h-32 bg-muted/60 rounded-lg mt-4" />
+            </div>
+          </Card>
+        </div>
       </AppShell>
     );
   }
@@ -46,16 +54,20 @@ function AccessControlPage() {
   if (!isSuperadmin) {
     return (
       <AppShell title="Access Control" subtitle="Roles & permissions">
-        <Card>
-          <div className="py-14 flex flex-col items-center gap-3 text-center">
-            <Lock className="size-8 text-muted-foreground" />
-            <div className="text-base font-medium">Superadmin only</div>
-            <div className="text-sm text-muted-foreground max-w-md">
-              Access Control is restricted to the Superadmin. Ask your Superadmin to
-              grant you a role that includes the permissions you need.
+        <div className="max-w-2xl mx-auto">
+          <Card className="p-10">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="size-14 rounded-full bg-muted grid place-items-center">
+                <Lock className="size-6 text-muted-foreground" />
+              </div>
+              <div className="text-lg font-semibold">Superadmin only</div>
+              <div className="text-sm text-muted-foreground max-w-md">
+                Access Control is restricted to the Superadmin. Ask your Superadmin to
+                grant you a role that includes the permissions you need.
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </AppShell>
     );
   }
@@ -66,16 +78,18 @@ function AccessControlPage() {
       subtitle="Create custom roles and control what each role can do"
       actions={<Badge variant="secondary" className="gap-1"><ShieldCheck className="size-3" /> Superadmin</Badge>}
     >
-      <Tabs defaultValue="roles">
-        <TabsList>
-          <TabsTrigger value="roles">Roles</TabsTrigger>
-          <TabsTrigger value="matrix">Permission Matrix</TabsTrigger>
-          <TabsTrigger value="assignments">User Assignments</TabsTrigger>
-        </TabsList>
-        <TabsContent value="roles" className="mt-4"><RolesTab /></TabsContent>
-        <TabsContent value="matrix" className="mt-4"><MatrixTab /></TabsContent>
-        <TabsContent value="assignments" className="mt-4"><AssignmentsTab /></TabsContent>
-      </Tabs>
+      <div className="max-w-6xl mx-auto">
+        <Tabs defaultValue="roles">
+          <TabsList className="mb-5">
+            <TabsTrigger value="roles">Roles</TabsTrigger>
+            <TabsTrigger value="matrix">Permission Matrix</TabsTrigger>
+            <TabsTrigger value="assignments">User Assignments</TabsTrigger>
+          </TabsList>
+          <TabsContent value="roles"><RolesTab /></TabsContent>
+          <TabsContent value="matrix"><MatrixTab /></TabsContent>
+          <TabsContent value="assignments"><AssignmentsTab /></TabsContent>
+        </Tabs>
+      </div>
     </AppShell>
   );
 }
