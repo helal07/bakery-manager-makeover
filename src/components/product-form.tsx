@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { type ProductCategory, loadCategories, addCategory } from "@/lib/product-types";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,9 @@ import { addProduct, updateProduct, loadProducts, type Product } from "@/lib/pro
 import { addRawMaterial, loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { loadRecipeFor, saveRecipe, type Ingredient } from "@/lib/recipe-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { uploadImage } from "@/lib/storage";
