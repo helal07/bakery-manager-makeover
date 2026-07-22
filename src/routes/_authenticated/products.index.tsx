@@ -549,6 +549,122 @@ function Th({ children }: { children: React.ReactNode }) {
   );
 }
 
+function StockReportPanel({
+  rows,
+  loading,
+  locationName,
+  onExport,
+  onPrint,
+}: {
+  rows: Product[];
+  loading: boolean;
+  locationName: string;
+  onExport: () => void;
+  onPrint: () => void;
+}) {
+  const totals = rows.reduce(
+    (acc, p) => {
+      acc.units += p.stock;
+      acc.value += p.stock * p.cost;
+      acc.revenue += p.stock * p.price;
+      if (p.stock <= 0) acc.out += 1;
+      else if (p.stock < p.threshold) acc.low += 1;
+      return acc;
+    },
+    { units: 0, value: 0, revenue: 0, low: 0, out: 0 },
+  );
+
+  return (
+    <div className="p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="text-sm text-muted-foreground">
+          Stock report for <span className="font-medium text-foreground">{locationName}</span> — reflects current filters.
+        </div>
+        <div className="flex items-center gap-2">
+          <ToolBtn onClick={onExport} icon={<FileText className="size-3.5" />}>Export CSV</ToolBtn>
+          <ToolBtn onClick={onPrint} icon={<Printer className="size-3.5" />}>Print</ToolBtn>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+        <KpiTile label="Line items" value={rows.length.toLocaleString()} />
+        <KpiTile label="Total units" value={totals.units.toLocaleString()} />
+        <KpiTile label="Stock value" value={`৳${totals.value.toFixed(0)}`} />
+        <KpiTile label="Potential revenue" value={`৳${totals.revenue.toFixed(0)}`} />
+        <KpiTile label="Low / Out" value={`${totals.low} / ${totals.out}`} tone={totals.low || totals.out ? "warn" : "default"} />
+      </div>
+
+      <div className="overflow-x-auto border-t border-border">
+        <table className="w-full min-w-[900px] text-sm">
+          <thead className="text-xs bg-muted/40">
+            <tr>
+              <th className="text-left font-semibold px-3 py-3">SKU</th>
+              <th className="text-left font-semibold px-3 py-3">Product</th>
+              <th className="text-left font-semibold px-3 py-3">Category</th>
+              <th className="text-right font-semibold px-3 py-3">Unit Price</th>
+              <th className="text-right font-semibold px-3 py-3">Selling Price</th>
+              <th className="text-right font-semibold px-3 py-3">Stock</th>
+              <th className="text-right font-semibold px-3 py-3">Threshold</th>
+              <th className="text-right font-semibold px-3 py-3">Stock Value</th>
+              <th className="text-right font-semibold px-3 py-3">Potential Revenue</th>
+              <th className="text-left font-semibold px-3 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {loading && (
+              <tr><td colSpan={10} className="px-5 py-8 text-center text-muted-foreground">Loading…</td></tr>
+            )}
+            {!loading && rows.length === 0 && (
+              <tr><td colSpan={10} className="px-5 py-8 text-center text-muted-foreground">No products match the current filters.</td></tr>
+            )}
+            {rows.map((p) => {
+              const out = p.stock <= 0;
+              const low = !out && p.stock < p.threshold;
+              return (
+                <tr key={p.id} className="hover:bg-muted/30">
+                  <td className="px-3 py-2.5 font-mono text-xs">{p.sku || "—"}</td>
+                  <td className="px-3 py-2.5 font-medium">{p.name}</td>
+                  <td className="px-3 py-2.5"><Badge tone="primary">{p.category}</Badge></td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">৳{p.cost.toFixed(2)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">৳{p.price.toFixed(2)}</td>
+                  <td className={`px-3 py-2.5 text-right tabular-nums ${out ? "text-destructive font-semibold" : low ? "text-destructive" : ""}`}>{p.stock}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{p.threshold}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">৳{(p.stock * p.cost).toFixed(0)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums font-semibold">৳{(p.stock * p.price).toFixed(0)}</td>
+                  <td className="px-3 py-2.5">
+                    {out ? <Badge tone="destructive">Out</Badge> : low ? <Badge tone="warning">Low</Badge> : <Badge tone="success">OK</Badge>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          {rows.length > 0 && (
+            <tfoot className="bg-muted/30 text-sm font-semibold">
+              <tr>
+                <td className="px-3 py-2.5" colSpan={5}>Totals</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{totals.units.toLocaleString()}</td>
+                <td></td>
+                <td className="px-3 py-2.5 text-right tabular-nums">৳{totals.value.toFixed(0)}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">৳{totals.revenue.toFixed(0)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function KpiTile({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "warn" }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={`text-xl font-semibold mt-1 tabular-nums ${tone === "warn" ? "text-destructive" : ""}`}>{value}</div>
+    </div>
+  );
+}
+
 function TabBtn({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: string; label: string }) {
   return (
     <button
