@@ -138,7 +138,7 @@ function RolesTab() {
     setOpen(false); load();
   };
   const remove = async (r: AppRole) => {
-    if (r.is_system) { toast.error("Built-in roles cannot be deleted"); return; }
+    if (!confirm(`Delete role "${r.name}"? This cannot be undone.`)) return;
     if (!confirm(`Delete role "${r.name}"? This removes all its permission grants and user assignments.`)) return;
     const { error } = await sb.from("app_roles").delete().eq("id", r.id);
     if (error) { toast.error(error.message); return; }
