@@ -38,18 +38,25 @@ export async function saveRecipe(productId: string, ingredients: Ingredient[]): 
   if (error) throw error;
 }
 
+export type ProductionOverheadInput = { categoryId: string; amount: number; note?: string };
+
 export async function commitProduction(params: {
   productId: string;
   showroomId: string | null;
   batch: number;
   ingredients: Ingredient[];
+  overheads?: ProductionOverheadInput[];
 }): Promise<void> {
-  const { productId, showroomId, batch, ingredients } = params;
+  const { productId, showroomId, batch, ingredients, overheads } = params;
+  const cleanOverheads = (overheads ?? [])
+    .filter((o) => o.categoryId && Number(o.amount) > 0)
+    .map((o) => ({ categoryId: o.categoryId, amount: Number(o.amount), note: o.note ?? null }));
   const { error } = await sb.rpc("commit_production_batch", {
     _product_id: productId,
     _showroom_id: showroomId,
     _batch: batch,
     _ingredients: ingredients,
+    _overheads: cleanOverheads,
   });
   if (error) throw error;
 }
