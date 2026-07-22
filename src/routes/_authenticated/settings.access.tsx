@@ -410,8 +410,8 @@ function AssignmentsTab() {
   };
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div>
           <div className="text-base font-semibold">User role assignments</div>
           <div className="text-sm text-muted-foreground">Assign roles to users. Leave showroom blank for factory / global scope.</div>
@@ -420,22 +420,27 @@ function AssignmentsTab() {
       </div>
 
       {loading ? (
-        <div className="py-10 text-center text-muted-foreground">Loading…</div>
+        <div className="py-16 text-center text-muted-foreground text-sm">Loading…</div>
       ) : assignments.length === 0 ? (
-        <div className="py-10 text-center text-muted-foreground">No assignments yet.</div>
+        <div className="py-16 text-center text-muted-foreground text-sm">No assignments yet.</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-muted-foreground border-b">
-              <tr><th className="text-left py-2 pr-4">User ID</th><th className="text-left py-2 pr-4">Role</th><th className="text-left py-2 pr-4">Scope</th><th className="text-right py-2">Actions</th></tr>
+            <thead className="text-xs uppercase text-muted-foreground bg-muted/40">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium">User ID</th>
+                <th className="text-left px-4 py-3 font-medium">Role</th>
+                <th className="text-left px-4 py-3 font-medium">Scope</th>
+                <th className="text-right px-4 py-3 font-medium">Actions</th>
+              </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border">
               {assignments.map((a) => (
-                <tr key={a.id} className="border-b last:border-0">
-                  <td className="py-2 pr-4 font-mono text-xs">{a.user_id}</td>
-                  <td className="py-2 pr-4">{a.role_name}</td>
-                  <td className="py-2 pr-4">{a.showroom_name ?? <span className="text-muted-foreground">Global / Factory</span>}</td>
-                  <td className="py-2 text-right">
+                <tr key={a.id} className="hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono text-xs">{a.user_id}</td>
+                  <td className="px-4 py-3">{a.role_name}</td>
+                  <td className="px-4 py-3">{a.showroom_name ?? <span className="text-muted-foreground">Global / Factory</span>}</td>
+                  <td className="px-4 py-3 text-right">
                     <Button size="sm" variant="ghost" onClick={() => revoke(a.id)}><Trash2 className="size-4" /></Button>
                   </td>
                 </tr>
