@@ -138,7 +138,7 @@ function RolesTab() {
     setOpen(false); load();
   };
   const remove = async (r: AppRole) => {
-    if (r.is_system) { toast.error("Built-in roles cannot be deleted"); return; }
+    if (!confirm(`Delete role "${r.name}"? This cannot be undone.`)) return;
     if (!confirm(`Delete role "${r.name}"? This removes all its permission grants and user assignments.`)) return;
     const { error } = await sb.from("app_roles").delete().eq("id", r.id);
     if (error) { toast.error(error.message); return; }
@@ -179,7 +179,7 @@ function RolesTab() {
                   <td className="px-4 py-3">{r.is_active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Disabled</Badge>}</td>
                   <td className="px-4 py-3 text-right">
                     <Button size="sm" variant="ghost" onClick={() => openEdit(r)}><Pencil className="size-4" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(r)} disabled={r.is_system}><Trash2 className="size-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => remove(r)}><Trash2 className="size-4" /></Button>
                   </td>
                 </tr>
               ))}
@@ -291,7 +291,7 @@ function MatrixTab() {
           <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
             <SelectTrigger className="w-64"><SelectValue placeholder="Choose role" /></SelectTrigger>
             <SelectContent>
-              {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? " (built-in)" : ""}</SelectItem>)}
+              {roles.filter((r) => r.name?.toLowerCase() !== "superadmin").map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? " (built-in)" : ""}</SelectItem>)}
             </SelectContent>
           </Select>
           {isSuperadminRole && <Badge variant="secondary">Full access</Badge>}
