@@ -17,7 +17,7 @@ export function useIsAdmin() {
         .eq("user_id", data.user.id);
       if (!mounted) return;
       const roles = (rows ?? []).map(r => String(r.role).toLowerCase());
-      setIsAdmin(roles.includes("owner") || roles.includes("admin"));
+      setIsAdmin(roles.includes("owner") || roles.includes("admin") || roles.includes("superadmin"));
       setLoading(false);
     })();
     return () => { mounted = false; };

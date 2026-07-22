@@ -73,13 +73,20 @@ function EmployeesPage() {
 
   const refresh = async () => {
     setLoading(true);
-    const [emp, sr] = await Promise.all([
-      supabase
+    const withUserId = await supabase
+      .from("employees")
+      .select("id, name, role, showroom_id, email, phone, salary, attendance, is_active, user_id")
+      .order("created_at", { ascending: false });
+    let emp = withUserId as any;
+    if (withUserId.error && /user_id/.test(withUserId.error.message)) {
+      // Column not yet migrated — fall back and warn admin once.
+      emp = await supabase
         .from("employees")
-        .select("id, name, role, showroom_id, email, phone, salary, attendance, is_active, user_id")
-        .order("created_at", { ascending: false }),
-      supabase.from("showrooms").select("id, name").eq("is_active", true).order("name"),
-    ]);
+        .select("id, name, role, showroom_id, email, phone, salary, attendance, is_active")
+        .order("created_at", { ascending: false });
+      toast.warning("Run sql/15_employee_login_link.sql to enable employee logins");
+    }
+    const sr = await supabase.from("showrooms").select("id, name").eq("is_active", true).order("name");
     if (emp.error) toast.error(emp.error.message);
     else
       setList(
