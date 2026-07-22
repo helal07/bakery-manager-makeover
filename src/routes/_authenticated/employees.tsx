@@ -228,6 +228,15 @@ function EmployeesPage() {
                     {u.phone && <div>{u.phone}</div>}
                     {!u.email && !u.phone && "—"}
                   </td>
+                  <td className="px-5 py-3">
+                    {u.user_id ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <ShieldCheck className="size-3" /> Active
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-right">{u.attendance}%</td>
                   <td className="px-5 py-3 text-right">৳{u.salary.toLocaleString()}</td>
                   <td className="px-5 py-3 text-right">
