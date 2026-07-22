@@ -402,15 +402,11 @@ export function ProductForm({ editId }: { editId?: string }) {
                   const mat = rawMaterials.find((r) => r.id === ing.materialId);
                   return (
                     <div key={idx} className="flex items-center gap-2">
-                      <select
+                      <IngredientPicker
+                        materials={rawMaterials}
                         value={ing.materialId}
-                        onChange={(e) => updateIngredient(idx, { materialId: e.target.value })}
-                        className="flex-1 h-9 px-2 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
-                      >
-                        {rawMaterials.map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
+                        onChange={(id) => updateIngredient(idx, { materialId: id })}
+                      />
                       <Input
                         type="number"
                         min={0}
