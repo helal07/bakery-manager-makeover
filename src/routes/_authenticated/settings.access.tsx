@@ -281,49 +281,64 @@ function MatrixTab() {
     setSaving(false); load();
   };
 
-  if (loading) return <Card><div className="py-10 text-center text-muted-foreground">Loading…</div></Card>;
+  if (loading) return <Card className="p-6"><div className="py-16 text-center text-muted-foreground text-sm">Loading…</div></Card>;
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Label className="text-sm">Role:</Label>
+          <Label className="text-sm">Role</Label>
           <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Choose role" /></SelectTrigger>
+            <SelectTrigger className="w-64"><SelectValue placeholder="Choose role" /></SelectTrigger>
             <SelectContent>
               {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? " (built-in)" : ""}</SelectItem>)}
             </SelectContent>
           </Select>
           {isSuperadminRole && <Badge variant="secondary">Full access</Badge>}
+          {!isSuperadminRole && selectedRole && (
+            <span className="text-xs text-muted-foreground">
+              {checked.size} of {perms.length} permissions
+            </span>
+          )}
         </div>
         <Button onClick={save} disabled={saving || dirty.size === 0 || isSuperadminRole}>
-          {saving ? "Saving…" : dirty.size > 0 ? `Save ${dirty.size} change${dirty.size === 1 ? "" : "s"}` : "Save"}
+          {saving ? "Saving…" : dirty.size > 0 ? `Save ${dirty.size} change${dirty.size === 1 ? "" : "s"}` : "Saved"}
         </Button>
       </div>
 
       {isSuperadminRole && (
-        <div className="text-sm text-muted-foreground mb-4">Superadmin always has every permission — this role cannot be edited.</div>
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 mb-5 text-sm text-muted-foreground">
+          Superadmin always has every permission — this role cannot be edited.
+        </div>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {modules.map(([module, list]) => (
-          <div key={module} className="border rounded-lg p-3">
-            <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">{module}</div>
-            <div className="space-y-1.5">
-              {list.map((p) => (
-                <label key={p.permission_key} className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={isSuperadminRole || checked.has(p.permission_key)}
-                    disabled={isSuperadminRole}
-                    onCheckedChange={() => toggle(p.permission_key)}
-                  />
-                  <span>{p.label}</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground font-mono">{p.permission_key}</span>
-                </label>
-              ))}
+        {modules.map(([module, list]) => {
+          const enabledCount = list.filter((p) => checked.has(p.permission_key)).length;
+          return (
+            <div key={module} className="border border-border rounded-xl p-4 bg-card">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{module}</div>
+                <span className="text-[11px] text-muted-foreground">
+                  {isSuperadminRole ? list.length : enabledCount}/{list.length}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {list.map((p) => (
+                  <label key={p.permission_key} className="flex items-center gap-2 text-sm rounded-md px-2 py-1.5 hover:bg-muted/40">
+                    <Checkbox
+                      checked={isSuperadminRole || checked.has(p.permission_key)}
+                      disabled={isSuperadminRole}
+                      onCheckedChange={() => toggle(p.permission_key)}
+                    />
+                    <span className="flex-1">{p.label}</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">{p.permission_key}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
