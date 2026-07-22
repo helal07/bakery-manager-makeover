@@ -347,7 +347,7 @@ function InvoiceModal({ data, onClose }: { data: { sale: any; items: any[] }; on
           </div>
         </div>
         <div className="p-4 text-sm">
-          <table className="w-full">
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px]">
             <thead className="text-xs uppercase tracking-wider text-muted-foreground">
               <tr><th className="text-left py-1.5">Item</th><th className="text-right py-1.5">Qty</th><th className="text-right py-1.5">Price</th><th className="text-right py-1.5">Total</th></tr>
             </thead>
@@ -361,7 +361,7 @@ function InvoiceModal({ data, onClose }: { data: { sale: any; items: any[] }; on
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           <div className="mt-4 space-y-1 text-right">
             <div>Subtotal: <span className="tabular-nums">{money(Number(sale.subtotal) || 0)}</span></div>
             <div>Discount: <span className="tabular-nums">{money(Number(sale.discount) || 0)}</span></div>

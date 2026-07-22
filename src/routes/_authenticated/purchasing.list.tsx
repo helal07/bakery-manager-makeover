@@ -314,7 +314,7 @@ function ViewBody({ p }: { p: Purchase }) {
       <div>
         <div className="text-xs font-medium text-muted-foreground mb-2">Items</div>
         <div className="border border-border rounded-md overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
             <thead className="bg-muted/40 text-xs text-muted-foreground">
               <tr>
                 <th className="text-left px-3 py-2">Item</th>
@@ -336,7 +336,7 @@ function ViewBody({ p }: { p: Purchase }) {
                 <tr><td colSpan={4} className="px-3 py-4 text-center text-xs text-muted-foreground">No line items</td></tr>
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
       <div className="flex justify-end">
@@ -390,7 +390,7 @@ function InvoiceBody({ p }: { p: Purchase }) {
         <div className="font-medium">{p.supplier}</div>
       </div>
       <div className="border border-border rounded-md overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
           <thead className="bg-muted/40 text-xs text-muted-foreground">
             <tr><th className="text-left px-3 py-2">Item</th><th className="text-right px-3 py-2">Qty</th><th className="text-right px-3 py-2">Price</th><th className="text-right px-3 py-2">Total</th></tr>
           </thead>
@@ -402,7 +402,7 @@ function InvoiceBody({ p }: { p: Purchase }) {
               <tr><td colSpan={4} className="px-3 py-4 text-center text-xs text-muted-foreground">No line items</td></tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
       <div className="flex justify-end">
         <div className="w-56 space-y-1">

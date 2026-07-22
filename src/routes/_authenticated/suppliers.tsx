@@ -70,7 +70,7 @@ function Suppliers() {
         <Card className="p-5"><div className="text-xs text-muted-foreground">On-time delivery</div><div className="text-2xl font-semibold mt-1 text-[color:var(--success)]">96%</div></Card>
       </div>
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
           <thead className="text-xs text-muted-foreground bg-muted/40">
             <tr>
               <th className="text-left font-medium px-5 py-3">Supplier</th>
@@ -92,7 +92,7 @@ function Suppliers() {
               <tr><td colSpan={4} className="px-5 py-10 text-center text-muted-foreground">No suppliers yet.</td></tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>

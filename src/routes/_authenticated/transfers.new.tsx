@@ -266,7 +266,7 @@ function NewTransferPage() {
               ) : (
                 <div className="rounded-lg border overflow-hidden">
                   <div className="max-h-[520px] overflow-auto">
-                    <table className="w-full text-sm">
+                    <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
                       <thead className="bg-muted/60 sticky top-0 backdrop-blur">
                         <tr className="text-left">
                           <th className="py-2.5 px-3 font-medium">Product</th>
@@ -318,7 +318,7 @@ function NewTransferPage() {
                           <tr><td colSpan={5} className="py-12 text-center text-muted-foreground">No products match your search</td></tr>
                         )}
                       </tbody>
-                    </table>
+                    </table></div>
                   </div>
                 </div>
               )}
