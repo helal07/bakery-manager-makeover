@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { type ProductCategory, loadCategories, addCategory } from "@/lib/product-types";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,9 @@ import { addProduct, updateProduct, loadProducts, type Product } from "@/lib/pro
 import { addRawMaterial, loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { loadRecipeFor, saveRecipe, type Ingredient } from "@/lib/recipe-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { uploadImage } from "@/lib/storage";
@@ -399,15 +402,11 @@ export function ProductForm({ editId }: { editId?: string }) {
                   const mat = rawMaterials.find((r) => r.id === ing.materialId);
                   return (
                     <div key={idx} className="flex items-center gap-2">
-                      <select
+                      <IngredientPicker
+                        materials={rawMaterials}
                         value={ing.materialId}
-                        onChange={(e) => updateIngredient(idx, { materialId: e.target.value })}
-                        className="flex-1 h-9 px-2 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
-                      >
-                        {rawMaterials.map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
+                        onChange={(id) => updateIngredient(idx, { materialId: id })}
+                      />
                       <Input
                         type="number"
                         min={0}
@@ -513,5 +512,66 @@ export function ProductForm({ editId }: { editId?: string }) {
         </DialogContent>
       </Dialog>
     </AppShell>
+  );
+}
+
+function IngredientPicker({
+  materials,
+  value,
+  onChange,
+}: {
+  materials: RawMaterial[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = materials.find((m) => m.id === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={open}
+          className="flex-1 h-9 px-2 rounded-md border border-input bg-background text-sm outline-none focus:border-primary flex items-center justify-between gap-2"
+        >
+          <span className={cn("truncate", !selected && "text-muted-foreground")}>
+            {selected ? selected.name : "Search ingredient…"}
+          </span>
+          <ChevronsUpDown className="size-3.5 opacity-50 shrink-0" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="p-0 w-[280px]" align="start">
+        <Command>
+          <CommandInput placeholder="Type to search…" />
+          <CommandList>
+            <CommandEmpty>No ingredient found.</CommandEmpty>
+            <CommandGroup>
+              {materials.map((m) => (
+                <CommandItem
+                  key={m.id}
+                  value={`${m.name} ${m.unit ?? ""}`}
+                  onSelect={() => {
+                    onChange(m.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 size-4",
+                      value === m.id ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="flex-1 truncate">{m.name}</span>
+                  {m.unit && (
+                    <span className="text-xs text-muted-foreground ml-2">{m.unit}</span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
