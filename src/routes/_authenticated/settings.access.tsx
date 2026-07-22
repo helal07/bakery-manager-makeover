@@ -291,7 +291,7 @@ function MatrixTab() {
           <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
             <SelectTrigger className="w-64"><SelectValue placeholder="Choose role" /></SelectTrigger>
             <SelectContent>
-              {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? " (built-in)" : ""}</SelectItem>)}
+              {roles.filter((r) => r.name?.toLowerCase() !== "superadmin").map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? " (built-in)" : ""}</SelectItem>)}
             </SelectContent>
           </Select>
           {isSuperadminRole && <Badge variant="secondary">Full access</Badge>}
