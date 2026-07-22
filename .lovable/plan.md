@@ -1,57 +1,32 @@
-# Factory Stock + Showroom Inbox (Incoming Goods)
+## Issues
 
-## Goal
-Factory-only production রাখা, showroom-এ transfer receive workflow যোগ করা, এবং Purchase ও Transfer আলাদা রেখে একটা unified "Incoming Goods" view দেওয়া।
+**1. "IT Solution" label** — hardcoded fallback in `src/routes/_authenticated/products.index.tsx` lines 125–126 when no showroom is selected (factory / all scope). It's not from settings; just a stray literal.
 
-## Scope
+**2. Stock Report tab ignores most Filter-card fields.** Only `category` + the search box actually filter rows today (see `filtered`, lines 129–136). `Product Type`, `Unit`, `Tax`, `Brand`, `Business Location`, and `Not for selling` are inert. In particular, the **Business Location** filter does not re-scope stock to the picked showroom — stock is loaded once from `currentShowroomId` and never re-queried.
 
-### 1. Production menu — Factory Stock views
-- `Production` sidebar-এ ২টা নতুন submenu:
-  - **Factory Raw Stock** — `raw_material_stock` (showroom = factory) list with value (qty × cost)
-  - **Factory Product Stock** — `product_stock` (showroom = factory) list with value (qty × price)
-- Total valuation KPI উপরে।
-- Factory = `showrooms.code = 'FACTORY'` (বা `is_factory` flag; existing convention follow করবো)।
+## Plan
 
-### 2. Showroom Inbox (Incoming Transfers)
-- নতুন route: `src/routes/_authenticated/inbox.tsx`
-- Current user-এর active showroom-এ pending transfers (`transfers.status = 'sent'`, `to_showroom_id = current`) list করবে।
-- প্রতিটা transfer-এ: from factory, date, items (product, qty), "Receive" button।
-- Receive হলে:
-  - প্রতিটা `transfer_items`-এর জন্য `commit_stock_movement(product_id, to_showroom, +qty, 'transfer_in', 'transfer', transfer_id)`
-  - `transfers.status = 'received'`, `received_at = now()`, `received_by = user`
-  - Missing product row auto-insert হয় (existing RPC behavior) — showroom-এ product আগে না থাকলেও কাজ করবে।
+### A. Fix the "IT Solution" label
+- Replace the hardcoded fallback with `"All Locations"` when scope is factory/global (no showroom selected). Use the actual showroom name when one is picked. No settings dependency needed.
 
-### 3. Notifications
-- Sidebar-এ `Inbox` menu item-এর পাশে pending count badge।
-- Topbar-এ ছোট bell/badge (pending transfer count)।
-- Count query: `transfers` where `to_showroom_id = current AND status = 'sent'`.
+### B. Make the Filter card actually filter the Products list and Stock Report
 
-### 4. Purchase vs Transfer separation
-- Purchase List-এ transfer **mix করবো না** (double liability এড়াতে)।
-- Purchase List page-এর উপরে একটা hint banner: "X pending incoming transfers — Open Inbox" → `/inbox`.
-- Optional: Dashboard-এ "Incoming Goods" widget with 2 tabs (Purchases / Transfers) — এই plan-এ শুধু banner + Inbox, widget পরে।
+Client-side filters (applied to `filtered`, so both tabs react):
+- **Category** — already works.
+- **Product Type** — `products` has no variants today, so map `All` → no-op, `Single` → show all, `Variable` → empty (documented placeholder until variants ship).
+- **Unit** — filter by `products.unit` (already selected in `reports.stock.tsx`; add `unit` to the `loadProducts` select and to the `Product` type).
+- **Tax** — `products` has no tax column; hide the Tax select for now (keeps UI honest) OR leave it and make it no-op. Recommend hiding to avoid dead controls.
+- **Brand** — same story, no `brand` column. Hide for now.
+- **Not for selling** — filter by `products.is_active = false`. Requires loading inactive rows too when the box is checked (today `loadProducts` hardcodes `is_active = true`). Add an `includeInactive` option to `loadProducts` and re-fetch when the toggle flips.
 
-### 5. Missing product edge case
-- Existing `commit_stock_movement` RPC `product_stock`-এ row না থাকলে auto-insert করে — কোনো schema change লাগবে না।
-- Showroom-এ product first time এলে সেটা automatic ওই showroom-এর catalog-এ visible হবে (product master global, stock per-showroom)।
+Server-side re-scope (needs a refetch, not just a client filter):
+- **Business Location** — when the user picks a specific location, refetch products/stock scoped to that `showroom_id` instead of `currentShowroomId`. When `All`, fall back to `currentShowroomId` (preserves the top-bar showroom switcher behavior). Wire this by adding a `locationOverride` state that feeds `loadProducts(locationOverride ?? currentShowroomId)` inside the existing `useEffect`.
 
-## Files
+### C. Keep the display label in sync
+- `currentShowroomName` (used in the Stock Report header and CSV "Location" column) should reflect the effective scope: overridden location name if set, else the current showroom's name, else `"All Locations"`.
 
-**New**
-- `src/routes/_authenticated/inbox.tsx` — pending transfers list + receive action
-- `src/routes/_authenticated/production.factory-stock.tsx` — raw + product stock tabs
-- `sql/14_inbox_helpers.sql` — (only if we need a `get_pending_transfers_count` RPC; otherwise skip)
+## Technical notes
 
-**Modified**
-- `src/components/app-shell.tsx` — add Inbox menu + badge, add Factory Stock under Production
-- `src/routes/_authenticated/production.index.tsx` — sidebar entry for Factory Stock
-- `src/routes/_authenticated/purchasing.list.tsx` — hint banner linking to Inbox
-
-## Migrations
-- সম্ভবত schema change লাগবে না (transfers/status/received_at fields already আছে ধরে নিচ্ছি — verify করে confirm করবো implementation-এ)।
-- লাগলে `sql/14_transfer_receive.sql` numbered file দেব manual import-এর জন্য।
-
-## Out of scope (এই plan-এ না)
-- Full "Incoming Goods" dashboard widget
-- Partial receive / discrepancy reporting
-- Auto-create purchase entry from transfer (accounting-এর জন্য পরে আলাদা plan)
+- Files touched: `src/routes/_authenticated/products.index.tsx`, `src/lib/product-store.ts` (add `unit`, `is_active` to the projection + `includeInactive` option).
+- No schema changes. No new SQL migration.
+- Tax / Brand selects are removed from the Filters card until the schema grows those columns — cleaner than shipping controls that do nothing.

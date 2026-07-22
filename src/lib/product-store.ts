@@ -16,6 +16,8 @@ export type Product = {
   expiryDate?: string;
   shelfLifeDays?: number;
   imageUrl?: string;
+  unit?: string;
+  isActive?: boolean;
 };
 
 export type ProductInput = {
@@ -46,15 +48,21 @@ function mapRow(r: any, stockMap: Map<string, { qty: number; min: number }>): Pr
     expiryDate: r.expiry_date ?? undefined,
     shelfLifeDays: r.shelf_life_days ?? undefined,
     imageUrl: r.image_url ?? undefined,
+    unit: r.unit ?? undefined,
+    isActive: r.is_active ?? true,
   };
 }
 
-export async function loadProducts(showroomId?: string | null): Promise<Product[]> {
-  const { data: rows, error } = await sb
+export async function loadProducts(
+  showroomId?: string | null,
+  opts?: { includeInactive?: boolean },
+): Promise<Product[]> {
+  let q = sb
     .from("products")
-    .select("id,sku,name,category,price,cost,mfg_date,expiry_date,shelf_life_days,image_url,is_active")
-    .eq("is_active", true)
+    .select("id,sku,name,category,price,cost,mfg_date,expiry_date,shelf_life_days,image_url,is_active,unit")
     .order("name");
+  if (!opts?.includeInactive) q = q.eq("is_active", true);
+  const { data: rows, error } = await q;
   if (error) throw error;
 
   let stockQ = sb.from("product_stock").select("product_id,showroom_id,quantity,min_stock");
