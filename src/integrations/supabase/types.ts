@@ -208,6 +208,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          created_by: string | null
           customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
@@ -224,6 +225,7 @@ export type Database = {
         Insert: {
           amount?: number
           created_at?: string
+          created_by?: string | null
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
@@ -240,6 +242,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          created_by?: string | null
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
@@ -327,47 +330,177 @@ export type Database = {
           },
         ]
       }
+      damaged_ledger: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          product_id: string
+          qty: number
+          ref_id: string | null
+          ref_type: string | null
+          showroom_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          note?: string | null
+          product_id: string
+          qty: number
+          ref_id?: string | null
+          ref_type?: string | null
+          showroom_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          product_id?: string
+          qty?: number
+          ref_id?: string | null
+          ref_type?: string | null
+          showroom_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "damaged_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "damaged_ledger_showroom_id_fkey"
+            columns: ["showroom_id"]
+            isOneToOne: false
+            referencedRelation: "showrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      damaged_stock: {
+        Row: {
+          id: string
+          product_id: string
+          quantity: number
+          showroom_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          quantity?: number
+          showroom_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          quantity?: number
+          showroom_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "damaged_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "damaged_stock_showroom_id_fkey"
+            columns: ["showroom_id"]
+            isOneToOne: false
+            referencedRelation: "showrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
+          address: string | null
           attendance: number | null
+          avatar_url: string | null
           created_at: string
+          date_of_birth: string | null
+          designation: string | null
           email: string | null
+          emergency_contact: string | null
+          emergency_phone: string | null
+          gender: string | null
           id: string
           is_active: boolean
+          joining_date: string | null
           name: string
+          national_id: string | null
+          notes: string | null
           phone: string | null
           role: string | null
+          role_id: string | null
           salary: number | null
           showroom_id: string | null
           updated_at: string
         }
         Insert: {
+          address?: string | null
           attendance?: number | null
+          avatar_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          designation?: string | null
           email?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          gender?: string | null
           id?: string
           is_active?: boolean
+          joining_date?: string | null
           name: string
+          national_id?: string | null
+          notes?: string | null
           phone?: string | null
           role?: string | null
+          role_id?: string | null
           salary?: number | null
           showroom_id?: string | null
           updated_at?: string
         }
         Update: {
+          address?: string | null
           attendance?: number | null
+          avatar_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          designation?: string | null
           email?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          gender?: string | null
           id?: string
           is_active?: boolean
+          joining_date?: string | null
           name?: string
+          national_id?: string | null
+          notes?: string | null
           phone?: string | null
           role?: string | null
+          role_id?: string | null
           salary?: number | null
           showroom_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "employees_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "app_roles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "employees_showroom_id_fkey"
             columns: ["showroom_id"]
@@ -381,18 +514,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           name: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name?: string
           updated_at?: string
         }
@@ -878,18 +1014,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           name: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name?: string
           updated_at?: string
         }
@@ -1022,7 +1161,10 @@ export type Database = {
           amount: number
           code: string | null
           created_at: string
+          created_by: string | null
           id: string
+          invoice_ref: string | null
+          note: string | null
           purchase_id: string | null
           reason: string | null
           showroom_id: string | null
@@ -1033,7 +1175,10 @@ export type Database = {
           amount?: number
           code?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
+          invoice_ref?: string | null
+          note?: string | null
           purchase_id?: string | null
           reason?: string | null
           showroom_id?: string | null
@@ -1044,7 +1189,10 @@ export type Database = {
           amount?: number
           code?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
+          invoice_ref?: string | null
+          note?: string | null
           purchase_id?: string | null
           reason?: string | null
           showroom_id?: string | null
@@ -1419,6 +1567,80 @@ export type Database = {
           },
         ]
       }
+      repurpose_queue: {
+        Row: {
+          converted_material_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          processed_at: string | null
+          product_id: string
+          qty: number
+          source_showroom_id: string | null
+          status: string
+          transfer_id: string | null
+          wastage_qty: number | null
+          yield_qty: number | null
+        }
+        Insert: {
+          converted_material_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          processed_at?: string | null
+          product_id: string
+          qty: number
+          source_showroom_id?: string | null
+          status?: string
+          transfer_id?: string | null
+          wastage_qty?: number | null
+          yield_qty?: number | null
+        }
+        Update: {
+          converted_material_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          processed_at?: string | null
+          product_id?: string
+          qty?: number
+          source_showroom_id?: string | null
+          status?: string
+          transfer_id?: string | null
+          wastage_qty?: number | null
+          yield_qty?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repurpose_queue_converted_material_id_fkey"
+            columns: ["converted_material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repurpose_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repurpose_queue_source_showroom_id_fkey"
+            columns: ["source_showroom_id"]
+            isOneToOne: false
+            referencedRelation: "showrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repurpose_queue_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -1545,6 +1767,7 @@ export type Database = {
       }
       sale_return_items: {
         Row: {
+          condition: string | null
           created_at: string
           id: string
           line_total: number
@@ -1556,6 +1779,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          condition?: string | null
           created_at?: string
           id?: string
           line_total?: number
@@ -1567,6 +1791,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          condition?: string | null
           created_at?: string
           id?: string
           line_total?: number
@@ -1606,9 +1831,11 @@ export type Database = {
           amount: number
           code: string | null
           created_at: string
+          created_by: string | null
           customer_name: string | null
           id: string
           invoice_ref: string | null
+          note: string | null
           reason: string | null
           sale_id: string | null
           showroom_id: string | null
@@ -1618,9 +1845,11 @@ export type Database = {
           amount?: number
           code?: string | null
           created_at?: string
+          created_by?: string | null
           customer_name?: string | null
           id?: string
           invoice_ref?: string | null
+          note?: string | null
           reason?: string | null
           sale_id?: string | null
           showroom_id?: string | null
@@ -1630,9 +1859,11 @@ export type Database = {
           amount?: number
           code?: string | null
           created_at?: string
+          created_by?: string | null
           customer_name?: string | null
           id?: string
           invoice_ref?: string | null
+          note?: string | null
           reason?: string | null
           sale_id?: string | null
           showroom_id?: string | null
@@ -1773,9 +2004,11 @@ export type Database = {
           created_by: string | null
           id: string
           is_active: boolean
+          is_factory: boolean | null
           manager_name: string | null
           name: string
           phone: string | null
+          settings: Json
           updated_at: string
         }
         Insert: {
@@ -1786,9 +2019,11 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          is_factory?: boolean | null
           manager_name?: string | null
           name: string
           phone?: string | null
+          settings?: Json
           updated_at?: string
         }
         Update: {
@@ -1799,9 +2034,11 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          is_factory?: boolean | null
           manager_name?: string | null
           name?: string
           phone?: string | null
+          settings?: Json
           updated_at?: string
         }
         Relationships: []
@@ -1864,6 +2101,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          created_by: string | null
           id: string
           method: string | null
           note: string | null
@@ -1877,6 +2115,7 @@ export type Database = {
         Insert: {
           amount?: number
           created_at?: string
+          created_by?: string | null
           id?: string
           method?: string | null
           note?: string | null
@@ -1890,6 +2129,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          created_by?: string | null
           id?: string
           method?: string | null
           note?: string | null
@@ -2071,22 +2311,28 @@ export type Database = {
       }
       units: {
         Row: {
+          code: string
           created_at: string
           id: string
+          is_active: boolean
           name: string
           short_name: string | null
           updated_at: string
         }
         Insert: {
+          code: string
           created_at?: string
           id?: string
+          is_active?: boolean
           name: string
           short_name?: string | null
           updated_at?: string
         }
         Update: {
+          code?: string
           created_at?: string
           id?: string
+          is_active?: boolean
           name?: string
           short_name?: string | null
           updated_at?: string
@@ -2103,6 +2349,7 @@ export type Database = {
           language: string | null
           name: string | null
           phone: string | null
+          software: Json
           timezone: string | null
           updated_at: string
           user_id: string
@@ -2116,6 +2363,7 @@ export type Database = {
           language?: string | null
           name?: string | null
           phone?: string | null
+          software?: Json
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -2129,6 +2377,7 @@ export type Database = {
           language?: string | null
           name?: string | null
           phone?: string | null
+          software?: Json
           timezone?: string | null
           updated_at?: string
           user_id?: string
@@ -2333,6 +2582,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      commit_damaged_movement: {
+        Args: {
+          _kind: string
+          _note?: string
+          _product_id: string
+          _qty: number
+          _ref_id?: string
+          _ref_type?: string
+          _showroom_id: string
+        }
+        Returns: string
+      }
+      commit_damaged_transfer_approve: {
+        Args: { _transfer_id: string }
+        Returns: undefined
+      }
       commit_production_batch: {
         Args: {
           _batch: number
@@ -2354,6 +2619,16 @@ export type Database = {
         }
         Returns: string
       }
+      commit_repurpose: {
+        Args: {
+          _material_id: string
+          _note?: string
+          _queue_id: string
+          _wastage_qty: number
+          _yield_qty: number
+        }
+        Returns: undefined
+      }
       commit_stock_movement: {
         Args: {
           _kind: string
@@ -2367,6 +2642,10 @@ export type Database = {
         Returns: string
       }
       find_user_id_by_email: { Args: { _email: string }; Returns: string }
+      get_effective_invoice_settings: {
+        Args: { _showroom_id: string }
+        Returns: Json
+      }
       get_invoice_bundle: { Args: { _sale_id: string }; Returns: Json }
       has_role: {
         Args: {
