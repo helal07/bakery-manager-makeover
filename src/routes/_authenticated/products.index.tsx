@@ -47,8 +47,6 @@ type FilterState = {
   productType: string;
   category: string;
   unit: string;
-  tax: string;
-  brand: string;
   businessLocation: string;
   notForSelling: boolean;
 };
@@ -57,8 +55,6 @@ const DEFAULT_FILTERS: FilterState = {
   productType: "All",
   category: "All",
   unit: "All",
-  tax: "All",
-  brand: "All",
   businessLocation: "All",
   notForSelling: false,
 };
