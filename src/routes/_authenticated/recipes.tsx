@@ -644,21 +644,40 @@ function ProduceTab({
   batch,
   setBatch,
   unitCost,
+  materialUnitCost,
+  overheadUnitCost,
   batchCost,
+  materialCost,
+  overheadCost,
   shortRows,
   canProduce,
   onProduce,
+  overheadCats,
+  overheads,
+  setOverheads,
 }: {
   productName: string;
   rows: Array<{ it: Ingredient; raw?: RawMaterial; need: number; have: number; short: number; lineCost: number; ok: boolean }>;
   batch: number;
   setBatch: (v: number | ((b: number) => number)) => void;
   unitCost: number;
+  materialUnitCost: number;
+  overheadUnitCost: number;
   batchCost: number;
+  materialCost: number;
+  overheadCost: number;
   shortRows: Array<{ it: Ingredient; raw?: RawMaterial; short: number }>;
   canProduce: boolean;
   onProduce: () => void;
+  overheadCats: OverheadCategory[];
+  overheads: BatchOverhead[];
+  setOverheads: React.Dispatch<React.SetStateAction<BatchOverhead[]>>;
 }) {
+  const addOverhead = () => {
+    const used = new Set(overheads.map((o) => o.categoryId));
+    const free = overheadCats.find((c) => !used.has(c.id));
+    setOverheads((prev) => [...prev, { categoryId: free?.id ?? overheadCats[0]?.id ?? "", amount: 0 }]);
+  };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
       <Card className="p-5 space-y-4 h-fit">
@@ -696,6 +715,11 @@ function ProduceTab({
           <MiniStat icon={<CircleDollarSign className="size-3.5" />} label="Unit cost" value={`৳${unitCost.toFixed(2)}`} />
         </div>
 
+        <div className="rounded-md border border-border bg-muted/20 p-2.5 text-[11px] text-muted-foreground grid grid-cols-2 gap-y-1">
+          <span>Material</span><span className="text-right text-foreground">৳{materialUnitCost.toFixed(2)}/unit</span>
+          <span>Overhead</span><span className="text-right text-foreground">৳{overheadUnitCost.toFixed(2)}/unit</span>
+        </div>
+
         {shortRows.length > 0 && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 text-destructive p-3 text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-medium">
@@ -720,58 +744,123 @@ function ProduceTab({
           <Play className="size-4" /> Produce Now
         </button>
         <div className="text-[11px] text-muted-foreground text-center">
-          Total cost: ৳{batchCost.toFixed(2)} · {batch} unit
+          Total ৳{batchCost.toFixed(2)} = Material ৳{materialCost.toFixed(2)} + Overhead ৳{overheadCost.toFixed(2)}
         </div>
       </Card>
 
-      <Card className="overflow-hidden">
-        <div className="p-5 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-2">
-            <Factory className="size-4 text-primary" />
-            <h3 className="text-sm font-semibold">Raw material preview</h3>
+      <div className="space-y-4">
+        <Card className="overflow-hidden">
+          <div className="p-5 border-b border-border bg-muted/30">
+            <div className="flex items-center gap-2">
+              <Factory className="size-4 text-primary" />
+              <h3 className="text-sm font-semibold">Raw material preview</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {batch} × {productName} বানাতে যা লাগবে
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {batch} × {productName} বানাতে যা লাগবে
-          </p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-xs text-muted-foreground bg-muted/20">
-              <tr>
-                <th className="text-left font-medium px-5 py-2.5">Material</th>
-                <th className="text-right font-medium px-5 py-2.5">Need</th>
-                <th className="text-right font-medium px-5 py-2.5">In stock</th>
-                <th className="text-right font-medium px-5 py-2.5">Cost</th>
-                <th className="text-right font-medium px-5 py-2.5">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((r) => (
-                <tr key={r.it.materialId} className="hover:bg-muted/20">
-                  <td className="px-5 py-3 font-medium">{r.raw?.name ?? r.it.materialId}</td>
-                  <td className="px-5 py-3 text-right">
-                    {r.need} {r.raw?.unit}
-                  </td>
-                  <td className="px-5 py-3 text-right text-muted-foreground">
-                    {r.have} {r.raw?.unit}
-                  </td>
-                  <td className="px-5 py-3 text-right">৳{r.lineCost.toFixed(2)}</td>
-                  <td className="px-5 py-3 text-right">
-                    <Badge tone={r.ok ? "success" : "danger"}>{r.ok ? "OK" : "Short"}</Badge>
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground bg-muted/20">
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">
-                    কোনো ingredient নেই
-                  </td>
+                  <th className="text-left font-medium px-5 py-2.5">Material</th>
+                  <th className="text-right font-medium px-5 py-2.5">Need</th>
+                  <th className="text-right font-medium px-5 py-2.5">In stock</th>
+                  <th className="text-right font-medium px-5 py-2.5">Cost</th>
+                  <th className="text-right font-medium px-5 py-2.5">Status</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((r) => (
+                  <tr key={r.it.materialId} className="hover:bg-muted/20">
+                    <td className="px-5 py-3 font-medium">{r.raw?.name ?? r.it.materialId}</td>
+                    <td className="px-5 py-3 text-right">
+                      {r.need} {r.raw?.unit}
+                    </td>
+                    <td className="px-5 py-3 text-right text-muted-foreground">
+                      {r.have} {r.raw?.unit}
+                    </td>
+                    <td className="px-5 py-3 text-right">৳{r.lineCost.toFixed(2)}</td>
+                    <td className="px-5 py-3 text-right">
+                      <Badge tone={r.ok ? "success" : "danger"}>{r.ok ? "OK" : "Short"}</Badge>
+                    </td>
+                  </tr>
+                ))}
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      কোনো ingredient নেই
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <div className="p-5 border-b border-border bg-muted/30 flex items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <CircleDollarSign className="size-4 text-primary" />
+                <h3 className="text-sm font-semibold">Production overheads</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Gas, electricity, labor ইত্যাদি — এই ব্যাচের total খরচ
+              </p>
+            </div>
+            <button
+              onClick={addOverhead}
+              disabled={overheadCats.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-background text-xs font-medium hover:bg-accent disabled:opacity-50"
+            >
+              <Plus className="size-3.5" /> Add
+            </button>
+          </div>
+          <div className="p-4 space-y-2">
+            {overheads.length === 0 && (
+              <div className="text-xs text-muted-foreground text-center py-4">
+                কোনো overhead নেই। Recipe-এ default set করলে এখানে auto-fill হবে।
+              </div>
+            )}
+            {overheads.map((o, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_120px_36px] gap-2 items-center">
+                <select
+                  value={o.categoryId}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, categoryId: v } : x)));
+                  }}
+                  className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+                >
+                  {overheadCats.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={o.amount}
+                  onChange={(e) => {
+                    const v = Math.max(0, +e.target.value || 0);
+                    setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, amount: v } : x)));
+                  }}
+                  placeholder="৳ Amount"
+                  className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right"
+                />
+                <button
+                  onClick={() => setOverheads((prev) => prev.filter((_, i) => i !== idx))}
+                  className="size-9 grid place-items-center rounded-md border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40"
+                  aria-label="Remove"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -784,11 +873,31 @@ function RecipeTab(props: {
   rawMaterials: RawMaterial[];
   items: Ingredient[];
   setItems: React.Dispatch<React.SetStateAction<Ingredient[]>>;
+  overheads: RecipeOverhead[];
+  setOverheads: React.Dispatch<React.SetStateAction<RecipeOverhead[]>>;
+  overheadCats: OverheadCategory[];
+  onAddCategory: (name: string) => Promise<string | null>;
   saving: boolean;
   onSave: () => void;
   onDelete: () => void;
   hasRecipe: boolean;
 }) {
+  const addLine = () => {
+    const used = new Set(props.overheads.map((o) => o.categoryId));
+    const free = props.overheadCats.find((c) => !used.has(c.id));
+    props.setOverheads((prev) => [
+      ...prev,
+      { categoryId: free?.id ?? props.overheadCats[0]?.id ?? "", amount: 0, mode: "per_unit" },
+    ]);
+  };
+  const addNewCategory = async () => {
+    const name = window.prompt("New overhead category name (e.g. Gas, Electricity, Labor)");
+    if (!name || !name.trim()) return;
+    const id = await props.onAddCategory(name.trim());
+    if (id) {
+      props.setOverheads((prev) => [...prev, { categoryId: id, amount: 0, mode: "per_unit" }]);
+    }
+  };
   return (
     <Card className="p-5 space-y-4">
       <RecipeEditorBody
@@ -800,6 +909,88 @@ function RecipeTab(props: {
         items={props.items}
         setItems={props.setItems}
       />
+
+      <div className="pt-4 border-t border-border space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h4 className="text-sm font-semibold flex items-center gap-1.5">
+              <CircleDollarSign className="size-4 text-primary" /> Default overheads
+            </h4>
+            <p className="text-[11px] text-muted-foreground">
+              Gas, বিদ্যুৎ, লেবার ইত্যাদি — produce করার সময় auto-fill হবে
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={addNewCategory}
+              className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-md border border-border bg-background text-xs hover:bg-accent"
+            >
+              <Plus className="size-3" /> Category
+            </button>
+            <button
+              onClick={addLine}
+              disabled={props.overheadCats.length === 0}
+              className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-md border border-border bg-background text-xs font-medium hover:bg-accent disabled:opacity-50"
+            >
+              <Plus className="size-3" /> Add line
+            </button>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {props.overheads.length === 0 && (
+            <div className="text-xs text-muted-foreground text-center py-3 border border-dashed border-border rounded-md">
+              কোনো default overhead সেট করা নেই
+            </div>
+          )}
+          {props.overheads.map((o, idx) => (
+            <div key={idx} className="grid grid-cols-[1fr_110px_110px_36px] gap-2 items-center">
+              <select
+                value={o.categoryId}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  props.setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, categoryId: v } : x)));
+                }}
+                className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+              >
+                {props.overheadCats.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={o.amount}
+                onChange={(e) => {
+                  const v = Math.max(0, +e.target.value || 0);
+                  props.setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, amount: v } : x)));
+                }}
+                placeholder="৳ Amount"
+                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right"
+              />
+              <select
+                value={o.mode}
+                onChange={(e) => {
+                  const v = e.target.value as "per_unit" | "per_batch";
+                  props.setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, mode: v } : x)));
+                }}
+                className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+              >
+                <option value="per_unit">per unit</option>
+                <option value="per_batch">per batch</option>
+              </select>
+              <button
+                onClick={() => props.setOverheads((prev) => prev.filter((_, i) => i !== idx))}
+                className="size-9 grid place-items-center rounded-md border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40"
+                aria-label="Remove"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
         {props.hasRecipe && (
           <button
@@ -820,6 +1011,7 @@ function RecipeTab(props: {
     </Card>
   );
 }
+
 
 function RecipeEditorBody({
   productId,
