@@ -179,7 +179,7 @@ function RolesTab() {
                   <td className="px-4 py-3">{r.is_active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Disabled</Badge>}</td>
                   <td className="px-4 py-3 text-right">
                     <Button size="sm" variant="ghost" onClick={() => openEdit(r)}><Pencil className="size-4" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(r)} disabled={r.is_system}><Trash2 className="size-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => remove(r)}><Trash2 className="size-4" /></Button>
                   </td>
                 </tr>
               ))}
