@@ -27,6 +27,15 @@ import {
   saveRecipe,
   type Ingredient,
 } from "@/lib/recipe-store";
+import {
+  loadOverheadCategories,
+  loadRecipeOverheads,
+  saveRecipeOverheads,
+  addOverheadCategory,
+  type OverheadCategory,
+  type RecipeOverhead,
+  type BatchOverhead,
+} from "@/lib/production-overhead-store";
 import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
@@ -34,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PermissionGate } from "@/components/permission-gate";
 import { pageTitle } from "@/lib/company-settings";
+import { IngredientPicker } from "@/components/ingredient-picker";
 
 type Search = { product?: string; tab?: "produce" | "recipe" | "history" };
 
@@ -86,7 +96,17 @@ function Workbench() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorProductId, setEditorProductId] = useState<string>("");
   const [editorItems, setEditorItems] = useState<Ingredient[]>([]);
+  const [editorOverheads, setEditorOverheads] = useState<RecipeOverhead[]>([]);
   const [editorSaving, setEditorSaving] = useState(false);
+
+  // Overhead categories master list
+  const [overheadCats, setOverheadCats] = useState<OverheadCategory[]>([]);
+
+  // Recipe-level default overheads for the currently active product
+  const [activeRecipeOverheads, setActiveRecipeOverheads] = useState<RecipeOverhead[]>([]);
+
+  // Per-produce overrides (starts from recipe defaults, user can add/edit/remove)
+  const [produceOverheads, setProduceOverheads] = useState<BatchOverhead[]>([]);
 
   // Batch history
   const [batches, setBatches] = useState<BatchRow[]>([]);
@@ -94,14 +114,16 @@ function Workbench() {
 
   const refresh = async () => {
     try {
-      const [ps, rms, rm] = await Promise.all([
+      const [ps, rms, rm, ocs] = await Promise.all([
         loadProducts(currentShowroomId ?? null),
         loadRawMaterials(null), // factory-only raw stock
         loadRecipes(),
+        loadOverheadCategories(),
       ]);
       setProducts(ps);
       setRawMaterials(rms);
       setRecipeMap(rm);
+      setOverheadCats(ocs);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to load");
     } finally {
@@ -164,10 +186,46 @@ function Workbench() {
   });
 
   const shortRows = rows.filter((r) => !r.ok);
-  const batchCost = rows.reduce((s, r) => s + r.lineCost, 0);
+  const materialCost = rows.reduce((s, r) => s + r.lineCost, 0);
+  const overheadCost = produceOverheads.reduce((s, o) => s + (Number(o.amount) || 0), 0);
+  const batchCost = materialCost + overheadCost;
   const unitCost = batch > 0 ? batchCost / batch : 0;
+  const materialUnitCost = batch > 0 ? materialCost / batch : 0;
+  const overheadUnitCost = batch > 0 ? overheadCost / batch : 0;
   const canProduce =
     !!active && rows.length > 0 && shortRows.length === 0 && !busy;
+
+  // Load recipe overheads for the active product, and derive produce-tab
+  // overheads from them (per_unit lines auto-scale with batch qty).
+  useEffect(() => {
+    let cancel = false;
+    if (!activeId) {
+      setActiveRecipeOverheads([]);
+      return;
+    }
+    loadRecipeOverheads(activeId)
+      .then((rows) => {
+        if (cancel) return;
+        setActiveRecipeOverheads(rows);
+      })
+      .catch(() => {
+        if (!cancel) setActiveRecipeOverheads([]);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [activeId]);
+
+  // Rebuild produceOverheads from defaults when active product or batch changes.
+  // User edits after this reset are preserved until the product/batch changes again.
+  useEffect(() => {
+    const derived: BatchOverhead[] = activeRecipeOverheads.map((r) => ({
+      categoryId: r.categoryId,
+      amount: r.mode === "per_unit" ? r.amount * batch : r.amount,
+      note: undefined,
+    }));
+    setProduceOverheads(derived);
+  }, [activeRecipeOverheads, batch]);
 
   const produce = async () => {
     if (!active || !canProduce) return;
@@ -178,6 +236,7 @@ function Workbench() {
         showroomId: currentShowroomId ?? null,
         batch,
         ingredients: items,
+        overheads: produceOverheads,
       });
       toast.success(`✓ Produced ${batch} × ${active.product.name}`);
       setConfirmOpen(false);
@@ -196,12 +255,14 @@ function Workbench() {
     const firstFree = products.find((p) => !(recipeMap[p.id]?.length));
     setEditorProductId(firstFree?.id ?? products[0]?.id ?? "");
     setEditorItems([{ materialId: "", qty: 1 }]);
+    setEditorOverheads([]);
     setEditorOpen(true);
   };
   const openEditActive = () => {
     if (!active) return;
     setEditorProductId(active.product.id);
     setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 1 }]);
+    setEditorOverheads(activeRecipeOverheads.map((r) => ({ ...r })));
     setTab("recipe");
   };
   const saveEditor = async (opts?: { closeDialog?: boolean }) => {
@@ -221,12 +282,30 @@ function Workbench() {
       }
       seen.add(i.materialId);
     }
+    // Validate overheads: no duplicate (category, mode); positive amounts only kept
+    const seenOv = new Set<string>();
+    const cleanOverheads = editorOverheads.filter((o) => o.categoryId && Number(o.amount) > 0);
+    for (const o of cleanOverheads) {
+      const key = `${o.categoryId}::${o.mode}`;
+      if (seenOv.has(key)) {
+        const cat = overheadCats.find((c) => c.id === o.categoryId);
+        return toast.error(`Duplicate overhead: ${cat?.name ?? o.categoryId} (${o.mode})`);
+      }
+      seenOv.add(key);
+    }
     setEditorSaving(true);
     try {
       await saveRecipe(editorProductId, populated);
+      await saveRecipeOverheads(editorProductId, cleanOverheads);
       toast.success("Recipe saved");
       if (opts?.closeDialog) setEditorOpen(false);
       setActiveId(editorProductId);
+      // Refresh the active recipe overheads if we just edited the active product
+      if (editorProductId === activeId) {
+        try {
+          setActiveRecipeOverheads(await loadRecipeOverheads(editorProductId));
+        } catch { /* ignore */ }
+      }
       await refresh();
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save recipe");
@@ -240,6 +319,7 @@ function Workbench() {
     if (!confirm(`Delete recipe for "${active.product.name}"?`)) return;
     try {
       await saveRecipe(active.product.id, []);
+      await saveRecipeOverheads(active.product.id, []);
       toast.success("Recipe deleted");
       await refresh();
     } catch (e: any) {
@@ -247,13 +327,14 @@ function Workbench() {
     }
   };
 
-  // Load recipe items into editor whenever entering Edit Recipe tab
+  // Load recipe items + overheads into editor whenever entering Edit Recipe tab
   useEffect(() => {
     if (tab !== "recipe" || !active) return;
     setEditorProductId(active.product.id);
     setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 1 }]);
+    setEditorOverheads(activeRecipeOverheads.map((r) => ({ ...r })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, activeId]);
+  }, [tab, activeId, activeRecipeOverheads]);
 
   // ── Batch history ────────────────────────────────────────────────
   const loadHistory = async (productId: string) => {
@@ -280,6 +361,8 @@ function Workbench() {
     if (tab === "history" && activeId) loadHistory(activeId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, activeId]);
+
+
 
   // ── Render ───────────────────────────────────────────────────────
   return (
@@ -373,10 +456,17 @@ function Workbench() {
               batch={batch}
               setBatch={setBatch}
               unitCost={unitCost}
+              materialUnitCost={materialUnitCost}
+              overheadUnitCost={overheadUnitCost}
               batchCost={batchCost}
+              materialCost={materialCost}
+              overheadCost={overheadCost}
               shortRows={shortRows}
               canProduce={canProduce}
               onProduce={() => setConfirmOpen(true)}
+              overheadCats={overheadCats}
+              overheads={produceOverheads}
+              setOverheads={setProduceOverheads}
             />
           )}
 
@@ -389,6 +479,19 @@ function Workbench() {
               rawMaterials={rawMaterials}
               items={editorItems}
               setItems={setEditorItems}
+              overheads={editorOverheads}
+              setOverheads={setEditorOverheads}
+              overheadCats={overheadCats}
+              onAddCategory={async (name) => {
+                try {
+                  const cat = await addOverheadCategory(name);
+                  setOverheadCats((cs) => [...cs, cat].sort((a, b) => a.name.localeCompare(b.name)));
+                  return cat.id;
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Failed to add category");
+                  return null;
+                }
+              }}
               saving={editorSaving}
               onSave={() => saveEditor()}
               onDelete={deleteActiveRecipe}
@@ -541,21 +644,40 @@ function ProduceTab({
   batch,
   setBatch,
   unitCost,
+  materialUnitCost,
+  overheadUnitCost,
   batchCost,
+  materialCost,
+  overheadCost,
   shortRows,
   canProduce,
   onProduce,
+  overheadCats,
+  overheads,
+  setOverheads,
 }: {
   productName: string;
   rows: Array<{ it: Ingredient; raw?: RawMaterial; need: number; have: number; short: number; lineCost: number; ok: boolean }>;
   batch: number;
   setBatch: (v: number | ((b: number) => number)) => void;
   unitCost: number;
+  materialUnitCost: number;
+  overheadUnitCost: number;
   batchCost: number;
+  materialCost: number;
+  overheadCost: number;
   shortRows: Array<{ it: Ingredient; raw?: RawMaterial; short: number }>;
   canProduce: boolean;
   onProduce: () => void;
+  overheadCats: OverheadCategory[];
+  overheads: BatchOverhead[];
+  setOverheads: React.Dispatch<React.SetStateAction<BatchOverhead[]>>;
 }) {
+  const addOverhead = () => {
+    const used = new Set(overheads.map((o) => o.categoryId));
+    const free = overheadCats.find((c) => !used.has(c.id));
+    setOverheads((prev) => [...prev, { categoryId: free?.id ?? overheadCats[0]?.id ?? "", amount: 0 }]);
+  };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
       <Card className="p-5 space-y-4 h-fit">
@@ -593,6 +715,11 @@ function ProduceTab({
           <MiniStat icon={<CircleDollarSign className="size-3.5" />} label="Unit cost" value={`৳${unitCost.toFixed(2)}`} />
         </div>
 
+        <div className="rounded-md border border-border bg-muted/20 p-2.5 text-[11px] text-muted-foreground grid grid-cols-2 gap-y-1">
+          <span>Material</span><span className="text-right text-foreground">৳{materialUnitCost.toFixed(2)}/unit</span>
+          <span>Overhead</span><span className="text-right text-foreground">৳{overheadUnitCost.toFixed(2)}/unit</span>
+        </div>
+
         {shortRows.length > 0 && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 text-destructive p-3 text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-medium">
@@ -617,58 +744,123 @@ function ProduceTab({
           <Play className="size-4" /> Produce Now
         </button>
         <div className="text-[11px] text-muted-foreground text-center">
-          Total cost: ৳{batchCost.toFixed(2)} · {batch} unit
+          Total ৳{batchCost.toFixed(2)} = Material ৳{materialCost.toFixed(2)} + Overhead ৳{overheadCost.toFixed(2)}
         </div>
       </Card>
 
-      <Card className="overflow-hidden">
-        <div className="p-5 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-2">
-            <Factory className="size-4 text-primary" />
-            <h3 className="text-sm font-semibold">Raw material preview</h3>
+      <div className="space-y-4">
+        <Card className="overflow-hidden">
+          <div className="p-5 border-b border-border bg-muted/30">
+            <div className="flex items-center gap-2">
+              <Factory className="size-4 text-primary" />
+              <h3 className="text-sm font-semibold">Raw material preview</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {batch} × {productName} বানাতে যা লাগবে
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {batch} × {productName} বানাতে যা লাগবে
-          </p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-xs text-muted-foreground bg-muted/20">
-              <tr>
-                <th className="text-left font-medium px-5 py-2.5">Material</th>
-                <th className="text-right font-medium px-5 py-2.5">Need</th>
-                <th className="text-right font-medium px-5 py-2.5">In stock</th>
-                <th className="text-right font-medium px-5 py-2.5">Cost</th>
-                <th className="text-right font-medium px-5 py-2.5">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((r) => (
-                <tr key={r.it.materialId} className="hover:bg-muted/20">
-                  <td className="px-5 py-3 font-medium">{r.raw?.name ?? r.it.materialId}</td>
-                  <td className="px-5 py-3 text-right">
-                    {r.need} {r.raw?.unit}
-                  </td>
-                  <td className="px-5 py-3 text-right text-muted-foreground">
-                    {r.have} {r.raw?.unit}
-                  </td>
-                  <td className="px-5 py-3 text-right">৳{r.lineCost.toFixed(2)}</td>
-                  <td className="px-5 py-3 text-right">
-                    <Badge tone={r.ok ? "success" : "danger"}>{r.ok ? "OK" : "Short"}</Badge>
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground bg-muted/20">
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">
-                    কোনো ingredient নেই
-                  </td>
+                  <th className="text-left font-medium px-5 py-2.5">Material</th>
+                  <th className="text-right font-medium px-5 py-2.5">Need</th>
+                  <th className="text-right font-medium px-5 py-2.5">In stock</th>
+                  <th className="text-right font-medium px-5 py-2.5">Cost</th>
+                  <th className="text-right font-medium px-5 py-2.5">Status</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((r) => (
+                  <tr key={r.it.materialId} className="hover:bg-muted/20">
+                    <td className="px-5 py-3 font-medium">{r.raw?.name ?? r.it.materialId}</td>
+                    <td className="px-5 py-3 text-right">
+                      {r.need} {r.raw?.unit}
+                    </td>
+                    <td className="px-5 py-3 text-right text-muted-foreground">
+                      {r.have} {r.raw?.unit}
+                    </td>
+                    <td className="px-5 py-3 text-right">৳{r.lineCost.toFixed(2)}</td>
+                    <td className="px-5 py-3 text-right">
+                      <Badge tone={r.ok ? "success" : "danger"}>{r.ok ? "OK" : "Short"}</Badge>
+                    </td>
+                  </tr>
+                ))}
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      কোনো ingredient নেই
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <div className="p-5 border-b border-border bg-muted/30 flex items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <CircleDollarSign className="size-4 text-primary" />
+                <h3 className="text-sm font-semibold">Production overheads</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Gas, electricity, labor ইত্যাদি — এই ব্যাচের total খরচ
+              </p>
+            </div>
+            <button
+              onClick={addOverhead}
+              disabled={overheadCats.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-background text-xs font-medium hover:bg-accent disabled:opacity-50"
+            >
+              <Plus className="size-3.5" /> Add
+            </button>
+          </div>
+          <div className="p-4 space-y-2">
+            {overheads.length === 0 && (
+              <div className="text-xs text-muted-foreground text-center py-4">
+                কোনো overhead নেই। Recipe-এ default set করলে এখানে auto-fill হবে।
+              </div>
+            )}
+            {overheads.map((o, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_120px_36px] gap-2 items-center">
+                <select
+                  value={o.categoryId}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, categoryId: v } : x)));
+                  }}
+                  className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+                >
+                  {overheadCats.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={o.amount}
+                  onChange={(e) => {
+                    const v = Math.max(0, +e.target.value || 0);
+                    setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, amount: v } : x)));
+                  }}
+                  placeholder="৳ Amount"
+                  className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right"
+                />
+                <button
+                  onClick={() => setOverheads((prev) => prev.filter((_, i) => i !== idx))}
+                  className="size-9 grid place-items-center rounded-md border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40"
+                  aria-label="Remove"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -681,11 +873,31 @@ function RecipeTab(props: {
   rawMaterials: RawMaterial[];
   items: Ingredient[];
   setItems: React.Dispatch<React.SetStateAction<Ingredient[]>>;
+  overheads: RecipeOverhead[];
+  setOverheads: React.Dispatch<React.SetStateAction<RecipeOverhead[]>>;
+  overheadCats: OverheadCategory[];
+  onAddCategory: (name: string) => Promise<string | null>;
   saving: boolean;
   onSave: () => void;
   onDelete: () => void;
   hasRecipe: boolean;
 }) {
+  const addLine = () => {
+    const used = new Set(props.overheads.map((o) => o.categoryId));
+    const free = props.overheadCats.find((c) => !used.has(c.id));
+    props.setOverheads((prev) => [
+      ...prev,
+      { categoryId: free?.id ?? props.overheadCats[0]?.id ?? "", amount: 0, mode: "per_unit" },
+    ]);
+  };
+  const addNewCategory = async () => {
+    const name = window.prompt("New overhead category name (e.g. Gas, Electricity, Labor)");
+    if (!name || !name.trim()) return;
+    const id = await props.onAddCategory(name.trim());
+    if (id) {
+      props.setOverheads((prev) => [...prev, { categoryId: id, amount: 0, mode: "per_unit" }]);
+    }
+  };
   return (
     <Card className="p-5 space-y-4">
       <RecipeEditorBody
@@ -697,6 +909,88 @@ function RecipeTab(props: {
         items={props.items}
         setItems={props.setItems}
       />
+
+      <div className="pt-4 border-t border-border space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h4 className="text-sm font-semibold flex items-center gap-1.5">
+              <CircleDollarSign className="size-4 text-primary" /> Default overheads
+            </h4>
+            <p className="text-[11px] text-muted-foreground">
+              Gas, বিদ্যুৎ, লেবার ইত্যাদি — produce করার সময় auto-fill হবে
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={addNewCategory}
+              className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-md border border-border bg-background text-xs hover:bg-accent"
+            >
+              <Plus className="size-3" /> Category
+            </button>
+            <button
+              onClick={addLine}
+              disabled={props.overheadCats.length === 0}
+              className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-md border border-border bg-background text-xs font-medium hover:bg-accent disabled:opacity-50"
+            >
+              <Plus className="size-3" /> Add line
+            </button>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {props.overheads.length === 0 && (
+            <div className="text-xs text-muted-foreground text-center py-3 border border-dashed border-border rounded-md">
+              কোনো default overhead সেট করা নেই
+            </div>
+          )}
+          {props.overheads.map((o, idx) => (
+            <div key={idx} className="grid grid-cols-[1fr_110px_110px_36px] gap-2 items-center">
+              <select
+                value={o.categoryId}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  props.setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, categoryId: v } : x)));
+                }}
+                className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+              >
+                {props.overheadCats.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={o.amount}
+                onChange={(e) => {
+                  const v = Math.max(0, +e.target.value || 0);
+                  props.setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, amount: v } : x)));
+                }}
+                placeholder="৳ Amount"
+                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right"
+              />
+              <select
+                value={o.mode}
+                onChange={(e) => {
+                  const v = e.target.value as "per_unit" | "per_batch";
+                  props.setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, mode: v } : x)));
+                }}
+                className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+              >
+                <option value="per_unit">per unit</option>
+                <option value="per_batch">per batch</option>
+              </select>
+              <button
+                onClick={() => props.setOverheads((prev) => prev.filter((_, i) => i !== idx))}
+                className="size-9 grid place-items-center rounded-md border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40"
+                aria-label="Remove"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
         {props.hasRecipe && (
           <button
@@ -717,6 +1011,7 @@ function RecipeTab(props: {
     </Card>
   );
 }
+
 
 function RecipeEditorBody({
   productId,
@@ -780,24 +1075,22 @@ function RecipeEditorBody({
           <div className="space-y-2">
             {items.map((it, idx) => {
               const raw = rawMaterials.find((r) => r.id === it.materialId);
+              const usedIds = new Set(
+                items.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean),
+              );
+              const lineCost = (raw?.cost ?? 0) * (Number(it.qty) || 0);
               return (
                 <div key={idx} className="flex items-center gap-2">
-                  <select
+                  <IngredientPicker
+                    materials={rawMaterials}
                     value={it.materialId}
-                    onChange={(e) =>
+                    onChange={(id) =>
                       setItems((arr) =>
-                        arr.map((x, i) => (i === idx ? { ...x, materialId: e.target.value } : x)),
+                        arr.map((x, i) => (i === idx ? { ...x, materialId: id } : x)),
                       )
                     }
-                    className="flex-1 h-9 px-2 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
-                  >
-                    <option value="">— Select material —</option>
-                    {rawMaterials.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} ({r.unit})
-                      </option>
-                    ))}
-                  </select>
+                    disabledIds={usedIds}
+                  />
                   <input
                     type="number"
                     min={0}
@@ -810,14 +1103,17 @@ function RecipeEditorBody({
                         ),
                       )
                     }
-                    className="w-24 h-9 px-2 rounded-md border border-border bg-background text-sm text-right outline-none focus:border-primary"
+                    className="w-24 h-10 px-2 rounded-md border border-border bg-background text-sm text-right outline-none focus:border-primary tabular-nums"
                   />
-                  <span className="text-xs text-muted-foreground w-10">{raw?.unit ?? ""}</span>
+                  <span className="text-xs text-muted-foreground w-10 shrink-0">{raw?.unit ?? ""}</span>
+                  <span className="text-xs text-muted-foreground w-20 text-right shrink-0 tabular-nums">
+                    {raw ? `৳${lineCost.toFixed(2)}` : ""}
+                  </span>
                   <button
                     onClick={() =>
                       setItems((arr) => arr.filter((_, i) => i !== idx))
                     }
-                    className="size-9 grid place-items-center rounded-md hover:bg-destructive/10 text-destructive"
+                    className="size-9 grid place-items-center rounded-md hover:bg-destructive/10 text-destructive shrink-0"
                     aria-label="Remove ingredient"
                   >
                     <Trash2 className="size-3.5" />

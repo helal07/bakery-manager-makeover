@@ -936,6 +936,75 @@ export type Database = {
           },
         ]
       }
+      production_overhead_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      production_overheads: {
+        Row: {
+          amount: number
+          batch_id: string
+          category_id: string
+          created_at: string
+          id: string
+          note: string | null
+          product_id: string | null
+        }
+        Insert: {
+          amount: number
+          batch_id: string
+          category_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          product_id?: string | null
+        }
+        Update: {
+          amount?: number
+          batch_id?: string
+          category_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_overheads_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "production_overhead_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_overheads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           barcode: string | null
@@ -1514,6 +1583,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recipe_overheads: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string
+          id: string
+          mode: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          category_id: string
+          created_at?: string
+          id?: string
+          mode?: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string
+          id?: string
+          mode?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_overheads_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "production_overhead_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_overheads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recipes: {
         Row: {
@@ -2598,15 +2712,26 @@ export type Database = {
         Args: { _transfer_id: string }
         Returns: undefined
       }
-      commit_production_batch: {
-        Args: {
-          _batch: number
-          _ingredients: Json
-          _product_id: string
-          _showroom_id: string
-        }
-        Returns: string
-      }
+      commit_production_batch:
+        | {
+            Args: {
+              _batch: number
+              _ingredients: Json
+              _product_id: string
+              _showroom_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _batch: number
+              _ingredients: Json
+              _overheads?: Json
+              _product_id: string
+              _showroom_id: string
+            }
+            Returns: string
+          }
       commit_raw_stock_movement: {
         Args: {
           _kind: string
