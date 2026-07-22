@@ -25,7 +25,22 @@ function AuthPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [brandName, setBrandName] = useState<string>(() => getCompanyName());
+  const [signupAllowed, setSignupAllowed] = useState(false);
+  const [checkingSignup, setCheckingSignup] = useState(true);
   useEffect(() => { getCompany().then((c) => setBrandName(c.name || getCompanyName())).catch(() => {}); }, []);
+
+  // First-run lock: signup only visible when no users exist yet.
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await (supabase as any).rpc("has_any_user");
+      if (!error) {
+        const allow = !data;
+        setSignupAllowed(allow);
+        setMode(allow ? "signup" : "signin");
+      }
+      setCheckingSignup(false);
+    })();
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -36,6 +51,7 @@ function AuthPage() {
   useEffect(() => {
     if (search.denied) setError("Your account has no assigned role. Please contact the owner or an admin.");
   }, [search.denied]);
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
