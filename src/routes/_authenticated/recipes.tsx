@@ -456,10 +456,17 @@ function Workbench() {
               batch={batch}
               setBatch={setBatch}
               unitCost={unitCost}
+              materialUnitCost={materialUnitCost}
+              overheadUnitCost={overheadUnitCost}
               batchCost={batchCost}
+              materialCost={materialCost}
+              overheadCost={overheadCost}
               shortRows={shortRows}
               canProduce={canProduce}
               onProduce={() => setConfirmOpen(true)}
+              overheadCats={overheadCats}
+              overheads={produceOverheads}
+              setOverheads={setProduceOverheads}
             />
           )}
 
@@ -472,6 +479,19 @@ function Workbench() {
               rawMaterials={rawMaterials}
               items={editorItems}
               setItems={setEditorItems}
+              overheads={editorOverheads}
+              setOverheads={setEditorOverheads}
+              overheadCats={overheadCats}
+              onAddCategory={async (name) => {
+                try {
+                  const cat = await addOverheadCategory(name);
+                  setOverheadCats((cs) => [...cs, cat].sort((a, b) => a.name.localeCompare(b.name)));
+                  return cat.id;
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Failed to add category");
+                  return null;
+                }
+              }}
               saving={editorSaving}
               onSave={() => saveEditor()}
               onDelete={deleteActiveRecipe}
