@@ -2783,6 +2783,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_bootstrap_superadmin: { Args: { _user: string }; Returns: boolean }
+      user_has_showroom_access: {
+        Args: { _showroom: string; _user: string }
+        Returns: boolean
+      }
+      user_is_global_admin: { Args: { _user: string }; Returns: boolean }
     }
     Enums: {
       app_role:
