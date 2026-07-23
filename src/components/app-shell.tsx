@@ -413,7 +413,7 @@ export function AppShellFrame() {
   );
 }
 
-function TopBar({ onOpenMobile, company }: { onOpenMobile: () => void; company: CompanySettings }) {
+function TopBar({ onOpenMobile, company, adminBarColor }: { onOpenMobile: () => void; company: CompanySettings; adminBarColor?: string }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -424,8 +424,13 @@ function TopBar({ onOpenMobile, company }: { onOpenMobile: () => void; company: 
   const yyyy = now.getFullYear();
   const dateStr = `${dd}-${mm}-${yyyy}`;
 
+  const headerStyle = adminBarColor ? { background: adminBarColor } : undefined;
+
   return (
-    <header className="sticky top-0 z-40 h-14 bg-primary text-primary-foreground border-b border-primary/40 shadow-sm">
+    <header
+      className="sticky top-0 z-40 h-14 bg-primary text-primary-foreground border-b border-primary/40 shadow-sm"
+      style={headerStyle}
+    >
       <div className="h-full px-3 md:px-5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <button
@@ -437,13 +442,17 @@ function TopBar({ onOpenMobile, company }: { onOpenMobile: () => void; company: 
             <Menu className="size-5" />
           </button>
           <Link to="/dashboard" className="flex items-center gap-2.5 min-w-0 rounded-md px-1.5 py-1 hover:bg-white/10 transition-colors">
-            <div className="size-9 shrink-0 rounded-md bg-white/15 grid place-items-center overflow-hidden">
-              {company.logoDataUrl ? (
-                <img src={company.logoDataUrl} alt="" className="size-full object-cover" />
-              ) : (
+            {company.logoDataUrl ? (
+              <img
+                src={company.logoDataUrl}
+                alt=""
+                className="h-9 max-w-[9rem] object-contain shrink-0"
+              />
+            ) : (
+              <div className="size-9 shrink-0 rounded-md bg-white/15 grid place-items-center">
                 <Wheat className="size-5" />
-              )}
-            </div>
+              </div>
+            )}
             <div className="min-w-0 leading-tight hidden sm:block">
               <div className="text-sm font-semibold truncate">
                 {company.name || defaultCompany.name}
