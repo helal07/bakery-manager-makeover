@@ -226,18 +226,21 @@ function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a
-                href="#products"
-                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-amber-900 text-amber-50 text-sm font-medium hover:bg-amber-950 shadow-sm"
+                href={c.hero.ctaSecondary.href || "#products"}
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full text-sm font-medium shadow-sm hover:opacity-90"
+                style={{ background: theme.primary, color: theme.primaryFg }}
               >
-                Explore our bakery <ArrowRight className="size-4" />
+                {c.hero.ctaSecondary.label} <ArrowRight className="size-4" />
               </a>
               <a
                 href="#story"
-                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full border border-amber-900/20 text-amber-950 text-sm font-medium hover:bg-amber-900/5"
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full border text-sm font-medium hover:opacity-70"
+                style={{ borderColor: `${theme.primary}33`, color: theme.text }}
               >
-                Our story
+                {nav.storyLabel}
               </a>
             </div>
+
             <div className="mt-10 flex items-center gap-6 text-xs text-amber-950/60">
               <div><span className="text-2xl font-bold text-amber-900 block">15+</span> Years baking</div>
               <div className="h-8 w-px bg-amber-900/10" />
