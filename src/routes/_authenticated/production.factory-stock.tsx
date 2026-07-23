@@ -109,10 +109,10 @@ function FactoryStockPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="raw" className="w-full">
+      <Tabs defaultValue="products" className="w-full">
         <TabsList>
-          <TabsTrigger value="raw">Raw Materials</TabsTrigger>
           <TabsTrigger value="products">Finished Products</TabsTrigger>
+          <TabsTrigger value="raw">Raw Materials</TabsTrigger>
         </TabsList>
 
         <TabsContent value="raw" className="mt-4 space-y-4">
