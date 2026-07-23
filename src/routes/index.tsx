@@ -105,13 +105,38 @@ function Landing() {
     };
   }, [refetch, refetchCarousels, refetchFeatured]);
 
-  const brandName = company?.name || c.brand.name;
-  const brandTagline = company?.tagline || c.brand.tagline;
-  const logoUrl = company?.logoDataUrl;
+  const brandName = c.brand.name || company?.name || defaultLanding.brand.name;
+  const brandTagline = c.brand.tagline || company?.tagline || defaultLanding.brand.tagline;
+  const logoUrl = c.brand.logoUrl || company?.logoDataUrl;
+  const theme = c.theme;
+  const nav = c.nav;
+
+  const themeStyle = useMemo(
+    () =>
+      ({
+        "--l-bg": theme.bg,
+        "--l-surface": theme.surface,
+        "--l-text": theme.text,
+        "--l-muted": theme.muted,
+        "--l-primary": theme.primary,
+        "--l-primary-fg": theme.primaryFg,
+        "--l-story-bg": theme.storyBg,
+        "--l-story-fg": theme.storyFg,
+      }) as React.CSSProperties,
+    [theme],
+  );
+
+  const autoplay = useRef(
+    Autoplay({ delay: c.carousel.intervalMs || 5000, stopOnInteraction: false }),
+  );
+  useEffect(() => {
+    autoplay.current.options.delay = c.carousel.intervalMs || 5000;
+  }, [c.carousel.intervalMs]);
 
   useEffect(() => {
     if (logoUrl) setFavicon(logoUrl);
   }, [logoUrl]);
+
   useEffect(() => {
     if (typeof document !== "undefined" && brandName) {
       document.title = `${brandName} · ${brandTagline || "Freshly baked, honestly made"}`;
