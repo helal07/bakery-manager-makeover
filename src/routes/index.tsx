@@ -303,7 +303,7 @@ function Landing() {
           <div className="flex items-end justify-between mb-8">
             <div>
               <div className="text-xs uppercase tracking-[0.2em] text-amber-800 font-semibold mb-2">Bestsellers</div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-amber-950">Featured products</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: theme.text }}>{c.sections.featuredTitle}</h2>
             </div>
             <p className="text-amber-950/60 text-sm hidden sm:block max-w-xs text-right">
               Handpicked from our current catalog — fresh from the oven.
