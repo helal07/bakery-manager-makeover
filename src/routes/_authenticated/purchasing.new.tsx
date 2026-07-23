@@ -87,12 +87,14 @@ function AddPurchase() {
     e.preventDefault();
     if (!supplierId) return toast.error("Supplier is required");
     if (items.length === 0) return toast.error("Add at least one item");
+    if (currentShowroomId)
+      return toast.error("Factory Only Can Purchase Raw Materials. Change your showroom to Factory.");
     if (payment === "Partial" && (paidAmount <= 0 || paidAmount >= total))
       return toast.error("Partial paid must be greater than 0 and less than total");
     try {
       const p = await savePurchase({
         supplier_id: supplierId,
-        showroom_id: currentShowroomId,
+        showroom_id: null,
         date,
         items,
         total,
@@ -102,7 +104,12 @@ function AddPurchase() {
       toast.success(`Purchase ${p.id} added`);
       nav({ to: "/purchasing/list" });
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to save purchase");
+      const msg = String(err?.message ?? "");
+      if (msg.includes("raw_stock_ledger_factory_only") || msg.includes("factory_only")) {
+        toast.error("Factory Only Can Purchase Raw Materials. Change your showroom to Factory.");
+      } else {
+        toast.error(msg || "Failed to save purchase");
+      }
     }
   };
 
