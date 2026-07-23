@@ -153,12 +153,21 @@ function Landing() {
   const heroSlide = carousels[0];
 
   return (
-    <div className="min-h-screen bg-[#fdf8f2] text-foreground">
+    <div
+      className="min-h-screen"
+      style={{ ...themeStyle, background: "var(--l-bg)", color: "var(--l-text)" }}
+    >
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#fdf8f2]/85 backdrop-blur border-b border-amber-900/10">
+      <header
+        className="sticky top-0 z-40 backdrop-blur border-b"
+        style={{ background: `${theme.bg}d9`, borderColor: `${theme.primary}1a` }}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="size-10 rounded-full bg-amber-900 text-amber-50 grid place-items-center font-bold overflow-hidden ring-2 ring-amber-100">
+            <div
+              className="size-10 rounded-full grid place-items-center font-bold overflow-hidden ring-2"
+              style={{ background: theme.primary, color: theme.primaryFg, borderColor: theme.primary }}
+            >
               {logoUrl ? (
                 <img src={logoUrl} alt={brandName} className="size-full object-cover" />
               ) : (
@@ -166,34 +175,37 @@ function Landing() {
               )}
             </div>
             <div className="leading-tight">
-              <div className="font-semibold text-amber-950">{brandName}</div>
-              <div className="text-[11px] text-amber-800/70 hidden sm:block">
+              <div className="font-semibold" style={{ color: theme.text }}>{brandName}</div>
+              <div className="text-[11px] hidden sm:block" style={{ color: theme.muted }}>
                 {brandTagline}
               </div>
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-7 text-sm text-amber-950/80">
-            <a href="#products" className="hover:text-amber-900 transition-colors">Products</a>
-            <a href="#story" className="hover:text-amber-900 transition-colors">Story</a>
-            <a href="#contact" className="hover:text-amber-900 transition-colors">Contact</a>
+          <nav className="hidden md:flex items-center gap-7 text-sm" style={{ color: theme.text }}>
+            <a href="#products" className="hover:opacity-70 transition-opacity">{nav.productsLabel}</a>
+            <a href="#story" className="hover:opacity-70 transition-opacity">{nav.storyLabel}</a>
+            <a href="#contact" className="hover:opacity-70 transition-opacity">{nav.contactLabel}</a>
           </nav>
           {signedIn ? (
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-900 text-amber-50 text-sm font-medium hover:bg-amber-950 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium shadow-sm hover:opacity-90"
+              style={{ background: theme.primary, color: theme.primaryFg }}
             >
-              Dashboard <ArrowRight className="size-4" />
+              {nav.dashboardLabel} <ArrowRight className="size-4" />
             </Link>
           ) : (
             <Link
               to="/auth"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-900 text-amber-50 text-sm font-medium hover:bg-amber-950 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium shadow-sm hover:opacity-90"
+              style={{ background: theme.primary, color: theme.primaryFg }}
             >
-              Sign in
+              {nav.signInLabel}
             </Link>
           )}
         </div>
       </header>
+
 
       {/* Hero */}
       <section className="relative overflow-hidden">
