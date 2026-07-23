@@ -241,6 +241,7 @@ export function AppShellFrame() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
+  const [software, setSoftware] = useState<SoftwarePrefs>(() => getCachedSoftware() ?? defaultSoftware);
   const { loading: permLoading, isSuperadmin, permissions, scopedPermissions } = usePermissions();
 
   const [meta, setMetaState] = useState<PageMeta>({ title: "" });
