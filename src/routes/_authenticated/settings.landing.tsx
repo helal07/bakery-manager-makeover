@@ -123,7 +123,110 @@ function LandingEditor() {
               onChange={(e) => setContent({ ...content, brand: { ...content.brand, tagline: e.target.value } })}
             />
           </div>
+          <div>
+            <Label>Logo URL (public)</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="https://…/logo.png"
+                value={content.brand.logoUrl ?? ""}
+                onChange={(e) => setContent({ ...content, brand: { ...content.brand, logoUrl: e.target.value } })}
+              />
+              <BrandLogoUpload
+                onUploaded={(url) => setContent((c) => ({ ...c, brand: { ...c.brand, logoUrl: url } }))}
+              />
+            </div>
+            {content.brand.logoUrl && (
+              <img src={content.brand.logoUrl} alt="logo" className="mt-2 size-14 rounded object-cover border" />
+            )}
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Shown in the public header/favicon. Use an image URL from a public bucket for reliability.
+            </p>
+          </div>
         </Card>
+
+        {/* Navigation labels */}
+        <Card className="p-5 space-y-3">
+          <h2 className="text-sm font-semibold">Menu labels</h2>
+          <p className="text-xs text-muted-foreground">Rename the public site's navigation.</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(["productsLabel", "storyLabel", "contactLabel", "signInLabel", "dashboardLabel"] as const).map((k) => (
+              <div key={k}>
+                <Label className="text-xs capitalize">{k.replace("Label", "")}</Label>
+                <Input
+                  value={content.nav[k]}
+                  onChange={(e) => setContent({ ...content, nav: { ...content.nav, [k]: e.target.value } })}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="pt-2 border-t">
+            <h3 className="text-xs font-semibold mb-2">Section headings</h3>
+            <div className="grid grid-cols-1 gap-2">
+              {(["featuredTitle", "craftTitle", "contactTitle"] as const).map((k) => (
+                <div key={k}>
+                  <Label className="text-xs capitalize">{k.replace("Title", "")}</Label>
+                  <Input
+                    value={content.sections[k]}
+                    onChange={(e) => setContent({ ...content, sections: { ...content.sections, [k]: e.target.value } })}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+
+        {/* Theme colors */}
+        <Card className="p-5 space-y-3 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold">Landing colors</h2>
+              <p className="text-xs text-muted-foreground">Customize the public landing palette. Click any swatch to change.</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setContent({ ...content, theme: { ...defaultTheme } })}
+            >
+              <RotateCcw className="size-4" /> Reset colors
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {(
+              [
+                ["bg", "Page background"],
+                ["surface", "Card surface"],
+                ["text", "Text"],
+                ["muted", "Muted text"],
+                ["primary", "Primary / buttons"],
+                ["primaryFg", "Primary text"],
+                ["storyBg", "Story background"],
+                ["storyFg", "Story text"],
+              ] as const
+            ).map(([key, label]) => (
+              <div key={key} className="space-y-1">
+                <Label className="text-xs">{label}</Label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={content.theme[key]}
+                    onChange={(e) =>
+                      setContent({ ...content, theme: { ...content.theme, [key]: e.target.value } })
+                    }
+                    className="size-9 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={content.theme[key]}
+                    onChange={(e) =>
+                      setContent({ ...content, theme: { ...content.theme, [key]: e.target.value } })
+                    }
+                    className="font-mono text-xs"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
 
         {/* Hero */}
         <Card className="p-5 space-y-3">
