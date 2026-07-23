@@ -59,17 +59,17 @@ export async function deleteCarousel(id: string) {
 }
 
 export async function uploadCarouselImage(file: File): Promise<string> {
-  const ext = file.name.split(".").pop() || "jpg";
+  const { compressImage } = await import("@/lib/storage");
+  const compressed = await compressImage(file, { maxDim: 1920, quality: 0.85, maxBytes: 2 * 1024 * 1024 }).catch(() => file);
+  const ext = (compressed.name.split(".").pop() || "webp").toLowerCase();
   const path = `carousel/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from("landing-images").upload(path, file, {
+  const { error } = await supabase.storage.from("landing-images").upload(path, compressed, {
     upsert: false,
     cacheControl: "3600",
-    contentType: file.type,
+    contentType: compressed.type || file.type,
   });
   if (error) throw error;
-  // Try public URL first (works with public buckets on self-hosted Supabase).
   const pub = supabase.storage.from("landing-images").getPublicUrl(path).data.publicUrl;
-  // Also generate a long-lived signed URL as fallback for private buckets.
   const { data: signed } = await supabase.storage
     .from("landing-images")
     .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);

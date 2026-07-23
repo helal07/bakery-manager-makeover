@@ -26,6 +26,7 @@ import {
   MapPin,
   Clock,
   ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/")({
           "Muzahid Food — a family-run bakery factory producing breads, biscuits, cakes and pastries for our showrooms and partner retailers.",
       },
       { property: "og:title", content: "Muzahid Food · Freshly baked, honestly made" },
-      { property: "og:description", content: "Muzahid Food — a family-run bakery factory producing breads, biscuits, cakes and pastries for our showrooms and partner retailers." },
+      { property: "og:description", content: "A family-run bakery factory producing breads, biscuits, cakes and pastries." },
       { property: "og:type", content: "website" },
     ],
   }),
@@ -122,13 +123,15 @@ function Landing() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const heroSlide = carousels[0];
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[#fdf8f2] text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur border-b border-border">
+      <header className="sticky top-0 z-40 bg-[#fdf8f2]/85 backdrop-blur border-b border-amber-900/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="size-9 rounded-md bg-primary text-primary-foreground grid place-items-center font-bold overflow-hidden">
+          <div className="flex items-center gap-2.5">
+            <div className="size-10 rounded-full bg-amber-900 text-amber-50 grid place-items-center font-bold overflow-hidden ring-2 ring-amber-100">
               {logoUrl ? (
                 <img src={logoUrl} alt={brandName} className="size-full object-cover" />
               ) : (
@@ -136,28 +139,28 @@ function Landing() {
               )}
             </div>
             <div className="leading-tight">
-              <div className="font-semibold">{brandName}</div>
-              <div className="text-[11px] text-muted-foreground hidden sm:block">
+              <div className="font-semibold text-amber-950">{brandName}</div>
+              <div className="text-[11px] text-amber-800/70 hidden sm:block">
                 {brandTagline}
               </div>
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm">
-            <a href="#products" className="hover:text-primary">Products</a>
-            <a href="#story" className="hover:text-primary">Story</a>
-            <a href="#contact" className="hover:text-primary">Contact</a>
+          <nav className="hidden md:flex items-center gap-7 text-sm text-amber-950/80">
+            <a href="#products" className="hover:text-amber-900 transition-colors">Products</a>
+            <a href="#story" className="hover:text-amber-900 transition-colors">Story</a>
+            <a href="#contact" className="hover:text-amber-900 transition-colors">Contact</a>
           </nav>
           {signedIn ? (
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-900 text-amber-50 text-sm font-medium hover:bg-amber-950 shadow-sm"
             >
-              Open Dashboard <ArrowRight className="size-4" />
+              Dashboard <ArrowRight className="size-4" />
             </Link>
           ) : (
             <Link
               to="/auth"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-900 text-amber-50 text-sm font-medium hover:bg-amber-950 shadow-sm"
             >
               Sign in
             </Link>
@@ -167,95 +170,117 @@ function Landing() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-28 text-center">
-          <div className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest text-primary font-medium mb-4">
-            <Cake className="size-3.5" /> {brandTagline}
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-100/60 via-[#fdf8f2] to-[#fdf8f2]" />
+        <div className="absolute -top-24 -right-24 size-96 rounded-full bg-orange-200/40 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 size-96 rounded-full bg-rose-200/30 blur-3xl" />
+
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-12 grid lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.2em] text-amber-800 font-semibold mb-5 px-3 py-1 rounded-full bg-amber-100 border border-amber-200/70">
+              <Sparkles className="size-3.5" /> {brandTagline}
+            </div>
+            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-amber-950 leading-[1.05]">
+              {c.hero.headline}
+            </h1>
+            <p className="mt-6 text-base sm:text-lg text-amber-950/70 max-w-xl leading-relaxed">
+              {c.hero.subhead}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a
+                href="#products"
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-amber-900 text-amber-50 text-sm font-medium hover:bg-amber-950 shadow-sm"
+              >
+                Explore our bakery <ArrowRight className="size-4" />
+              </a>
+              <a
+                href="#story"
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full border border-amber-900/20 text-amber-950 text-sm font-medium hover:bg-amber-900/5"
+              >
+                Our story
+              </a>
+            </div>
+            <div className="mt-10 flex items-center gap-6 text-xs text-amber-950/60">
+              <div><span className="text-2xl font-bold text-amber-900 block">15+</span> Years baking</div>
+              <div className="h-8 w-px bg-amber-900/10" />
+              <div><span className="text-2xl font-bold text-amber-900 block">50+</span> Products</div>
+              <div className="h-8 w-px bg-amber-900/10" />
+              <div><span className="text-2xl font-bold text-amber-900 block">10k+</span> Weekly customers</div>
+            </div>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight max-w-3xl mx-auto">
-            {c.hero.headline}
-          </h1>
-          <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-            {c.hero.subhead}
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3 justify-center">
-            <a
-              href={c.hero.ctaPrimary.href}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-            >
-              {c.hero.ctaPrimary.label} <ArrowRight className="size-4" />
-            </a>
-            <a
-              href={c.hero.ctaSecondary.href}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-md border border-border text-sm font-medium hover:bg-accent"
-            >
-              {c.hero.ctaSecondary.label}
-            </a>
+
+          {/* Hero visual — carousel or fallback */}
+          <div className="relative">
+            {carousels.length > 0 ? (
+              <Carousel opts={{ loop: true }} className="w-full">
+                <CarouselContent>
+                  {carousels.map((s) => (
+                    <CarouselItem key={s.id}>
+                      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-amber-900/10 shadow-2xl shadow-amber-900/10 bg-amber-100">
+                        <img src={s.imageUrl} alt={s.title} className="absolute inset-0 size-full object-cover" />
+                        {(s.title || s.subtitle) && (
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent flex items-end p-6">
+                            <div className="text-white">
+                              {s.title && <div className="text-xl sm:text-2xl font-semibold">{s.title}</div>}
+                              {s.subtitle && <div className="text-sm opacity-90 mt-1">{s.subtitle}</div>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                {carousels.length > 1 && (
+                  <>
+                    <CarouselPrevious className="left-3 bg-white/90 border-none" />
+                    <CarouselNext className="right-3 bg-white/90 border-none" />
+                  </>
+                )}
+              </Carousel>
+            ) : (
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-amber-900/10 shadow-2xl shadow-amber-900/10 bg-gradient-to-br from-amber-200 via-orange-200 to-rose-200 grid place-items-center">
+                <Cake className="size-28 text-amber-900/40" />
+              </div>
+            )}
+            {/* small floating card */}
+            <div className="hidden sm:flex absolute -bottom-6 -left-6 items-center gap-3 bg-white rounded-2xl shadow-xl border border-amber-900/5 px-4 py-3">
+              <div className="size-10 rounded-full bg-amber-100 grid place-items-center">
+                <Croissant className="size-5 text-amber-900" />
+              </div>
+              <div className="text-xs">
+                <div className="font-semibold text-amber-950">Baked this morning</div>
+                <div className="text-amber-900/60">Delivered fresh daily</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Carousel */}
-      {carousels.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-4">
-          <Carousel opts={{ loop: true }} className="w-full">
-            <CarouselContent>
-              {carousels.map((s) => {
-                const inner = (
-                  <div className="relative aspect-[16/6] w-full overflow-hidden rounded-xl border border-border bg-muted">
-                    <img src={s.imageUrl} alt={s.title} className="absolute inset-0 size-full object-cover" />
-                    {(s.title || s.subtitle) && (
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end p-6">
-                        <div className="text-white">
-                          {s.title && <div className="text-lg sm:text-2xl font-semibold">{s.title}</div>}
-                          {s.subtitle && <div className="text-sm opacity-90 mt-1">{s.subtitle}</div>}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-                return (
-                  <CarouselItem key={s.id}>
-                    {s.linkUrl ? (
-                      <a href={s.linkUrl} target="_blank" rel="noreferrer">{inner}</a>
-                    ) : (
-                      inner
-                    )}
-                  </CarouselItem>
-                );
-              })}
-            </CarouselContent>
-            {carousels.length > 1 && (
-              <>
-                <CarouselPrevious />
-                <CarouselNext />
-              </>
-            )}
-          </Carousel>
-        </section>
-      )}
-
-      {/* Featured products (from backend) */}
+      {/* Featured products */}
       {featuredProducts.length > 0 && (
-        <section id="featured" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-bold">Featured products</h2>
-            <p className="text-muted-foreground mt-2">Handpicked from our current catalog.</p>
+        <section id="featured" className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <div className="text-xs uppercase tracking-[0.2em] text-amber-800 font-semibold mb-2">Bestsellers</div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-amber-950">Featured products</h2>
+            </div>
+            <p className="text-amber-950/60 text-sm hidden sm:block max-w-xs text-right">
+              Handpicked from our current catalog — fresh from the oven.
+            </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {featuredProducts.map((p) => (
-              <div key={p.id} className="rounded-lg border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors">
-                <div className="aspect-square bg-muted grid place-items-center overflow-hidden">
+              <div key={p.id} className="group rounded-2xl bg-white overflow-hidden border border-amber-900/10 hover:shadow-xl hover:shadow-amber-900/10 transition-all">
+                <div className="aspect-square bg-amber-50 grid place-items-center overflow-hidden">
                   {p.imageUrl ? (
-                    <img src={p.imageUrl} alt={p.name} className="size-full object-cover" />
+                    <img src={p.imageUrl} alt={p.name} className="size-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
-                    <Cake className="size-10 text-muted-foreground" />
+                    <Cake className="size-10 text-amber-900/30" />
                   )}
                 </div>
-                <div className="p-3">
-                  <div className="text-xs text-muted-foreground">{p.category}</div>
-                  <div className="font-medium text-sm mt-0.5 line-clamp-1">{p.name}</div>
-                  <div className="text-sm text-primary font-semibold mt-1">৳ {p.price.toFixed(2)}</div>
+                <div className="p-3.5">
+                  <div className="text-[11px] uppercase tracking-wider text-amber-800/70">{p.category}</div>
+                  <div className="font-medium text-sm mt-1 text-amber-950 line-clamp-1">{p.name}</div>
+                  <div className="text-base text-amber-900 font-bold mt-1.5">৳ {p.price.toFixed(2)}</div>
                 </div>
               </div>
             ))}
@@ -263,22 +288,23 @@ function Landing() {
         </section>
       )}
 
-      {/* Products (static highlights) */}
+      {/* What we bake */}
       <section id="products" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold">What we bake</h2>
-          <p className="text-muted-foreground mt-2">Made fresh every day at our factory.</p>
+        <div className="text-center mb-12">
+          <div className="text-xs uppercase tracking-[0.2em] text-amber-800 font-semibold mb-2">Our craft</div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-amber-950">What we bake</h2>
+          <p className="text-amber-950/60 mt-3 max-w-lg mx-auto">Made fresh every day at our factory with honest ingredients.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {c.products.map((p, i) => {
             const Icon = productIcons[i % productIcons.length];
             return (
-              <div key={i} className="p-6 rounded-lg border border-border bg-card hover:border-primary/40 transition-colors">
-                <div className="size-10 rounded-md bg-primary/10 text-primary grid place-items-center mb-4">
-                  <Icon className="size-5" />
+              <div key={i} className="p-6 rounded-2xl bg-white border border-amber-900/10 hover:border-amber-900/30 hover:-translate-y-1 transition-all duration-300">
+                <div className="size-12 rounded-xl bg-amber-100 text-amber-900 grid place-items-center mb-4">
+                  <Icon className="size-6" />
                 </div>
-                <h3 className="font-semibold">{p.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1.5">{p.desc}</p>
+                <h3 className="font-semibold text-amber-950">{p.name}</h3>
+                <p className="text-sm text-amber-950/60 mt-2 leading-relaxed">{p.desc}</p>
               </div>
             );
           })}
@@ -286,10 +312,15 @@ function Landing() {
       </section>
 
       {/* Story */}
-      <section id="story" className="bg-muted/30 border-y border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold">{c.story.title}</h2>
-          <p className="mt-4 text-muted-foreground leading-relaxed whitespace-pre-line">
+      <section id="story" className="bg-amber-900 text-amber-50 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute -top-10 -left-10 size-80 rounded-full bg-orange-300 blur-3xl" />
+          <div className="absolute -bottom-10 -right-10 size-80 rounded-full bg-rose-300 blur-3xl" />
+        </div>
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-20 sm:py-24 text-center">
+          <div className="text-xs uppercase tracking-[0.2em] text-amber-200 font-semibold mb-3">Since day one</div>
+          <h2 className="text-3xl sm:text-4xl font-bold">{c.story.title}</h2>
+          <p className="mt-6 text-amber-100/90 leading-relaxed whitespace-pre-line text-base sm:text-lg max-w-2xl mx-auto">
             {c.story.body}
           </p>
         </div>
@@ -297,9 +328,10 @@ function Landing() {
 
       {/* Contact */}
       <section id="contact" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold">Get in touch</h2>
-          <p className="text-muted-foreground mt-2">We'd love to hear from you.</p>
+        <div className="text-center mb-12">
+          <div className="text-xs uppercase tracking-[0.2em] text-amber-800 font-semibold mb-2">Say hello</div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-amber-950">Get in touch</h2>
+          <p className="text-amber-950/60 mt-3">Visit our factory, call us, or drop a line.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
           {[
@@ -308,19 +340,21 @@ function Landing() {
             { icon: Mail, label: "Email", value: c.contact.email },
             { icon: Clock, label: "Hours", value: c.contact.hours },
           ].map((r) => (
-            <div key={r.label} className="p-5 rounded-lg border border-border bg-card text-center">
-              <r.icon className="size-5 text-primary mx-auto mb-2" />
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">{r.label}</div>
-              <div className="mt-1 text-sm font-medium break-words">{r.value}</div>
+            <div key={r.label} className="p-6 rounded-2xl bg-white border border-amber-900/10 text-center hover:shadow-lg transition-shadow">
+              <div className="size-11 rounded-full bg-amber-100 grid place-items-center mx-auto mb-3">
+                <r.icon className="size-5 text-amber-900" />
+              </div>
+              <div className="text-[11px] uppercase tracking-[0.15em] text-amber-800/70 font-medium">{r.label}</div>
+              <div className="mt-1.5 text-sm font-medium text-amber-950 break-words">{r.value}</div>
             </div>
           ))}
         </div>
       </section>
 
-      <footer className="border-t border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+      <footer className="border-t border-amber-900/10 bg-[#fdf8f2]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-950/60">
           <div>© {new Date().getFullYear()} {brandName}. All rights reserved.</div>
-          <Link to="/auth" className="hover:text-primary">Staff sign in</Link>
+          <div>Baked with care in Bangladesh.</div>
         </div>
       </footer>
     </div>
