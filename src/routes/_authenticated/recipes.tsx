@@ -233,7 +233,7 @@ function Workbench() {
     try {
       await commitProduction({
         productId: active.product.id,
-        showroomId: currentShowroomId ?? null,
+        showroomId: null, // Factory-only production model
         batch,
         ingredients: items,
         overheads: produceOverheads,
