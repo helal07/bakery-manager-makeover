@@ -174,7 +174,7 @@ function LabelsPage() {
           </DialogHeader>
           <div className="overflow-auto bg-muted/40 p-6 print:bg-white print:p-0" style={{ maxHeight: "80vh" }}>
             {info && (
-              <div className="print-area mx-auto bg-white shadow-sm print:shadow-none" style={{
+              <div className="mx-auto bg-white shadow-sm print:shadow-none" style={{
                 width: layout === "a4" ? "210mm" : "38mm",
                 minHeight: layout === "a4" ? "297mm" : undefined,
                 padding: layout === "a4" ? "5mm" : "0",
@@ -190,7 +190,18 @@ function LabelsPage() {
         </DialogContent>
       </Dialog>
 
+      {info && count > 0 && (
+        <div className={`print-root ${layout === "a4" ? "print-root-a4" : "print-root-roll"}`} aria-hidden="true">
+          <div className={layout === "a4" ? "labels-a4" : "labels-roll"}>
+            {labels.map((i) => (
+              <LabelCell key={i} info={info} company={company} />
+            ))}
+          </div>
+        </div>
+      )}
+
       <style>{`
+        .print-root { display: none; }
         .labels-a4 {
           display: grid;
           grid-template-columns: repeat(5, 38mm);
@@ -229,30 +240,23 @@ function LabelsPage() {
           @page { size: ${layout === "roll" ? "38mm 25mm" : "A4"}; margin: ${layout === "roll" ? "0" : "5mm"}; }
           html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
           body * { visibility: hidden !important; }
-          /* Neutralize Radix Dialog centering (fixed + translate) so the print area sits at page top */
-          [data-radix-portal], [role="dialog"], [data-state="open"] {
-            position: static !important;
-            transform: none !important;
-            inset: auto !important;
-            top: auto !important; left: auto !important;
-            max-height: none !important; max-width: none !important;
-            overflow: visible !important;
-            box-shadow: none !important;
-            border: 0 !important;
-            background: white !important;
-          }
-          .print-area, .print-area * { visibility: visible !important; }
-          .print-area {
+          .print-root, .print-root * { visibility: visible !important; }
+          .print-root {
+            display: block !important;
             position: fixed !important;
-            left: 0 !important; top: 0 !important; right: 0 !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            box-shadow: none !important;
             background: white !important;
+            z-index: 2147483647 !important;
           }
+          .print-root-a4 .labels-a4 { justify-content: center; align-content: start; }
+          .print-root-roll { width: 38mm !important; }
           .label-cell { border: none; }
-          .labels-roll .label-cell { page-break-after: always; }
+          .labels-roll .label-cell { break-after: page; page-break-after: always; }
+          .labels-roll .label-cell:last-child { break-after: auto; page-break-after: auto; }
         }
       `}</style>
     </AppShell>
