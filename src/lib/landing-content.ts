@@ -100,7 +100,26 @@ export async function fetchLandingContent(): Promise<LandingContent> {
     .limit(1)
     .maybeSingle();
   if (error || !data) return defaultLanding;
-  return { ...defaultLanding, ...(data.content as Partial<LandingContent>) } as LandingContent;
+  const stored = (data.content ?? {}) as Partial<LandingContent>;
+  return {
+    ...defaultLanding,
+    ...stored,
+    brand: { ...defaultLanding.brand, ...(stored.brand ?? {}) },
+    hero: {
+      ...defaultLanding.hero,
+      ...(stored.hero ?? {}),
+      ctaPrimary: { ...defaultLanding.hero.ctaPrimary, ...(stored.hero?.ctaPrimary ?? {}) },
+      ctaSecondary: { ...defaultLanding.hero.ctaSecondary, ...(stored.hero?.ctaSecondary ?? {}) },
+    },
+    story: { ...defaultLanding.story, ...(stored.story ?? {}) },
+    contact: { ...defaultLanding.contact, ...(stored.contact ?? {}) },
+    nav: { ...defaultLanding.nav, ...(stored.nav ?? {}) },
+    theme: { ...defaultLanding.theme, ...(stored.theme ?? {}) },
+    carousel: { ...defaultLanding.carousel, ...(stored.carousel ?? {}) },
+    sections: { ...defaultLanding.sections, ...(stored.sections ?? {}) },
+    products: stored.products ?? defaultLanding.products,
+  } as LandingContent;
+
 }
 
 export async function saveLandingContent(content: LandingContent) {
