@@ -150,7 +150,9 @@ function RootComponent() {
     };
     const load = async () => {
       try {
-        const { getCompany } = await import("@/lib/company-settings");
+        const { getCompany, getCachedCompany } = await import("@/lib/company-settings");
+        const cached = getCachedCompany();
+        if (cached?.logoDataUrl) apply(cached.logoDataUrl);
         const c = await getCompany();
         if (c.logoDataUrl) apply(c.logoDataUrl);
       } catch { /* ignore */ }
