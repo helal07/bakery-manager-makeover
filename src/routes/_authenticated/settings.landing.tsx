@@ -359,10 +359,51 @@ function LandingEditor() {
           </div>
         </Card>
 
+        {/* Carousel settings */}
+        <Card className="p-5 space-y-3 lg:col-span-2">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h2 className="text-sm font-semibold">Carousel behavior</h2>
+              <p className="text-xs text-muted-foreground">Auto-advance timing for the hero carousel.</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <Switch
+                  checked={content.carousel.autoplay}
+                  onCheckedChange={(v) =>
+                    setContent({ ...content, carousel: { ...content.carousel, autoplay: v } })
+                  }
+                />
+                Autoplay
+              </label>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Interval (seconds)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  step={0.5}
+                  className="w-24"
+                  value={(content.carousel.intervalMs / 1000).toString()}
+                  onChange={(e) =>
+                    setContent({
+                      ...content,
+                      carousel: {
+                        ...content.carousel,
+                        intervalMs: Math.max(1000, Math.round(Number(e.target.value) * 1000)) || 5000,
+                      },
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
         {/* Carousel manager */}
         <Card className="p-5 space-y-3 lg:col-span-2">
           <CarouselManager />
         </Card>
+
 
         {/* Product publisher */}
         <Card className="p-5 space-y-3 lg:col-span-2">
