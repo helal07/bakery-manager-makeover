@@ -284,6 +284,28 @@ export function AppShellFrame() {
     return () => { mounted = false; window.removeEventListener("company-settings-updated", handler); };
   }, []);
 
+  // Load software prefs + apply theme + admin bar color
+  useEffect(() => {
+    let mounted = true;
+    getSoftware().then((s) => { if (mounted) setSoftware(s); }).catch(() => {});
+    const onPrefs = (e: Event) => {
+      const detail = (e as CustomEvent<SoftwarePrefs>).detail;
+      if (detail) setSoftware(detail);
+    };
+    window.addEventListener("software-prefs-updated", onPrefs);
+    const mq = typeof window !== "undefined" ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+    const onMq = () => { if (software.theme === "system") applyThemePref("system"); };
+    mq?.addEventListener?.("change", onMq);
+    return () => {
+      mounted = false;
+      window.removeEventListener("software-prefs-updated", onPrefs);
+      mq?.removeEventListener?.("change", onMq);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => { applyThemePref(software.theme); }, [software.theme]);
+
   useEffect(() => {
     for (const g of navGroups) {
       for (const it of g.items) {
