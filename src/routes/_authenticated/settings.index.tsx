@@ -399,8 +399,8 @@ function SettingsPage() {
                 </div>
               </Fld>
               <div className="mt-4">
-                <Fld label="Admin bar color" hint="Overrides the top bar background. Leave empty to use the default theme color.">
-                  <div className="flex items-center gap-2">
+                <Fld label="Admin bar color">
+                  <p className="text-xs text-muted-foreground mb-2">Overrides the top bar background. Leave empty to use the default theme color.</p>
                     <input
                       type="color"
                       value={software.adminBarColor || "#78350f"}
