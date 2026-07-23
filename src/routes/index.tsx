@@ -250,7 +250,7 @@ function Landing() {
           {/* Hero visual — carousel or fallback */}
           <div className="relative">
             {carousels.length > 0 ? (
-              <Carousel opts={{ loop: true }} className="w-full">
+              <Carousel opts={{ loop: true }} plugins={c.carousel.autoplay ? [autoplay.current] : []} className="w-full">
                 <CarouselContent>
                   {carousels.map((s) => (
                     <CarouselItem key={s.id}>
