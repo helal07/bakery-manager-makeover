@@ -12,6 +12,7 @@ export type UserProfile = {
 
 export type SoftwarePrefs = {
   theme: "system" | "light" | "dark";
+  adminBarColor?: string;
   density: "comfortable" | "compact";
   dateFormat: "DD MMM YYYY" | "YYYY-MM-DD" | "MM/DD/YYYY";
   lowStockAlerts: boolean;
@@ -24,6 +25,29 @@ export type SoftwarePrefs = {
   receiptSize: "58mm" | "80mm" | "A4";
   printLogo: boolean;
 };
+
+const SOFTWARE_CACHE_KEY = "user-software-cache-v1";
+
+export function getCachedSoftware(): SoftwarePrefs | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(SOFTWARE_CACHE_KEY);
+    return raw ? ({ ...defaultSoftware, ...JSON.parse(raw) } as SoftwarePrefs) : null;
+  } catch { return null; }
+}
+
+export function cacheSoftware(s: SoftwarePrefs) {
+  try { localStorage.setItem(SOFTWARE_CACHE_KEY, JSON.stringify(s)); } catch { /* ignore */ }
+}
+
+export function applyThemePref(theme: SoftwarePrefs["theme"]) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  const prefersDark = typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+  const resolved = theme === "system" ? (prefersDark ? "dark" : "light") : theme;
+  root.classList.toggle("dark", resolved === "dark");
+  root.style.colorScheme = resolved;
+}
 
 export const defaultProfile: UserProfile = {
   name: "",
@@ -115,7 +139,9 @@ export async function getSoftware(): Promise<SoftwarePrefs> {
     .select("software")
     .eq("user_id", uid)
     .maybeSingle();
-  return { ...defaultSoftware, ...((data?.software ?? {}) as Partial<SoftwarePrefs>) };
+  const merged = { ...defaultSoftware, ...((data?.software ?? {}) as Partial<SoftwarePrefs>) };
+  cacheSoftware(merged);
+  return merged;
 }
 
 export async function saveSoftware(s: SoftwarePrefs): Promise<void> {
@@ -126,4 +152,8 @@ export async function saveSoftware(s: SoftwarePrefs): Promise<void> {
     { onConflict: "user_id" },
   );
   if (error) throw error;
+  cacheSoftware(s);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("software-prefs-updated", { detail: s }));
+  }
 }

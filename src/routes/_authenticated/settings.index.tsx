@@ -399,6 +399,35 @@ function SettingsPage() {
                 </div>
               </Fld>
               <div className="mt-4">
+                <Fld label="Admin bar color">
+                  <p className="text-xs text-muted-foreground mb-2">Overrides the top bar background. Leave empty to use the default theme color.</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={software.adminBarColor || "#78350f"}
+                      onChange={(e) => saveSoft({ adminBarColor: e.target.value })}
+                      className="h-10 w-14 rounded-md border border-border bg-background cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={software.adminBarColor ?? ""}
+                      onChange={(e) => saveSoft({ adminBarColor: e.target.value || undefined })}
+                      placeholder="#78350f"
+                      className="h-10 flex-1 rounded-md border border-border bg-background px-3 text-sm"
+                    />
+                    {software.adminBarColor && (
+                      <button
+                        type="button"
+                        onClick={() => saveSoft({ adminBarColor: undefined })}
+                        className="h-10 px-3 rounded-md border border-border text-sm hover:bg-muted"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </Fld>
+              </div>
+              <div className="mt-4">
                 <Fld label="Density">
                   <Select value={software.density} onChange={v => saveSoft({ density: v as any })}
                     options={[["comfortable","Comfortable"],["compact","Compact"]]} />
