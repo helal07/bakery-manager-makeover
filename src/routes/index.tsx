@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -16,6 +16,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 import {
   Cake,
   Cookie,
@@ -28,6 +29,7 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -103,13 +105,38 @@ function Landing() {
     };
   }, [refetch, refetchCarousels, refetchFeatured]);
 
-  const brandName = company?.name || c.brand.name;
-  const brandTagline = company?.tagline || c.brand.tagline;
-  const logoUrl = company?.logoDataUrl;
+  const brandName = c.brand.name || company?.name || defaultLanding.brand.name;
+  const brandTagline = c.brand.tagline || company?.tagline || defaultLanding.brand.tagline;
+  const logoUrl = c.brand.logoUrl || company?.logoDataUrl;
+  const theme = c.theme;
+  const nav = c.nav;
+
+  const themeStyle = useMemo(
+    () =>
+      ({
+        "--l-bg": theme.bg,
+        "--l-surface": theme.surface,
+        "--l-text": theme.text,
+        "--l-muted": theme.muted,
+        "--l-primary": theme.primary,
+        "--l-primary-fg": theme.primaryFg,
+        "--l-story-bg": theme.storyBg,
+        "--l-story-fg": theme.storyFg,
+      }) as React.CSSProperties,
+    [theme],
+  );
+
+  const autoplay = useRef(
+    Autoplay({ delay: c.carousel.intervalMs || 5000, stopOnInteraction: false }),
+  );
+  useEffect(() => {
+    autoplay.current.options.delay = c.carousel.intervalMs || 5000;
+  }, [c.carousel.intervalMs]);
 
   useEffect(() => {
     if (logoUrl) setFavicon(logoUrl);
   }, [logoUrl]);
+
   useEffect(() => {
     if (typeof document !== "undefined" && brandName) {
       document.title = `${brandName} · ${brandTagline || "Freshly baked, honestly made"}`;
@@ -126,12 +153,21 @@ function Landing() {
   const heroSlide = carousels[0];
 
   return (
-    <div className="min-h-screen bg-[#fdf8f2] text-foreground">
+    <div
+      className="min-h-screen"
+      style={{ ...themeStyle, background: "var(--l-bg)", color: "var(--l-text)" }}
+    >
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#fdf8f2]/85 backdrop-blur border-b border-amber-900/10">
+      <header
+        className="sticky top-0 z-40 backdrop-blur border-b"
+        style={{ background: `${theme.bg}d9`, borderColor: `${theme.primary}1a` }}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="size-10 rounded-full bg-amber-900 text-amber-50 grid place-items-center font-bold overflow-hidden ring-2 ring-amber-100">
+            <div
+              className="size-10 rounded-full grid place-items-center font-bold overflow-hidden ring-2"
+              style={{ background: theme.primary, color: theme.primaryFg, borderColor: theme.primary }}
+            >
               {logoUrl ? (
                 <img src={logoUrl} alt={brandName} className="size-full object-cover" />
               ) : (
@@ -139,34 +175,37 @@ function Landing() {
               )}
             </div>
             <div className="leading-tight">
-              <div className="font-semibold text-amber-950">{brandName}</div>
-              <div className="text-[11px] text-amber-800/70 hidden sm:block">
+              <div className="font-semibold" style={{ color: theme.text }}>{brandName}</div>
+              <div className="text-[11px] hidden sm:block" style={{ color: theme.muted }}>
                 {brandTagline}
               </div>
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-7 text-sm text-amber-950/80">
-            <a href="#products" className="hover:text-amber-900 transition-colors">Products</a>
-            <a href="#story" className="hover:text-amber-900 transition-colors">Story</a>
-            <a href="#contact" className="hover:text-amber-900 transition-colors">Contact</a>
+          <nav className="hidden md:flex items-center gap-7 text-sm" style={{ color: theme.text }}>
+            <a href="#products" className="hover:opacity-70 transition-opacity">{nav.productsLabel}</a>
+            <a href="#story" className="hover:opacity-70 transition-opacity">{nav.storyLabel}</a>
+            <a href="#contact" className="hover:opacity-70 transition-opacity">{nav.contactLabel}</a>
           </nav>
           {signedIn ? (
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-900 text-amber-50 text-sm font-medium hover:bg-amber-950 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium shadow-sm hover:opacity-90"
+              style={{ background: theme.primary, color: theme.primaryFg }}
             >
-              Dashboard <ArrowRight className="size-4" />
+              {nav.dashboardLabel} <ArrowRight className="size-4" />
             </Link>
           ) : (
             <Link
               to="/auth"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-900 text-amber-50 text-sm font-medium hover:bg-amber-950 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium shadow-sm hover:opacity-90"
+              style={{ background: theme.primary, color: theme.primaryFg }}
             >
-              Sign in
+              {nav.signInLabel}
             </Link>
           )}
         </div>
       </header>
+
 
       {/* Hero */}
       <section className="relative overflow-hidden">
@@ -187,18 +226,21 @@ function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a
-                href="#products"
-                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-amber-900 text-amber-50 text-sm font-medium hover:bg-amber-950 shadow-sm"
+                href={c.hero.ctaSecondary.href || "#products"}
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full text-sm font-medium shadow-sm hover:opacity-90"
+                style={{ background: theme.primary, color: theme.primaryFg }}
               >
-                Explore our bakery <ArrowRight className="size-4" />
+                {c.hero.ctaSecondary.label} <ArrowRight className="size-4" />
               </a>
               <a
                 href="#story"
-                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full border border-amber-900/20 text-amber-950 text-sm font-medium hover:bg-amber-900/5"
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full border text-sm font-medium hover:opacity-70"
+                style={{ borderColor: `${theme.primary}33`, color: theme.text }}
               >
-                Our story
+                {nav.storyLabel}
               </a>
             </div>
+
             <div className="mt-10 flex items-center gap-6 text-xs text-amber-950/60">
               <div><span className="text-2xl font-bold text-amber-900 block">15+</span> Years baking</div>
               <div className="h-8 w-px bg-amber-900/10" />
@@ -211,7 +253,7 @@ function Landing() {
           {/* Hero visual — carousel or fallback */}
           <div className="relative">
             {carousels.length > 0 ? (
-              <Carousel opts={{ loop: true }} className="w-full">
+              <Carousel opts={{ loop: true }} plugins={c.carousel.autoplay ? [autoplay.current] : []} className="w-full">
                 <CarouselContent>
                   {carousels.map((s) => (
                     <CarouselItem key={s.id}>
@@ -261,7 +303,7 @@ function Landing() {
           <div className="flex items-end justify-between mb-8">
             <div>
               <div className="text-xs uppercase tracking-[0.2em] text-amber-800 font-semibold mb-2">Bestsellers</div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-amber-950">Featured products</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: theme.text }}>{c.sections.featuredTitle}</h2>
             </div>
             <p className="text-amber-950/60 text-sm hidden sm:block max-w-xs text-right">
               Handpicked from our current catalog — fresh from the oven.
@@ -292,7 +334,7 @@ function Landing() {
       <section id="products" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
         <div className="text-center mb-12">
           <div className="text-xs uppercase tracking-[0.2em] text-amber-800 font-semibold mb-2">Our craft</div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-amber-950">What we bake</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: theme.text }}>{c.sections.craftTitle}</h2>
           <p className="text-amber-950/60 mt-3 max-w-lg mx-auto">Made fresh every day at our factory with honest ingredients.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -312,25 +354,21 @@ function Landing() {
       </section>
 
       {/* Story */}
-      <section id="story" className="bg-amber-900 text-amber-50 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-10 -left-10 size-80 rounded-full bg-orange-300 blur-3xl" />
-          <div className="absolute -bottom-10 -right-10 size-80 rounded-full bg-rose-300 blur-3xl" />
-        </div>
+      <section id="story" className="relative overflow-hidden" style={{ background: theme.storyBg, color: theme.storyFg }}>
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-20 sm:py-24 text-center">
-          <div className="text-xs uppercase tracking-[0.2em] text-amber-200 font-semibold mb-3">Since day one</div>
           <h2 className="text-3xl sm:text-4xl font-bold">{c.story.title}</h2>
-          <p className="mt-6 text-amber-100/90 leading-relaxed whitespace-pre-line text-base sm:text-lg max-w-2xl mx-auto">
+          <p className="mt-6 leading-relaxed whitespace-pre-line text-base sm:text-lg max-w-2xl mx-auto opacity-90">
             {c.story.body}
           </p>
         </div>
       </section>
 
+
       {/* Contact */}
       <section id="contact" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
         <div className="text-center mb-12">
           <div className="text-xs uppercase tracking-[0.2em] text-amber-800 font-semibold mb-2">Say hello</div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-amber-950">Get in touch</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: theme.text }}>{c.sections.contactTitle}</h2>
           <p className="text-amber-950/60 mt-3">Visit our factory, call us, or drop a line.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">

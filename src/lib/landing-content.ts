@@ -1,7 +1,26 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export type LandingTheme = {
+  bg: string;         // page background
+  surface: string;    // card / hero card bg
+  text: string;       // main text
+  muted: string;      // secondary text
+  primary: string;    // accent (buttons, badges)
+  primaryFg: string;  // text on primary
+  storyBg: string;    // story section bg
+  storyFg: string;    // story section text
+};
+
+export type LandingNav = {
+  productsLabel: string;
+  storyLabel: string;
+  contactLabel: string;
+  signInLabel: string;
+  dashboardLabel: string;
+};
+
 export type LandingContent = {
-  brand: { name: string; tagline: string };
+  brand: { name: string; tagline: string; logoUrl?: string };
   hero: {
     headline: string;
     subhead: string;
@@ -11,6 +30,21 @@ export type LandingContent = {
   story: { title: string; body: string };
   products: { name: string; desc: string }[];
   contact: { address: string; phone: string; email: string; hours: string };
+  nav: LandingNav;
+  theme: LandingTheme;
+  carousel: { intervalMs: number; autoplay: boolean };
+  sections: { featuredTitle: string; craftTitle: string; contactTitle: string };
+};
+
+export const defaultTheme: LandingTheme = {
+  bg: "#fdf8f2",
+  surface: "#ffffff",
+  text: "#3b2a1a",
+  muted: "#7a6552",
+  primary: "#78350f",
+  primaryFg: "#fef3c7",
+  storyBg: "#78350f",
+  storyFg: "#fffbeb",
 };
 
 export const defaultLanding: LandingContent = {
@@ -38,7 +72,22 @@ export const defaultLanding: LandingContent = {
     email: "hello@muzahidfood.com",
     hours: "Sun – Fri, 9:00 AM – 8:00 PM",
   },
+  nav: {
+    productsLabel: "Products",
+    storyLabel: "Story",
+    contactLabel: "Contact",
+    signInLabel: "Sign in",
+    dashboardLabel: "Dashboard",
+  },
+  theme: defaultTheme,
+  carousel: { intervalMs: 5000, autoplay: true },
+  sections: {
+    featuredTitle: "Featured products",
+    craftTitle: "What we bake",
+    contactTitle: "Get in touch",
+  },
 };
+
 
 const sb = supabase as any;
 
@@ -51,7 +100,26 @@ export async function fetchLandingContent(): Promise<LandingContent> {
     .limit(1)
     .maybeSingle();
   if (error || !data) return defaultLanding;
-  return { ...defaultLanding, ...(data.content as Partial<LandingContent>) } as LandingContent;
+  const stored = (data.content ?? {}) as Partial<LandingContent>;
+  return {
+    ...defaultLanding,
+    ...stored,
+    brand: { ...defaultLanding.brand, ...(stored.brand ?? {}) },
+    hero: {
+      ...defaultLanding.hero,
+      ...(stored.hero ?? {}),
+      ctaPrimary: { ...defaultLanding.hero.ctaPrimary, ...(stored.hero?.ctaPrimary ?? {}) },
+      ctaSecondary: { ...defaultLanding.hero.ctaSecondary, ...(stored.hero?.ctaSecondary ?? {}) },
+    },
+    story: { ...defaultLanding.story, ...(stored.story ?? {}) },
+    contact: { ...defaultLanding.contact, ...(stored.contact ?? {}) },
+    nav: { ...defaultLanding.nav, ...(stored.nav ?? {}) },
+    theme: { ...defaultLanding.theme, ...(stored.theme ?? {}) },
+    carousel: { ...defaultLanding.carousel, ...(stored.carousel ?? {}) },
+    sections: { ...defaultLanding.sections, ...(stored.sections ?? {}) },
+    products: stored.products ?? defaultLanding.products,
+  } as LandingContent;
+
 }
 
 export async function saveLandingContent(content: LandingContent) {

@@ -1,0 +1,10 @@
+set search_path = public;
+grant select on public.landing_content to anon;
+drop policy if exists "public read landing content" on public.landing_content;
+create policy "public read landing content" on public.landing_content for select to anon using (is_current = true);
+grant select on public.landing_carousels to anon;
+drop policy if exists "public read active carousels" on public.landing_carousels;
+create policy "public read active carousels" on public.landing_carousels for select to anon using (is_active = true);
+grant select on public.products to anon;
+drop policy if exists "public read landing products" on public.products;
+create policy "public read landing products" on public.products for select to anon using (is_active = true and show_on_landing = true);
