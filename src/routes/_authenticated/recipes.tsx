@@ -694,11 +694,17 @@ function ProduceTab({
               <Minus className="size-4" />
             </button>
             <input
-              type="number"
-              min={1}
-              value={batch}
-              onChange={(e) => setBatch(Math.max(1, +e.target.value || 1))}
-              className="flex-1 h-11 text-center text-base font-medium bg-transparent outline-none border-x border-border"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={batch === 0 ? "" : String(batch)}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                if (raw === "") { setBatch(0); return; }
+                setBatch(parseInt(raw, 10));
+              }}
+              onBlur={() => { if (!batch || batch < 1) setBatch(1); }}
+              className="flex-1 h-11 text-center text-base font-medium bg-transparent outline-none border-x border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <button
               onClick={() => setBatch((b) => b + 1)}
