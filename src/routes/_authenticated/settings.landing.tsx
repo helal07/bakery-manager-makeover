@@ -691,3 +691,43 @@ function ProductPublisher() {
     </div>
   );
 }
+function BrandLogoUpload({ onUploaded }: { onUploaded: (url: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+  const upload = async (file: File) => {
+    setBusy(true);
+    try {
+      const url = await uploadCarouselImage(file);
+      onUploaded(url);
+      toast.success("Logo uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) upload(f);
+          e.target.value = "";
+        }}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => ref.current?.click()}
+        disabled={busy}
+      >
+        <Upload className="size-4" /> {busy ? "…" : "Upload"}
+      </Button>
+    </>
+  );
+}
