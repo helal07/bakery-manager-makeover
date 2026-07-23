@@ -28,7 +28,7 @@ type ProductRow = {
   sku: string | null;
   unit: string;
   price: number | null;
-  cost_price: number | null;
+  cost: number | null;
   quantity: number;
 };
 
@@ -45,8 +45,10 @@ function FactoryStockPage() {
       const [mats, prodStock, prodMeta] = await Promise.all([
         loadRawMaterials(null),
         sb.from("product_stock").select("product_id,quantity").is("showroom_id", null),
-        sb.from("products").select("id,name,sku,unit,price,cost_price").eq("is_active", true),
+        sb.from("products").select("id,name,sku,unit,price,cost").eq("is_active", true),
       ]);
+      if (prodStock.error) throw prodStock.error;
+      if (prodMeta.error) throw prodMeta.error;
       const qtyMap = new Map<string, number>();
       for (const r of (prodStock.data ?? []) as any[]) qtyMap.set(r.product_id, Number(r.quantity ?? 0));
       const list: ProductRow[] = ((prodMeta.data ?? []) as any[]).map((p) => ({
@@ -55,7 +57,7 @@ function FactoryStockPage() {
         sku: p.sku,
         unit: p.unit,
         price: p.price != null ? Number(p.price) : null,
-        cost_price: p.cost_price != null ? Number(p.cost_price) : null,
+        cost: p.cost != null ? Number(p.cost) : null,
         quantity: qtyMap.get(p.id) ?? 0,
       })).sort((a, b) => a.name.localeCompare(b.name));
       setRaw(mats);
@@ -80,7 +82,7 @@ function FactoryStockPage() {
     items: products.length,
     inStock: products.filter((p) => p.quantity > 0).length,
     valueRetail: products.reduce((a, p) => a + p.quantity * (p.price ?? 0), 0),
-    valueCost: products.reduce((a, p) => a + p.quantity * (p.cost_price ?? 0), 0),
+    valueCost: products.reduce((a, p) => a + p.quantity * (p.cost ?? 0), 0),
   }), [products]);
 
   const filteredRaw = useMemo(() => {
@@ -201,7 +203,7 @@ function FactoryStockPage() {
                         <td className="py-2 px-3 text-muted-foreground text-xs">{p.sku ?? "—"}</td>
                         <td className="py-2 px-3 text-muted-foreground">{p.unit}</td>
                         <td className="py-2 px-3 text-right tabular-nums font-semibold">{p.quantity}</td>
-                        <td className="py-2 px-3 text-right tabular-nums">৳{(p.cost_price ?? 0).toFixed(2)}</td>
+                        <td className="py-2 px-3 text-right tabular-nums">৳{(p.cost ?? 0).toFixed(2)}</td>
                         <td className="py-2 px-3 text-right tabular-nums">৳{(p.price ?? 0).toFixed(2)}</td>
                         <td className="py-2 px-3 text-right tabular-nums font-semibold">৳{(p.quantity * (p.price ?? 0)).toFixed(0)}</td>
                       </tr>
