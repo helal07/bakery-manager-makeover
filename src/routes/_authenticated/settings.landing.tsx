@@ -12,6 +12,7 @@ import {
   fetchLandingContent,
   saveLandingContent,
   defaultLanding,
+  defaultTheme,
   type LandingContent,
 } from "@/lib/landing-content";
 import {
@@ -26,6 +27,7 @@ import {
   setProductShowOnLanding,
   type LandingProduct,
 } from "@/lib/landing-products";
+
 
 export const Route = createFileRoute("/_authenticated/settings/landing")({
   head: () => ({ meta: [{ title: "Landing Page · Settings" }] }),
