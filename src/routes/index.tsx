@@ -164,16 +164,20 @@ function Landing() {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div
-              className="size-10 rounded-full grid place-items-center font-bold overflow-hidden ring-2"
-              style={{ background: theme.primary, color: theme.primaryFg, borderColor: theme.primary }}
-            >
-              {logoUrl ? (
-                <img src={logoUrl} alt={brandName} className="size-full object-cover" />
-              ) : (
-                brandName.slice(0, 2).toUpperCase()
-              )}
-            </div>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={brandName}
+                className="h-11 max-w-[10rem] object-contain"
+              />
+            ) : (
+              <div
+                className="size-10 rounded-full grid place-items-center font-bold"
+                style={{ background: theme.primary, color: theme.primaryFg }}
+              >
+                {brandName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
             <div className="leading-tight">
               <div className="font-semibold" style={{ color: theme.text }}>{brandName}</div>
               <div className="text-[11px] hidden sm:block" style={{ color: theme.muted }}>
