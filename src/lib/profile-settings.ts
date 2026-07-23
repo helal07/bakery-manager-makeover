@@ -139,7 +139,9 @@ export async function getSoftware(): Promise<SoftwarePrefs> {
     .select("software")
     .eq("user_id", uid)
     .maybeSingle();
-  return { ...defaultSoftware, ...((data?.software ?? {}) as Partial<SoftwarePrefs>) };
+  const merged = { ...defaultSoftware, ...((data?.software ?? {}) as Partial<SoftwarePrefs>) };
+  cacheSoftware(merged);
+  return merged;
 }
 
 export async function saveSoftware(s: SoftwarePrefs): Promise<void> {
@@ -150,4 +152,8 @@ export async function saveSoftware(s: SoftwarePrefs): Promise<void> {
     { onConflict: "user_id" },
   );
   if (error) throw error;
+  cacheSoftware(s);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("software-prefs-updated", { detail: s }));
+  }
 }
