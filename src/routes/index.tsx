@@ -334,7 +334,7 @@ function Landing() {
       <section id="products" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
         <div className="text-center mb-12">
           <div className="text-xs uppercase tracking-[0.2em] text-amber-800 font-semibold mb-2">Our craft</div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-amber-950">What we bake</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: theme.text }}>{c.sections.craftTitle}</h2>
           <p className="text-amber-950/60 mt-3 max-w-lg mx-auto">Made fresh every day at our factory with honest ingredients.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
