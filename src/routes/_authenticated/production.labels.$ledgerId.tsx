@@ -227,9 +227,30 @@ function LabelsPage() {
         .label-company { width: 100%; font-size: 5.5pt; text-align: center; color: #475569; letter-spacing: 0.2px; }
         @media print {
           @page { size: ${layout === "roll" ? "38mm 25mm" : "A4"}; margin: ${layout === "roll" ? "0" : "5mm"}; }
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
           body * { visibility: hidden !important; }
+          /* Neutralize Radix Dialog centering (fixed + translate) so the print area sits at page top */
+          [data-radix-portal], [role="dialog"], [data-state="open"] {
+            position: static !important;
+            transform: none !important;
+            inset: auto !important;
+            top: auto !important; left: auto !important;
+            max-height: none !important; max-width: none !important;
+            overflow: visible !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            background: white !important;
+          }
           .print-area, .print-area * { visibility: visible !important; }
-          .print-area { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; padding: 0 !important; }
+          .print-area {
+            position: fixed !important;
+            left: 0 !important; top: 0 !important; right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: white !important;
+          }
           .label-cell { border: none; }
           .labels-roll .label-cell { page-break-after: always; }
         }
