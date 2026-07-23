@@ -354,19 +354,15 @@ function Landing() {
       </section>
 
       {/* Story */}
-      <section id="story" className="bg-amber-900 text-amber-50 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-10 -left-10 size-80 rounded-full bg-orange-300 blur-3xl" />
-          <div className="absolute -bottom-10 -right-10 size-80 rounded-full bg-rose-300 blur-3xl" />
-        </div>
+      <section id="story" className="relative overflow-hidden" style={{ background: theme.storyBg, color: theme.storyFg }}>
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-20 sm:py-24 text-center">
-          <div className="text-xs uppercase tracking-[0.2em] text-amber-200 font-semibold mb-3">Since day one</div>
           <h2 className="text-3xl sm:text-4xl font-bold">{c.story.title}</h2>
-          <p className="mt-6 text-amber-100/90 leading-relaxed whitespace-pre-line text-base sm:text-lg max-w-2xl mx-auto">
+          <p className="mt-6 leading-relaxed whitespace-pre-line text-base sm:text-lg max-w-2xl mx-auto opacity-90">
             {c.story.body}
           </p>
         </div>
       </section>
+
 
       {/* Contact */}
       <section id="contact" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
