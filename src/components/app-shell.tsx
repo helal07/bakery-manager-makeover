@@ -333,7 +333,7 @@ export function AppShellFrame() {
     <PageMetaContext.Provider value={metaCtx}>
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         {/* Sticky global top bar */}
-        <TopBar onOpenMobile={() => setMobileOpen(true)} company={company} />
+        <TopBar onOpenMobile={() => setMobileOpen(true)} company={company} adminBarColor={software.adminBarColor} />
 
         <div className="flex flex-1 min-h-0">
           {/* Mobile overlay */}
