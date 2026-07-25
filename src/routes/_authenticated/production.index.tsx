@@ -1,213 +1,210 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { AppShell, Card, Badge } from "@/components/app-shell";
-import {
-  Factory,
-  Trash2,
-  BarChart3,
-  Wheat,
-  Recycle,
-  History,
-  Package,
-  AlertTriangle,
-  TrendingUp,
-  Boxes,
-  ArrowRightLeft,
-  ChefHat,
-} from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { AppShell, Card } from "@/components/app-shell";
+import { Printer, FileDown, Boxes, TrendingDown, TrendingUp, Warehouse } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  PieChart, Pie, Cell, Legend,
-} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { pageTitle } from "@/lib/company-settings";
+import { Button } from "@/components/ui/button";
 
 const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/production/")({
-  head: () => ({ meta: [{ title: pageTitle("Production Dashboard") }] }),
-  component: ProductionDashboard,
+  head: () => ({ meta: [{ title: pageTitle("Daily Register Report") }] }),
+  component: ProductionRegister,
 });
 
-type Preset = "today" | "week" | "month" | "custom";
+type Preset = "today" | "month" | "year" | "custom";
 
+function ymd(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
 function rangeFor(preset: Preset, from: string, to: string) {
   const now = new Date();
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-  let start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  if (preset === "week") start.setDate(start.getDate() - 6);
-  else if (preset === "month") start.setDate(start.getDate() - 29);
-  else if (preset === "custom") {
-    if (from) start = new Date(from + "T00:00:00");
-    if (to) {
-      const e = new Date(to + "T23:59:59");
-      return { start: start.toISOString(), end: e.toISOString() };
-    }
-  }
-  return { start: start.toISOString(), end: end.toISOString() };
+  const today = ymd(now);
+  if (preset === "today") return { from: today, to: today };
+  if (preset === "month") return { from: ymd(new Date(now.getFullYear(), now.getMonth(), 1)), to: today };
+  if (preset === "year") return { from: ymd(new Date(now.getFullYear(), 0, 1)), to: today };
+  return { from: from || today, to: to || today };
 }
+function fmt(n: number, d = 2) {
+  return new Intl.NumberFormat("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: d }).format(n || 0);
+}
+function money(n: number) { return "৳" + fmt(n, 2); }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(n || 0);
-}
-function money(n: number) {
-  return "৳" + fmt(n);
-}
-function dayKey(iso: string) {
-  return iso.slice(0, 10);
-}
+type MatRow = {
+  id: string; name: string; unit: string; cost: number;
+  opening: number; consumption: number; closing: number;
+};
+type BatchRow = {
+  id: string; date: string; product_id: string; product_name: string; qty: number;
+  materials: { name: string; qty: number; unit: string }[];
+  cost: number; value: number;
+};
 
-const PIE_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#94a3b8"];
-
-function ProductionDashboard() {
+function ProductionRegister() {
   const [preset, setPreset] = useState<Preset>("today");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const [production, setProduction] = useState<any[]>([]);
-  const [consumption, setConsumption] = useState<any[]>([]);
-  const [wastage, setWastage] = useState<any[]>([]);
-  const [transfers, setTransfers] = useState<any[]>([]);
-  const [rawStock, setRawStock] = useState<any[]>([]);
-  const [prodStock, setProdStock] = useState<any[]>([]);
-  const [rawMaterials, setRawMaterials] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [recent, setRecent] = useState<any[]>([]);
+  const [materials, setMaterials] = useState<MatRow[]>([]);
+  const [batches, setBatches] = useState<BatchRow[]>([]);
 
-  const { start, end } = useMemo(() => rangeFor(preset, from, to), [preset, from, to]);
+  const { from, to } = useMemo(() => rangeFor(preset, customFrom, customTo), [preset, customFrom, customTo]);
+  const startIso = `${from}T00:00:00.000Z`;
+  const endIso = `${to}T23:59:59.999Z`;
 
   useEffect(() => {
     let cancel = false;
     setLoading(true);
     (async () => {
-      const [
-        prodRes, consRes, wastRes, trRes, rsRes, psRes, rmRes, pRes, recRes,
-      ] = await Promise.all([
-        sb.from("stock_ledger")
-          .select("id, product_id, qty, created_at, products(name, cost)")
+      const [rmRes, curStockRes, periodLedRes, prodLedRes, recRes, prodRes] = await Promise.all([
+        sb.from("raw_materials").select("id,name,unit,cost").eq("is_active", true),
+        sb.from("raw_material_stock").select("material_id,quantity").is("showroom_id", null),
+        sb.from("raw_stock_ledger").select("material_id,qty,kind,created_at")
+          .gte("created_at", startIso).lte("created_at", endIso),
+        sb.from("stock_ledger").select("id,product_id,qty,created_at,products(name,cost,price)")
           .eq("kind", "production").is("showroom_id", null)
-          .gte("created_at", start).lte("created_at", end),
-        sb.from("raw_stock_ledger")
-          .select("id, material_id, qty, created_at, raw_materials(name, cost)")
-          .eq("kind", "production_consume")
-          .gte("created_at", start).lte("created_at", end),
-        sb.from("wastage_log")
-          .select("id, qty, created_at, product_id, material_id, products(name, cost), raw_materials(name, cost)")
-          .gte("created_at", start).lte("created_at", end),
-        sb.from("transfer_items")
-          .select("id, qty, product_id, material_id, transfers!inner(id, status, created_at, source_showroom_id, dest_showroom_id)")
-          .gte("transfers.created_at", start).lte("transfers.created_at", end),
-        sb.from("raw_material_stock").select("material_id, quantity, showroom_id, raw_materials(name, cost, min_stock)").is("showroom_id", null),
-        sb.from("product_stock").select("product_id, quantity, showroom_id, products(name, cost)"),
-        sb.from("raw_materials").select("id, name, cost, min_stock, is_active"),
-        sb.from("products").select("id, name, cost, is_active"),
-        sb.from("stock_ledger")
-          .select("id, qty, created_at, products(name)")
-          .eq("kind", "production").is("showroom_id", null)
-          .order("created_at", { ascending: false }).limit(8),
+          .gte("created_at", startIso).lte("created_at", endIso)
+          .order("created_at", { ascending: false }),
+        sb.from("recipes").select("product_id,material_id,qty"),
+        sb.from("products").select("id,name,cost,price"),
       ]);
       if (cancel) return;
-      setProduction(prodRes.data ?? []);
-      setConsumption(consRes.data ?? []);
-      setWastage(wastRes.data ?? []);
-      setTransfers(trRes.data ?? []);
-      setRawStock(rsRes.data ?? []);
-      setProdStock(psRes.data ?? []);
-      setRawMaterials(rmRes.data ?? []);
-      setProducts(pRes.data ?? []);
-      setRecent(recRes.data ?? []);
+
+      const rmList = (rmRes.data ?? []) as any[];
+      const closingMap = new Map<string, number>();
+      for (const s of (curStockRes.data ?? []) as any[]) {
+        closingMap.set(s.material_id, Number(s.quantity) || 0);
+      }
+      const netInPeriod = new Map<string, number>();
+      const consumeInPeriod = new Map<string, number>();
+      for (const r of (periodLedRes.data ?? []) as any[]) {
+        const q = Number(r.qty) || 0;
+        netInPeriod.set(r.material_id, (netInPeriod.get(r.material_id) || 0) + q);
+        if (r.kind === "production_consume") {
+          consumeInPeriod.set(r.material_id, (consumeInPeriod.get(r.material_id) || 0) + Math.abs(q));
+        }
+      }
+      const mats: MatRow[] = rmList.map((m) => {
+        const closing = closingMap.get(m.id) ?? 0;
+        const net = netInPeriod.get(m.id) ?? 0;
+        return {
+          id: m.id, name: m.name, unit: m.unit || "", cost: Number(m.cost) || 0,
+          opening: closing - net,
+          consumption: consumeInPeriod.get(m.id) ?? 0,
+          closing,
+        };
+      }).sort((a, b) => a.name.localeCompare(b.name));
+
+      // Recipes by product
+      const recipeMap = new Map<string, { material_id: string; qty: number }[]>();
+      for (const r of (recRes.data ?? []) as any[]) {
+        const arr = recipeMap.get(r.product_id) ?? [];
+        arr.push({ material_id: r.material_id, qty: Number(r.qty) || 0 });
+        recipeMap.set(r.product_id, arr);
+      }
+      const matById = new Map<string, any>(rmList.map((m) => [m.id, m]));
+
+      const batchRows: BatchRow[] = ((prodLedRes.data ?? []) as any[]).map((b) => {
+        const qty = Number(b.qty) || 0;
+        const ings = recipeMap.get(b.product_id) ?? [];
+        const materialsUsed = ings.map((it) => {
+          const m = matById.get(it.material_id);
+          return {
+            name: m?.name ?? "—",
+            qty: it.qty * qty,
+            unit: m?.unit ?? "",
+          };
+        });
+        const unitCost = ings.reduce((s, it) => s + (Number(matById.get(it.material_id)?.cost) || 0) * it.qty, 0);
+        const cost = unitCost * qty;
+        const price = Number(b.products?.price) || 0;
+        return {
+          id: b.id,
+          date: (b.created_at as string).slice(0, 10),
+          product_id: b.product_id,
+          product_name: b.products?.name ?? "—",
+          qty,
+          materials: materialsUsed,
+          cost,
+          value: price * qty,
+        };
+      });
+
+      setMaterials(mats);
+      setBatches(batchRows);
       setLoading(false);
-    })();
+    })().catch(() => setLoading(false));
     return () => { cancel = true; };
-  }, [start, end]);
+  }, [startIso, endIso]);
 
-  // KPIs
-  const totalProducedQty = production.reduce((s, r) => s + Number(r.qty || 0), 0);
-  const batchIds = new Set(production.map((r: any) => r.id));
-  const batchCount = batchIds.size;
-  const producedValue = production.reduce(
-    (s, r) => s + Number(r.qty || 0) * Number(r.products?.cost ?? 0), 0,
-  );
+  // Summary aggregates
+  const totals = useMemo(() => {
+    const openingQty = materials.reduce((s, m) => s + m.opening, 0);
+    const openingVal = materials.reduce((s, m) => s + m.opening * m.cost, 0);
+    const consumptionQty = materials.reduce((s, m) => s + m.consumption, 0);
+    const consumptionVal = materials.reduce((s, m) => s + m.consumption * m.cost, 0);
+    const closingQty = materials.reduce((s, m) => s + m.closing, 0);
+    const closingVal = materials.reduce((s, m) => s + m.closing * m.cost, 0);
+    const totalBatches = batches.length;
+    const totalProdCost = batches.reduce((s, b) => s + b.cost, 0);
+    const totalProdValue = batches.reduce((s, b) => s + b.value, 0);
+    const totalProdQty = batches.reduce((s, b) => s + b.qty, 0);
+    return { openingQty, openingVal, consumptionQty, consumptionVal, closingQty, closingVal, totalBatches, totalProdCost, totalProdValue, totalProdQty };
+  }, [materials, batches]);
 
-  const consumedValue = consumption.reduce(
-    (s, r) => s + Math.abs(Number(r.qty || 0)) * Number(r.raw_materials?.cost ?? 0), 0,
-  );
+  const rangeLabel = from === to ? from : `${from} → ${to}`;
 
-  const wastageQty = wastage.reduce((s, r) => s + Number(r.qty || 0), 0);
-  const wastageValue = wastage.reduce((s, r) => {
-    const cost = Number(r.products?.cost ?? r.raw_materials?.cost ?? 0);
-    return s + Number(r.qty || 0) * cost;
-  }, 0);
-
-  const transferOutQty = transfers.reduce((s, r) => s + Number(r.qty || 0), 0);
-  const transferCount = new Set(transfers.map((r: any) => r.transfers?.id)).size;
-
-  const rawStockValue = rawStock.reduce(
-    (s, r) => s + Number(r.quantity || 0) * Number(r.raw_materials?.cost ?? 0), 0,
-  );
-  const finishedStockValue = prodStock.reduce(
-    (s, r) => s + Number(r.quantity || 0) * Number(r.products?.cost ?? 0), 0,
-  );
-
-  const avgCost = totalProducedQty > 0 ? consumedValue / totalProducedQty : 0;
-
-  // Charts
-  const dailyProduction = useMemo(() => {
-    const map: Record<string, number> = {};
-    production.forEach((r: any) => {
-      const k = dayKey(r.created_at);
-      map[k] = (map[k] || 0) + Number(r.qty || 0);
+  const exportExcel = () => {
+    // Excel-friendly CSV (opens in MS Excel)
+    const esc = (v: any) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines: string[] = [];
+    lines.push(`Daily Register Report`);
+    lines.push(`Range,${rangeLabel}`);
+    lines.push("");
+    lines.push("=== Summary ===");
+    lines.push("Metric,Quantity,Value (BDT)");
+    lines.push(`Opening Stock,${totals.openingQty.toFixed(2)},${totals.openingVal.toFixed(2)}`);
+    lines.push(`Total Consumption,${totals.consumptionQty.toFixed(2)},${totals.consumptionVal.toFixed(2)}`);
+    lines.push(`Closing Stock,${totals.closingQty.toFixed(2)},${totals.closingVal.toFixed(2)}`);
+    lines.push(`Inventory Value (current),${totals.closingQty.toFixed(2)},${totals.closingVal.toFixed(2)}`);
+    lines.push("");
+    lines.push("=== Raw Material Inventory ===");
+    lines.push("Material,Unit,Opening,Consumption,Closing,Cost/Unit,Inventory Value");
+    materials.forEach((m) => {
+      lines.push([m.name, m.unit, m.opening.toFixed(4), m.consumption.toFixed(4), m.closing.toFixed(4), m.cost.toFixed(2), (m.closing * m.cost).toFixed(2)].map(esc).join(","));
     });
-    return Object.entries(map).sort().map(([date, qty]) => ({ date: date.slice(5), qty }));
-  }, [production]);
-
-  const dailyWastage = useMemo(() => {
-    const map: Record<string, number> = {};
-    wastage.forEach((r: any) => {
-      const k = dayKey(r.created_at);
-      map[k] = (map[k] || 0) + Number(r.qty || 0);
+    lines.push("");
+    lines.push("=== Batch-wise Production ===");
+    lines.push("Date,Batch ID,Product,Qty,Raw Materials Used,Production Cost,Production Value");
+    batches.forEach((b) => {
+      const mats = b.materials.map((m) => `${m.name}: ${m.qty.toFixed(3)} ${m.unit}`).join(" | ");
+      lines.push([b.date, b.id.slice(0, 8).toUpperCase(), b.product_name, b.qty, mats, b.cost.toFixed(2), b.value.toFixed(2)].map(esc).join(","));
     });
-    return Object.entries(map).sort().map(([date, qty]) => ({ date: date.slice(5), qty }));
-  }, [wastage]);
-
-  const productShare = useMemo(() => {
-    const map: Record<string, { name: string; qty: number }> = {};
-    production.forEach((r: any) => {
-      const key = r.product_id;
-      const name = r.products?.name ?? "—";
-      if (!map[key]) map[key] = { name, qty: 0 };
-      map[key].qty += Number(r.qty || 0);
-    });
-    const arr = Object.values(map).sort((a, b) => b.qty - a.qty);
-    const top = arr.slice(0, 5);
-    const otherQty = arr.slice(5).reduce((s, r) => s + r.qty, 0);
-    if (otherQty > 0) top.push({ name: "Others", qty: otherQty });
-    return top;
-  }, [production]);
-
-  const topProduct = productShare[0];
-
-  const lowStock = useMemo(() => {
-    return rawStock
-      .map((r: any) => ({
-        name: r.raw_materials?.name ?? "—",
-        qty: Number(r.quantity || 0),
-        min: Number(r.raw_materials?.min_stock ?? 0),
-      }))
-      .filter((r) => r.min > 0 && r.qty <= r.min)
-      .sort((a, b) => a.qty / (a.min || 1) - b.qty / (b.min || 1))
-      .slice(0, 8);
-  }, [rawStock]);
+    lines.push("");
+    lines.push(`Totals,${totals.totalBatches} batches,,${totals.totalProdQty},,${totals.totalProdCost.toFixed(2)},${totals.totalProdValue.toFixed(2)}`);
+    const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `daily-register-${from}_to_${to}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <AppShell title="Production Dashboard" subtitle="Real-time production, stock ও wastage overview">
-      {/* Filter bar */}
-      <Card className="p-3 mb-4">
+    <AppShell title="Daily Register Report" subtitle="Production register — opening, consumption, closing & batch-wise details">
+      {/* Filters bar */}
+      <Card className="p-3 mb-4 no-print">
         <div className="flex flex-wrap items-center gap-2">
-          {(["today", "week", "month", "custom"] as Preset[]).map((p) => (
+          {(["today", "month", "year", "custom"] as Preset[]).map((p) => (
             <button
               key={p}
               onClick={() => setPreset(p)}
@@ -215,214 +212,172 @@ function ProductionDashboard() {
                 preset === p ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"
               }`}
             >
-              {p === "today" ? "Today" : p === "week" ? "Last 7 days" : p === "month" ? "Last 30 days" : "Custom"}
+              {p === "today" ? "Today" : p === "month" ? "This Month" : p === "year" ? "This Year" : "Custom"}
             </button>
           ))}
           {preset === "custom" && (
             <div className="flex items-center gap-2 ml-2">
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
+              <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
                 className="h-8 rounded-md border border-border bg-background px-2 text-xs" />
               <span className="text-xs text-muted-foreground">→</span>
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
+              <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
                 className="h-8 rounded-md border border-border bg-background px-2 text-xs" />
             </div>
           )}
           <div className="flex-1" />
-          <Link to="/recipes" className="h-8 inline-flex items-center gap-1.5 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90">
-            <Factory className="size-3.5" /> Open Workbench
-          </Link>
+          <Button size="sm" variant="outline" onClick={exportExcel}>
+            <FileDown className="size-3.5" /> Export Excel
+          </Button>
+          <Button size="sm" onClick={() => window.print()}>
+            <Printer className="size-3.5" /> Print Report
+          </Button>
         </div>
       </Card>
 
-      {/* KPI grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <Kpi icon={Factory} label="Total Production" value={fmt(totalProducedQty)} sub={`${batchCount} batches · ${money(producedValue)}`} tone="primary" />
-        <Kpi icon={Wheat} label="Raw Consumed" value={money(consumedValue)} sub={`Avg cost/unit ${money(avgCost)}`} tone="amber" />
-        <Kpi icon={ArrowRightLeft} label="Transfers Out" value={fmt(transferOutQty)} sub={`${transferCount} transfers`} tone="sky" />
-        <Kpi icon={Trash2} label="Wastage" value={fmt(wastageQty)} sub={money(wastageValue)} tone="rose" />
-        <Kpi icon={Boxes} label="Factory Raw Stock" value={money(rawStockValue)} sub={`${rawStock.length} items`} tone="emerald" />
-        <Kpi icon={Package} label="Finished Stock Value" value={money(finishedStockValue)} sub={`${prodStock.length} rows (all locations)`} tone="violet" />
-        <Kpi icon={TrendingUp} label="Top Product" value={topProduct?.name ?? "—"} sub={topProduct ? `${fmt(topProduct.qty)} units` : "No production"} tone="primary" />
-        <Kpi icon={AlertTriangle} label="Low Stock Alerts" value={String(lowStock.length)} sub="Raw materials ≤ min" tone={lowStock.length ? "rose" : "emerald"} />
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <Card className="p-4 lg:col-span-2">
-          <div className="text-sm font-semibold mb-2">Daily Production</div>
-          <div className="h-56">
-            {dailyProduction.length === 0 ? (
-              <EmptyChart label={loading ? "Loading…" : "No production in this range"} />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dailyProduction}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="date" fontSize={11} />
-                  <YAxis fontSize={11} />
-                  <Tooltip />
-                  <Bar dataKey="qty" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="text-sm font-semibold mb-2">Production Share</div>
-          <div className="h-56">
-            {productShare.length === 0 ? (
-              <EmptyChart label="No data" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={productShare} dataKey="qty" nameKey="name" innerRadius={40} outerRadius={70}>
-                    {productShare.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <Card className="p-4">
-          <div className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-            <Trash2 className="size-4 text-rose-500" /> Daily Wastage
-          </div>
-          <div className="h-48">
-            {dailyWastage.length === 0 ? (
-              <EmptyChart label="No wastage" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dailyWastage}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="date" fontSize={11} />
-                  <YAxis fontSize={11} />
-                  <Tooltip />
-                  <Bar dataKey="qty" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-semibold flex items-center gap-1.5">
-              <AlertTriangle className="size-4 text-amber-500" /> Low Stock (Raw Materials)
-            </div>
-          </div>
-          {lowStock.length === 0 ? (
-            <div className="text-sm text-muted-foreground text-center py-8">সব stock ঠিক আছে ✓</div>
-          ) : (
-            <div className="divide-y divide-border">
-              {lowStock.map((r, i) => (
-                <div key={i} className="flex items-center justify-between py-2 text-sm">
-                  <div className="min-w-0 truncate">{r.name}</div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-muted-foreground">min {fmt(r.min)}</span>
-                    <Badge tone={r.qty === 0 ? "danger" : "warning"}>{fmt(r.qty)}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      </div>
-
-      {/* Recent batches */}
-      <Card className="p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <History className="size-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold">Recent Batches</h3>
-          </div>
-          <Link to="/recipes" className="text-xs text-primary hover:underline">View all →</Link>
+      <div className="print-area">
+        {/* Print-only header */}
+        <div className="hidden print:block mb-3" style={{ display: "none" }} data-print-header>
+          <h1 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Daily Register Report</h1>
+          <div style={{ fontSize: 11, color: "#444" }}>Range: {rangeLabel}</div>
         </div>
-        {recent.length === 0 ? (
-          <div className="text-sm text-muted-foreground text-center py-6">
-            এখনো কোনো batch হয়নি —{" "}
-            <Link to="/recipes" className="text-primary hover:underline">প্রথম batch বানান</Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {recent.map((r: any) => (
-              <div key={r.id} className="flex items-center justify-between py-2.5 text-sm">
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{r.products?.name ?? "—"}</div>
-                  <div className="text-xs text-muted-foreground font-mono">
-                    {(r.id as string).slice(0, 8).toUpperCase()} · {(r.created_at as string).slice(0, 10)}
-                  </div>
-                </div>
-                <Badge tone="success">+{fmt(Number(r.qty || 0))}</Badge>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
 
-      {/* Quick links */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        <QuickLink to="/production/wastage" icon={Trash2} label="Wastage Log" />
-        <QuickLink to="/production/repurpose" icon={Recycle} label="Wastage Management" />
-        
-        <QuickLink to="/production/cost-report" icon={BarChart3} label="Cost Report" />
-        <QuickLink to="/production/consumption-report" icon={Wheat} label="Consumption" />
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <SumCard icon={Warehouse} tone="emerald" label="Opening Stock" qty={totals.openingQty} value={totals.openingVal} />
+          <SumCard icon={TrendingDown} tone="rose" label="Total Consumption" qty={totals.consumptionQty} value={totals.consumptionVal} />
+          <SumCard icon={TrendingUp} tone="sky" label="Closing Stock" qty={totals.closingQty} value={totals.closingVal} />
+          <SumCard icon={Boxes} tone="violet" label="Inventory Value (Now)" qty={totals.closingQty} value={totals.closingVal} />
+        </div>
+
+        {/* Raw Material Inventory Table */}
+        <Card className="mb-4 overflow-hidden" data-card>
+          <div className="px-4 py-2.5 border-b border-border bg-muted/40 text-sm font-semibold">
+            Raw Material Inventory
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[720px]">
+              <thead className="text-xs text-muted-foreground bg-muted/20">
+                <tr>
+                  <th className="text-left font-medium px-4 py-2">Material</th>
+                  <th className="text-left font-medium px-4 py-2">Unit</th>
+                  <th className="text-right font-medium px-4 py-2">Opening</th>
+                  <th className="text-right font-medium px-4 py-2">Consumption</th>
+                  <th className="text-right font-medium px-4 py-2">Closing</th>
+                  <th className="text-right font-medium px-4 py-2">Cost/Unit</th>
+                  <th className="text-right font-medium px-4 py-2">Inventory Value</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {materials.length === 0 ? (
+                  <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">{loading ? "Loading…" : "No materials"}</td></tr>
+                ) : materials.map((m) => (
+                  <tr key={m.id}>
+                    <td className="px-4 py-2 font-medium">{m.name}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{m.unit}</td>
+                    <td className="px-4 py-2 text-right">{fmt(m.opening, 3)}</td>
+                    <td className="px-4 py-2 text-right text-rose-600">{fmt(m.consumption, 3)}</td>
+                    <td className="px-4 py-2 text-right font-medium">{fmt(m.closing, 3)}</td>
+                    <td className="px-4 py-2 text-right">{money(m.cost)}</td>
+                    <td className="px-4 py-2 text-right font-medium">{money(m.closing * m.cost)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/30 font-semibold">
+                  <td className="px-4 py-2" colSpan={2}>Totals</td>
+                  <td className="px-4 py-2 text-right">{fmt(totals.openingQty, 3)}</td>
+                  <td className="px-4 py-2 text-right">{fmt(totals.consumptionQty, 3)}</td>
+                  <td className="px-4 py-2 text-right">{fmt(totals.closingQty, 3)}</td>
+                  <td className="px-4 py-2 text-right">—</td>
+                  <td className="px-4 py-2 text-right">{money(totals.closingVal)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+
+        {/* Batch-wise Production Table */}
+        <Card className="overflow-hidden" data-card>
+          <div className="px-4 py-2.5 border-b border-border bg-muted/40 text-sm font-semibold">
+            Batch-wise Production Details
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[900px]">
+              <thead className="text-xs text-muted-foreground bg-muted/20">
+                <tr>
+                  <th className="text-left font-medium px-4 py-2">Date</th>
+                  <th className="text-left font-medium px-4 py-2">Batch ID</th>
+                  <th className="text-left font-medium px-4 py-2">Product</th>
+                  <th className="text-right font-medium px-4 py-2">Qty</th>
+                  <th className="text-left font-medium px-4 py-2">Raw Materials Consumed</th>
+                  <th className="text-right font-medium px-4 py-2">Prod. Cost</th>
+                  <th className="text-right font-medium px-4 py-2">Prod. Value</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {batches.length === 0 ? (
+                  <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">{loading ? "Loading…" : "No batches in this range"}</td></tr>
+                ) : batches.map((b) => (
+                  <tr key={b.id}>
+                    <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">{b.date}</td>
+                    <td className="px-4 py-2 font-mono text-xs">#{b.id.slice(0, 8).toUpperCase()}</td>
+                    <td className="px-4 py-2 font-medium">{b.product_name}</td>
+                    <td className="px-4 py-2 text-right">{fmt(b.qty, 2)}</td>
+                    <td className="px-4 py-2 text-xs">
+                      {b.materials.length === 0 ? <span className="text-muted-foreground">—</span> :
+                        b.materials.map((m, i) => (
+                          <span key={i} className="inline-block mr-2">
+                            {m.name}: <span className="font-medium">{fmt(m.qty, 3)}</span> {m.unit}{i < b.materials.length - 1 ? "," : ""}
+                          </span>
+                        ))
+                      }
+                    </td>
+                    <td className="px-4 py-2 text-right">{money(b.cost)}</td>
+                    <td className="px-4 py-2 text-right font-medium text-primary">{money(b.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/30 font-semibold">
+                  <td className="px-4 py-2" colSpan={3}>{totals.totalBatches} batches</td>
+                  <td className="px-4 py-2 text-right">{fmt(totals.totalProdQty, 2)}</td>
+                  <td className="px-4 py-2 text-right text-xs text-muted-foreground">Total consumption: {fmt(totals.consumptionQty, 3)}</td>
+                  <td className="px-4 py-2 text-right">{money(totals.totalProdCost)}</td>
+                  <td className="px-4 py-2 text-right">{money(totals.totalProdValue)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
       </div>
     </AppShell>
   );
 }
 
-function Kpi({
-  icon: Icon, label, value, sub, tone = "primary",
+function SumCard({
+  icon: Icon, label, qty, value, tone,
 }: {
-  icon: any; label: string; value: string; sub?: string;
-  tone?: "primary" | "amber" | "sky" | "rose" | "emerald" | "violet";
+  icon: any; label: string; qty: number; value: number;
+  tone: "emerald" | "rose" | "sky" | "violet";
 }) {
   const toneMap: Record<string, string> = {
-    primary: "bg-primary/10 text-primary",
-    amber: "bg-amber-500/10 text-amber-600",
-    sky: "bg-sky-500/10 text-sky-600",
-    rose: "bg-rose-500/10 text-rose-600",
     emerald: "bg-emerald-500/10 text-emerald-600",
+    rose: "bg-rose-500/10 text-rose-600",
+    sky: "bg-sky-500/10 text-sky-600",
     violet: "bg-violet-500/10 text-violet-600",
   };
   return (
-    <Card className="p-3">
+    <Card className="p-3" data-card>
       <div className="flex items-start gap-2.5">
         <div className={`size-9 rounded-lg grid place-items-center shrink-0 ${toneMap[tone]}`}>
           <Icon className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">{label}</div>
-          <div className="text-base font-semibold truncate">{value}</div>
-          {sub && <div className="text-[11px] text-muted-foreground truncate mt-0.5">{sub}</div>}
+          <div className="text-base font-semibold truncate">৳{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(value || 0)}</div>
+          <div className="text-[11px] text-muted-foreground truncate mt-0.5">Qty: {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 3 }).format(qty || 0)}</div>
         </div>
       </div>
     </Card>
   );
-}
-
-function QuickLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
-  return (
-    <Link to={to} className="group">
-      <Card className="p-3 hover:border-primary/60 transition">
-        <div className="flex items-center gap-2">
-          <div className="size-8 rounded-md bg-primary/10 text-primary grid place-items-center shrink-0">
-            <Icon className="size-4" />
-          </div>
-          <div className="text-xs font-medium truncate">{label}</div>
-        </div>
-      </Card>
-    </Link>
-  );
-}
-
-function EmptyChart({ label }: { label: string }) {
-  return <div className="h-full grid place-items-center text-xs text-muted-foreground">{label}</div>;
 }
