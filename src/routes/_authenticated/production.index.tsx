@@ -3,10 +3,11 @@ import { AppShell, Card } from "@/components/app-shell";
 import { Printer, FileDown, Boxes, TrendingDown, TrendingUp, Warehouse } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { pageTitle } from "@/lib/company-settings";
+import { pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
 import { Button } from "@/components/ui/button";
 
 const sb = supabase as any;
+
 
 export const Route = createFileRoute("/_authenticated/production/")({
   head: () => ({ meta: [{ title: pageTitle("Daily Register Report") }] }),
