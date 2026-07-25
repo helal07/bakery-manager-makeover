@@ -267,7 +267,7 @@ export function InvoicePreview({ snapshot, settings, company, paper, scale }: Pr
   const width = paper === "58mm" ? "54mm" : "72mm";
   const fontSize = paper === "58mm" ? 10 : 11;
   return (
-    <div style={wrapStyle}>
+    <div style={wrapStyle} className="thermal-receipt">
       <div
         style={{
           width,
