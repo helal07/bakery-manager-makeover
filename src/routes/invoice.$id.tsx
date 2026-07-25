@@ -318,15 +318,22 @@ function InvoiceView() {
     } catch { /* cancelled */ }
   };
 
+  const isThermal = paper !== "A4";
   return (
-    <div className="min-h-screen bg-muted/30 py-6 px-4 print:bg-white print:p-0">
+    <div className={`bg-muted/30 py-6 px-4 print:bg-white print:p-0 ${isThermal ? "" : "min-h-screen"} invoice-print-root`}>
       <style>{`
         @media print {
           @page { size: ${paper === "A4" ? "A4" : paper + " auto"}; margin: ${paper === "A4" ? "10mm" : "0"}; }
           html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+          html, body, #root, .invoice-print-root { min-height: 0 !important; height: auto !important; }
+          .invoice-print-root { margin: 0 !important; padding: 0 !important; }
           .a4-invoice { display: ${paper === "A4" ? "block" : "none"} !important; box-shadow: none !important; border: 0 !important; border-radius: 0 !important; max-width: 100% !important; }
           .thermal-only { display: ${paper === "A4" ? "none" : "block"} !important; }
           .print-hide { display: none !important; }
+          ${isThermal ? `
+          .invoice-print-root > *:not(.thermal-receipt) { display: none !important; }
+          .thermal-receipt { margin: 0 !important; padding: 2mm !important; }
+          ` : ""}
         }
       `}</style>
 
