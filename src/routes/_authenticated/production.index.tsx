@@ -3,10 +3,11 @@ import { AppShell, Card } from "@/components/app-shell";
 import { Printer, FileDown, Boxes, TrendingDown, TrendingUp, Warehouse } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { pageTitle } from "@/lib/company-settings";
+import { pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
 import { Button } from "@/components/ui/button";
 
 const sb = supabase as any;
+
 
 export const Route = createFileRoute("/_authenticated/production/")({
   head: () => ({ meta: [{ title: pageTitle("Daily Register Report") }] }),
@@ -49,9 +50,13 @@ function ProductionRegister() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
 
   const [materials, setMaterials] = useState<MatRow[]>([]);
   const [batches, setBatches] = useState<BatchRow[]>([]);
+
+  useEffect(() => { getCompany().then(setCompany).catch(() => {}); }, []);
+
 
   const { from, to } = useMemo(() => rangeFor(preset, customFrom, customTo), [preset, customFrom, customTo]);
   const startIso = `${from}T00:00:00.000Z`;
@@ -236,30 +241,44 @@ function ProductionRegister() {
 
       <div className="print-area">
         {/* Print-only header */}
-        <div className="hidden print:block mb-3" style={{ display: "none" }} data-print-header>
-          <h1 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Daily Register Report</h1>
-          <div style={{ fontSize: 11, color: "#444" }}>Range: {rangeLabel}</div>
+        <div className="print-only print-header">
+          <div className="co-name">{company.name || defaultCompany.name}</div>
+          {company.address && <div className="co-addr">{company.address}</div>}
+          {(company.phone || company.email) && (
+            <div className="co-addr">
+              {company.phone}{company.phone && company.email ? " · " : ""}{company.email}
+            </div>
+          )}
+          <div className="rpt-title">Daily Register Report — Production Register</div>
+          <div className="rpt-date">Date of Stock: {rangeLabel}</div>
         </div>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        {/* Screen summary cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 no-print">
           <SumCard icon={Warehouse} tone="emerald" label="Opening Stock" qty={totals.openingQty} value={totals.openingVal} />
           <SumCard icon={TrendingDown} tone="rose" label="Total Consumption" qty={totals.consumptionQty} value={totals.consumptionVal} />
           <SumCard icon={TrendingUp} tone="sky" label="Closing Stock" qty={totals.closingQty} value={totals.closingVal} />
           <SumCard icon={Boxes} tone="violet" label="Inventory Value (Now)" qty={totals.closingQty} value={totals.closingVal} />
         </div>
 
+        {/* Print-only compact summary */}
+        <div className="print-only print-summary">
+          <div className="kpi"><div className="lbl">Opening Stock</div><div className="val">{money(totals.openingVal)}</div><div className="sub">Qty: {fmt(totals.openingQty, 2)}</div></div>
+          <div className="kpi"><div className="lbl">Consumption</div><div className="val">{money(totals.consumptionVal)}</div><div className="sub">Qty: {fmt(totals.consumptionQty, 2)}</div></div>
+          <div className="kpi"><div className="lbl">Closing Stock</div><div className="val">{money(totals.closingVal)}</div><div className="sub">Qty: {fmt(totals.closingQty, 2)}</div></div>
+          <div className="kpi"><div className="lbl">Inventory Value</div><div className="val">{money(totals.closingVal)}</div><div className="sub">{totals.totalBatches} batches</div></div>
+        </div>
+
         {/* Raw Material Inventory Table */}
         <Card className="mb-4 overflow-hidden" data-card>
-          <div className="px-4 py-2.5 border-b border-border bg-muted/40 text-sm font-semibold">
+          <div className="px-4 py-2.5 border-b border-border bg-muted/40 text-sm font-semibold section-title">
             Raw Material Inventory
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[720px]">
+            <table className="w-full text-sm min-w-[640px]">
               <thead className="text-xs text-muted-foreground bg-muted/20">
                 <tr>
-                  <th className="text-left font-medium px-4 py-2">Material</th>
-                  <th className="text-left font-medium px-4 py-2">Unit</th>
+                  <th className="text-left font-medium px-4 py-2">Material (Unit)</th>
                   <th className="text-right font-medium px-4 py-2">Opening</th>
                   <th className="text-right font-medium px-4 py-2">Consumption</th>
                   <th className="text-right font-medium px-4 py-2">Closing</th>
@@ -269,27 +288,26 @@ function ProductionRegister() {
               </thead>
               <tbody className="divide-y divide-border">
                 {materials.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">{loading ? "Loading…" : "No materials"}</td></tr>
+                  <tr><td colSpan={6} className="text-center py-6 text-muted-foreground">{loading ? "Loading…" : "No materials"}</td></tr>
                 ) : materials.map((m) => (
                   <tr key={m.id}>
-                    <td className="px-4 py-2 font-medium">{m.name}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{m.unit}</td>
-                    <td className="px-4 py-2 text-right">{fmt(m.opening, 3)}</td>
-                    <td className="px-4 py-2 text-right text-rose-600">{fmt(m.consumption, 3)}</td>
-                    <td className="px-4 py-2 text-right font-medium">{fmt(m.closing, 3)}</td>
-                    <td className="px-4 py-2 text-right">{money(m.cost)}</td>
-                    <td className="px-4 py-2 text-right font-medium">{money(m.closing * m.cost)}</td>
+                    <td className="px-4 py-2 font-medium">{m.name} <span className="text-muted-foreground font-normal">({m.unit || "unit"})</span></td>
+                    <td className="px-4 py-2 text-right tabular-nums">{fmt(m.opening, 3)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-rose-600">{fmt(m.consumption, 3)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums font-medium">{fmt(m.closing, 3)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{money(m.cost)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums font-medium">{money(m.closing * m.cost)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="bg-muted/30 font-semibold">
-                  <td className="px-4 py-2" colSpan={2}>Totals</td>
-                  <td className="px-4 py-2 text-right">{fmt(totals.openingQty, 3)}</td>
-                  <td className="px-4 py-2 text-right">{fmt(totals.consumptionQty, 3)}</td>
-                  <td className="px-4 py-2 text-right">{fmt(totals.closingQty, 3)}</td>
+                  <td className="px-4 py-2">Totals</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.openingQty, 3)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.consumptionQty, 3)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.closingQty, 3)}</td>
                   <td className="px-4 py-2 text-right">—</td>
-                  <td className="px-4 py-2 text-right">{money(totals.closingVal)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{money(totals.closingVal)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -298,9 +316,10 @@ function ProductionRegister() {
 
         {/* Batch-wise Production Table */}
         <Card className="overflow-hidden" data-card>
-          <div className="px-4 py-2.5 border-b border-border bg-muted/40 text-sm font-semibold">
+          <div className="px-4 py-2.5 border-b border-border bg-muted/40 text-sm font-semibold section-title">
             Batch-wise Production Details
           </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[900px]">
               <thead className="text-xs text-muted-foreground bg-muted/20">
