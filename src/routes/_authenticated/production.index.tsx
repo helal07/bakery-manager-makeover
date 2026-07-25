@@ -50,9 +50,13 @@ function ProductionRegister() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
 
   const [materials, setMaterials] = useState<MatRow[]>([]);
   const [batches, setBatches] = useState<BatchRow[]>([]);
+
+  useEffect(() => { getCompany().then(setCompany).catch(() => {}); }, []);
+
 
   const { from, to } = useMemo(() => rangeFor(preset, customFrom, customTo), [preset, customFrom, customTo]);
   const startIso = `${from}T00:00:00.000Z`;
