@@ -1493,15 +1493,14 @@ function ProductSearchPicker({
   const selected = options.find((o) => o.id === value);
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return options.slice(0, 50);
-    return options
-      .filter(
-        (o) =>
-          o.name.toLowerCase().includes(s) ||
-          o.sku.toLowerCase().includes(s),
-      )
-      .slice(0, 50);
+    if (!s) return options;
+    return options.filter(
+      (o) =>
+        o.name.toLowerCase().includes(s) ||
+        o.sku.toLowerCase().includes(s),
+    );
   }, [q, options]);
+
 
   useEffect(() => {
     if (!open) return;
