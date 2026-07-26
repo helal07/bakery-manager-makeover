@@ -430,13 +430,17 @@ function PosPage() {
     });
   const clearCart = () => { setCart({}); setTenders([]); };
 
-  const handleScan = () => {
-    const code = scan.trim();
+  const scanCode = (raw: string) => {
+    const code = raw.trim();
     if (!code) return;
     const hit = skuIndex.get(code.toLowerCase());
     if (!hit) toast.error(`No product for "${code}"`);
     else if (hit.stock <= 0) toast.error(`${hit.name} is out of stock`);
     else { add(hit.id, 1); toast.success(`Added ${hit.name} · ${hit.stock.toFixed(0)} left`, { duration: 1200 }); }
+  };
+
+  const handleScan = () => {
+    scanCode(scan);
     setScan("");
     scanRef.current?.focus();
   };
