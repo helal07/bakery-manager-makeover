@@ -281,7 +281,7 @@ function Products() {
       {/* Table Card */}
       <Card className="overflow-hidden">
         {/* Tabs */}
-        <div className="border-b border-border px-4 pt-2 flex items-center gap-1">
+        <div className="border-b border-border px-4 pt-2 flex items-center gap-1 overflow-x-auto no-scrollbar">
           <TabBtn active={tab === "products"} onClick={() => setTab("products")} icon="📦" label="All Products" />
           <TabBtn active={tab === "stock"} onClick={() => setTab("stock")} icon="⏳" label="Stock Report" />
         </div>
