@@ -1069,3 +1069,25 @@ create policy "public read landing products"
 
 NOTIFY pgrst, 'reload schema';
 COMMIT;
+
+-- =====================================================================
+-- Patch 17 (2026-07): allow anonymous reads of public branding fields
+-- so the PWA manifest endpoint can render the company logo & name
+-- even when called without a signed-in user (public /manifest URL).
+-- =====================================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policy
+    WHERE polrelid = 'public.company_settings'::regclass
+      AND polname = 'company_settings_public_branding'
+  ) THEN
+    CREATE POLICY company_settings_public_branding
+      ON public.company_settings
+      FOR SELECT
+      TO anon
+      USING (true);
+  END IF;
+END $$;
+
+GRANT SELECT ON public.company_settings TO anon;
