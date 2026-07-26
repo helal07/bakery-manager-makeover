@@ -571,11 +571,11 @@ function Workbench() {
       {/* New Recipe dialog */}
       {editorOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center sm:p-4"
+          className="fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center sm:p-4 overflow-y-auto"
           onClick={() => !editorSaving && setEditorOpen(false)}
         >
           <div
-            className="bg-card border border-border sm:rounded-xl shadow-2xl w-full sm:max-w-4xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col"
+            className="bg-card border border-border sm:rounded-xl shadow-2xl w-full sm:max-w-5xl h-full sm:h-[95vh] flex flex-col overflow-hidden my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 sm:p-6 border-b border-border flex items-start justify-between gap-3 sticky top-0 bg-card z-10">
