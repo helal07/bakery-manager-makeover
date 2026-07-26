@@ -442,34 +442,6 @@ function Workbench() {
             </div>
           </Card>
 
-          {/* Visible recipe list */}
-          <Card className="p-3">
-            <div className="flex items-center justify-between mb-2 px-1">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-                All recipes ({withRecipes.length})
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {withRecipes.map((r) => {
-                const isActive = r.product.id === activeId;
-                return (
-                  <button
-                    key={r.product.id}
-                    onClick={() => { setActiveId(r.product.id); setTab("produce"); }}
-                    className={`inline-flex items-center gap-1.5 px-2.5 h-8 rounded-md border text-xs transition-colors ${
-                      isActive
-                        ? "border-primary bg-primary/10 text-foreground font-medium"
-                        : "border-border bg-background hover:bg-accent text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <ChefHat className="size-3" />
-                    <span className="truncate max-w-[160px]">{r.product.name}</span>
-                    <span className="text-[10px] opacity-70">· {r.items.length}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
 
           {/* Tabs */}
           <div className="flex items-center gap-1 border-b border-border">
