@@ -229,7 +229,8 @@ function CustomerLedger() {
                 <Button size="sm" variant="ghost" onClick={() => { setFrom(""); setTo(""); setTypeFilter("All"); }}>Reset</Button>
               )}
             </div>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full min-w-[640px] text-sm">
               <thead className="text-xs text-muted-foreground bg-muted/40">
                 <tr>
                   <th className="text-left font-medium px-4 py-2">Date</th>
@@ -276,6 +277,7 @@ function CustomerLedger() {
                 </tfoot>
               )}
             </table>
+            </div>
           </Card>
 
           <ReceivePaymentDialog

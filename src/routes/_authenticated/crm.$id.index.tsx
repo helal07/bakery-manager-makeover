@@ -258,7 +258,8 @@ function CustomerDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <Card className="overflow-hidden">
               <div className="px-5 py-3 border-b border-border font-medium text-sm">Purchase history</div>
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <table className="w-full min-w-[640px] text-sm">
                 <thead className="text-xs text-muted-foreground bg-muted/40">
                   <tr>
                     <th className="text-left font-medium px-4 py-2">Date</th>
@@ -289,11 +290,13 @@ function CustomerDetail() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </Card>
 
             <Card className="overflow-hidden">
               <div className="px-5 py-3 border-b border-border font-medium text-sm">Balance ledger</div>
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <table className="w-full min-w-[640px] text-sm">
                 <thead className="text-xs text-muted-foreground bg-muted/40">
                   <tr>
                     <th className="text-left font-medium px-4 py-2">Date</th>
@@ -318,6 +321,7 @@ function CustomerDetail() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </Card>
           </div>
         </>

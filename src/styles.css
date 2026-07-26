@@ -226,3 +226,8 @@
 .print-only { display: none; }
 
 
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
