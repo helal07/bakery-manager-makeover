@@ -130,7 +130,8 @@ function Accounting() {
           <div className="px-5 py-4 border-b border-border">
             <h2 className="text-sm font-semibold">General Ledger</h2>
           </div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full min-w-[640px] text-sm">
             <thead className="text-xs text-muted-foreground bg-muted/40">
               <tr>
                 <th className="text-left font-medium px-5 py-2.5">Date</th>
@@ -155,6 +156,7 @@ function Accounting() {
               )}
             </tbody>
           </table>
+          </div>
         </Card>
 
         <Card className="p-5">

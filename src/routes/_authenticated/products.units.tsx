@@ -58,7 +58,8 @@ function UnitsPage() {
       }
     >
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <table className="w-full min-w-[640px] text-sm">
           <thead className="text-xs text-muted-foreground bg-muted/40">
             <tr>
               <th className="text-left font-medium px-5 py-3">Code</th>
@@ -84,6 +85,7 @@ function UnitsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
