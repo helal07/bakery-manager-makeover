@@ -64,22 +64,20 @@ export function BarcodeScannerDialog({ open, onClose, onDetected, continuous = f
 
         // High-resolution constraints for sharper decoding
         const videoConstraints: MediaTrackConstraints = chosen
-          ? {
+          ? ({
               deviceId: { exact: chosen },
               width: { ideal: 1920 },
               height: { ideal: 1080 },
               frameRate: { ideal: 30 },
-              // @ts-expect-error non-standard but supported on Android Chrome
               focusMode: "continuous",
-            }
-          : {
+            } as MediaTrackConstraints)
+          : ({
               facingMode: { ideal: "environment" },
               width: { ideal: 1920 },
               height: { ideal: 1080 },
               frameRate: { ideal: 30 },
-              // @ts-expect-error
               focusMode: "continuous",
-            };
+            } as MediaTrackConstraints);
 
         setStatus("Focusing…");
         const controls = await reader.decodeFromConstraints(
