@@ -79,6 +79,7 @@ import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authent
 import { Route as AuthenticatedExpensesCategoriesRouteImport } from './routes/_authenticated/expenses.categories'
 import { Route as AuthenticatedEmployeesNewRouteImport } from './routes/_authenticated/employees.new'
 import { Route as AuthenticatedCrmIdIndexRouteImport } from './routes/_authenticated/crm.$id.index'
+import { Route as ApiPublicManifestWebmanifestRouteImport } from './routes/api/public/manifest.webmanifest'
 import { Route as AuthenticatedTransfersReceiveIdRouteImport } from './routes/_authenticated/transfers.receive.$id'
 import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
@@ -480,6 +481,12 @@ const AuthenticatedCrmIdIndexRoute = AuthenticatedCrmIdIndexRouteImport.update({
   path: '/crm/$id/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicManifestWebmanifestRoute =
+  ApiPublicManifestWebmanifestRouteImport.update({
+    id: '/api/public/manifest/webmanifest',
+    path: '/api/public/manifest/webmanifest',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedTransfersReceiveIdRoute =
   AuthenticatedTransfersReceiveIdRouteImport.update({
     id: '/transfers/receive/$id',
@@ -592,6 +599,7 @@ export interface FileRoutesByFullPath {
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
+  '/api/public/manifest/webmanifest': typeof ApiPublicManifestWebmanifestRoute
   '/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -666,6 +674,7 @@ export interface FileRoutesByTo {
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
+  '/api/public/manifest/webmanifest': typeof ApiPublicManifestWebmanifestRoute
   '/crm/$id': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesById {
@@ -745,6 +754,7 @@ export interface FileRoutesById {
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/_authenticated/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
+  '/api/public/manifest/webmanifest': typeof ApiPublicManifestWebmanifestRoute
   '/_authenticated/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -824,6 +834,7 @@ export interface FileRouteTypes {
     | '/products/edit/$id'
     | '/transfers/damaged/new'
     | '/transfers/receive/$id'
+    | '/api/public/manifest/webmanifest'
     | '/crm/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -898,6 +909,7 @@ export interface FileRouteTypes {
     | '/products/edit/$id'
     | '/transfers/damaged/new'
     | '/transfers/receive/$id'
+    | '/api/public/manifest/webmanifest'
     | '/crm/$id'
   id:
     | '__root__'
@@ -976,6 +988,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/transfers/damaged/new'
     | '/_authenticated/transfers/receive/$id'
+    | '/api/public/manifest/webmanifest'
     | '/_authenticated/crm/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -987,6 +1000,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
   ApiPublicSupabaseProxyRoute: typeof ApiPublicSupabaseProxyRoute
+  ApiPublicManifestWebmanifestRoute: typeof ApiPublicManifestWebmanifestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1481,6 +1495,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/manifest/webmanifest': {
+      id: '/api/public/manifest/webmanifest'
+      path: '/api/public/manifest/webmanifest'
+      fullPath: '/api/public/manifest/webmanifest'
+      preLoaderRoute: typeof ApiPublicManifestWebmanifestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/transfers/receive/$id': {
       id: '/_authenticated/transfers/receive/$id'
       path: '/transfers/receive/$id'
@@ -1734,6 +1755,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   InvoiceIdRoute: InvoiceIdRoute,
   ApiPublicSupabaseProxyRoute: ApiPublicSupabaseProxyRoute,
+  ApiPublicManifestWebmanifestRoute: ApiPublicManifestWebmanifestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
