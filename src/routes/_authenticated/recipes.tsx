@@ -571,29 +571,33 @@ function Workbench() {
       {/* New Recipe dialog */}
       {editorOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4"
+          className="fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center sm:p-4"
           onClick={() => !editorSaving && setEditorOpen(false)}
         >
           <div
-            className="bg-card border border-border rounded-lg shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+            className="bg-card border border-border sm:rounded-xl shadow-2xl w-full sm:max-w-4xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-5 border-b border-border flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-semibold">Create Recipe</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Select a product and define its raw material requirements per unit.
+            <div className="p-4 sm:p-6 border-b border-border flex items-start justify-between gap-3 sticky top-0 bg-card z-10">
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <ChefHat className="size-5 text-primary" />
+                  Create Recipe
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Choose a target product and define raw material requirements per unit produced.
                 </p>
               </div>
               <button
                 onClick={() => !editorSaving && setEditorOpen(false)}
-                className="size-8 grid place-items-center rounded-md hover:bg-accent text-muted-foreground"
+                className="size-9 grid place-items-center rounded-md hover:bg-accent text-muted-foreground shrink-0"
+                aria-label="Close"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            <div className="p-5 space-y-4 overflow-auto">
+            <div className="p-4 sm:p-6 space-y-5 overflow-auto flex-1">
               <RecipeEditorBody
                 productId={editorProductId}
                 onChangeProduct={setEditorProductId}
@@ -605,25 +609,27 @@ function Workbench() {
               />
             </div>
 
-            <div className="p-4 border-t border-border flex items-center justify-end gap-2">
+            <div className="p-3 sm:p-4 border-t border-border flex items-center justify-end gap-2 sticky bottom-0 bg-card">
               <button
                 onClick={() => setEditorOpen(false)}
                 disabled={editorSaving}
-                className="px-3 h-9 rounded-md border border-border bg-background text-sm hover:bg-accent disabled:opacity-50"
+                className="px-4 h-10 rounded-md border border-border bg-background text-sm hover:bg-accent disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={() => saveEditor({ closeDialog: true })}
                 disabled={editorSaving || !editorProductId}
-                className="px-4 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+                className="px-5 h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 inline-flex items-center gap-1.5"
               >
+                <Save className="size-4" />
                 {editorSaving ? "Saving…" : "Save Recipe"}
               </button>
             </div>
           </div>
         </div>
       )}
+
     </AppShell>
   );
 }
@@ -1487,15 +1493,14 @@ function ProductSearchPicker({
   const selected = options.find((o) => o.id === value);
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return options.slice(0, 50);
-    return options
-      .filter(
-        (o) =>
-          o.name.toLowerCase().includes(s) ||
-          o.sku.toLowerCase().includes(s),
-      )
-      .slice(0, 50);
+    if (!s) return options;
+    return options.filter(
+      (o) =>
+        o.name.toLowerCase().includes(s) ||
+        o.sku.toLowerCase().includes(s),
+    );
   }, [q, options]);
+
 
   useEffect(() => {
     if (!open) return;
@@ -1542,7 +1547,7 @@ function ProductSearchPicker({
                 />
               </div>
             </div>
-            <div className="max-h-72 overflow-auto py-1">
+            <div className="max-h-[60vh] sm:max-h-96 overflow-auto py-1">
               {filtered.length === 0 ? (
                 <div className="px-3 py-6 text-center text-xs text-muted-foreground">
                   No products match “{q}”
@@ -1559,7 +1564,7 @@ function ProductSearchPicker({
                         setOpen(false);
                         setQ("");
                       }}
-                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-accent ${
+                      className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2 hover:bg-accent ${
                         active ? "bg-accent/60" : ""
                       }`}
                     >
@@ -1580,6 +1585,10 @@ function ProductSearchPicker({
                 })
               )}
             </div>
+            <div className="px-3 py-1.5 border-t border-border bg-muted/40 text-[10px] text-muted-foreground text-center">
+              {filtered.length} of {options.length} products
+            </div>
+
           </div>
         </>
       )}
