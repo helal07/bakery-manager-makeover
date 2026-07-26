@@ -5,6 +5,41 @@
 
 BEGIN;
 
+-- Ensure helper functions exist (idempotent). Required by every policy below.
+CREATE OR REPLACE FUNCTION public.is_bootstrap_superadmin(_user uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+     WHERE ur.user_id = _user AND lower(ur.role::text) IN ('superadmin','owner')
+  ) OR EXISTS (
+    SELECT 1 FROM public.user_role_assignments a
+      JOIN public.app_roles r ON r.id = a.role_id
+     WHERE a.user_id = _user AND lower(r.name) = 'superadmin'
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_is_global_admin(_user uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT _user IS NOT NULL AND (
+    public.is_bootstrap_superadmin(_user)
+    OR EXISTS (
+      SELECT 1 FROM public.user_role_assignments a
+       WHERE a.user_id = _user AND a.showroom_id IS NULL
+    )
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_has_showroom_access(_user uuid, _showroom uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT _user IS NOT NULL AND (
+    public.user_is_global_admin(_user)
+    OR (_showroom IS NOT NULL AND EXISTS (
+      SELECT 1 FROM public.user_role_assignments a
+       WHERE a.user_id = _user AND a.showroom_id = _showroom
+    ))
+  );
+$$;
+
 -- app_roles
 DROP POLICY IF EXISTS app_roles_admin_write ON public.app_roles;
 CREATE POLICY app_roles_admin_write ON public.app_roles FOR ALL TO authenticated
