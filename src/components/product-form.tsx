@@ -61,7 +61,7 @@ function genSku(category: ProductCategory, name: string) {
   return `${prefix}-${slug || "NEW"}-${rand}`;
 }
 
-export function ProductForm({ editId }: { editId?: string }) {
+export function ProductForm({ editId, from }: { editId?: string; from?: string }) {
   const navigate = useNavigate();
   const { currentShowroomId } = useShowroomScope();
   const isEdit = !!editId;
@@ -72,10 +72,15 @@ export function ProductForm({ editId }: { editId?: string }) {
   const [rm, setRm] = useState({ name: "", unit: "", cost: "", threshold: "" });
   const [rmSaving, setRmSaving] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [recipeEnabled, setRecipeEnabled] = useState(false);
+  const [ingredients, setIngredients] = useState<IngredientRow[]>([]);
+  const [recipeIndex, setRecipeIndex] = useState<Record<string, number>>({});
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [copySource, setCopySource] = useState<string>("");
+  const [copyBusy, setCopyBusy] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(isEdit);
+  const [loading, setLoading] = useState(isEdit || !!from);
 
   useEffect(() => {
     (async () => {
