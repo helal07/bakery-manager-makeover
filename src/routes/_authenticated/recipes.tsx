@@ -254,14 +254,14 @@ function Workbench() {
   const openNewRecipe = () => {
     const firstFree = products.find((p) => !(recipeMap[p.id]?.length));
     setEditorProductId(firstFree?.id ?? products[0]?.id ?? "");
-    setEditorItems([{ materialId: "", qty: 1 }]);
+    setEditorItems([{ materialId: "", qty: 0 }]);
     setEditorOverheads([]);
     setEditorOpen(true);
   };
   const openEditActive = () => {
     if (!active) return;
     setEditorProductId(active.product.id);
-    setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 1 }]);
+    setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 0 }]);
     setEditorOverheads(activeRecipeOverheads.map((r) => ({ ...r })));
     setTab("recipe");
   };
@@ -331,7 +331,7 @@ function Workbench() {
   useEffect(() => {
     if (tab !== "recipe" || !active) return;
     setEditorProductId(active.product.id);
-    setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 1 }]);
+    setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 0 }]);
     setEditorOverheads(activeRecipeOverheads.map((r) => ({ ...r })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, activeId, activeRecipeOverheads]);
@@ -1127,7 +1127,7 @@ function RecipeEditorBody({
             Ingredients (per unit)
           </label>
           <button
-            onClick={() => setItems((it) => [...it, { materialId: "", qty: 1 }])}
+            onClick={() => setItems((it) => [...it, { materialId: "", qty: 0 }])}
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
           >
             <Plus className="size-3" /> Add ingredient
