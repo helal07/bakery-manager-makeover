@@ -612,6 +612,49 @@ function Workbench() {
   );
 }
 
+const DECIMAL_RE = /^\d*(\.\d{0,6})?$/;
+function DecimalInput({
+  value,
+  onChange,
+  className,
+  placeholder = "0",
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  className?: string;
+  placeholder?: string;
+}) {
+  const [draft, setDraft] = useState<string>(value ? String(value) : "");
+  useEffect(() => {
+    // sync when external value changes and doesn't match current draft
+    const parsed = Number(draft);
+    if (!Number.isFinite(parsed) || parsed !== value) {
+      setDraft(value ? String(value) : "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      placeholder={placeholder}
+      value={draft}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (v === "" || DECIMAL_RE.test(v)) {
+          setDraft(v);
+          const n = v === "" || v === "." ? 0 : Number(v);
+          if (Number.isFinite(n)) onChange(n);
+        }
+      }}
+      onBlur={() => {
+        if (draft === "" || draft === ".") { setDraft(""); onChange(0); }
+      }}
+      className={className}
+    />
+  );
+}
+
 function TabButton({
   active,
   onClick,
