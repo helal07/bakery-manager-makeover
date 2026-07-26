@@ -10,25 +10,50 @@ export const Route = createFileRoute("/api/public/manifest")({
 
         let name = "Muzahid Food";
         let short = "Muzahid";
-        let themeColor = "#7c3aed";
-        let bgColor = "#ffffff";
+        const themeColor = "#7c3aed";
+        const bgColor = "#ffffff";
         let iconUrl = "/favicon.ico";
+        let iconType = "image/png";
+
+        const detectType = (u: string): string => {
+          const m = u.match(/^data:([^;,]+)[;,]/i);
+          if (m) return m[1];
+          const ext = u.split("?")[0].split("#")[0].split(".").pop()?.toLowerCase();
+          if (ext === "svg") return "image/svg+xml";
+          if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+          if (ext === "webp") return "image/webp";
+          if (ext === "ico") return "image/x-icon";
+          return "image/png";
+        };
 
         try {
           if (url && key) {
             const sb = createClient(url, key, { auth: { persistSession: false } });
-            const { data } = await sb
+            // Try is_current=true first, fall back to latest row.
+            type Row = { name?: string; logo_url?: string | null };
+            let row: Row | null = null;
+            const primary = await sb
               .from("company_settings")
-              .select("name, logo_url")
+              .select("name, logo_url, updated_at")
               .eq("is_current", true)
               .order("updated_at", { ascending: false })
               .limit(1)
               .maybeSingle();
-            if (data?.name) {
-              name = data.name;
-              short = data.name.split(/\s+/)[0] || data.name;
+            row = ((primary.data as unknown) as Row | null) ?? null;
+            if (!row) {
+              const fallback = await sb
+                .from("company_settings")
+                .select("name, logo_url, updated_at")
+                .order("updated_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              row = ((fallback.data as unknown) as Row | null) ?? null;
             }
-            const stored = (data?.logo_url as string) || "";
+            if (row?.name) {
+              name = row.name;
+              short = row.name.split(/\s+/)[0] || row.name;
+            }
+            const stored = (row?.logo_url as string) || "";
             if (stored) {
               if (/^(https?:|data:)/i.test(stored)) {
                 iconUrl = stored;
@@ -38,6 +63,7 @@ export const Route = createFileRoute("/api/public/manifest")({
                   .createSignedUrl(stored, 60 * 60 * 24 * 7);
                 if (signed?.signedUrl) iconUrl = signed.signedUrl;
               }
+              iconType = detectType(iconUrl);
             }
           }
         } catch {
@@ -55,11 +81,12 @@ export const Route = createFileRoute("/api/public/manifest")({
           theme_color: themeColor,
           background_color: bgColor,
           icons: [
-            { src: iconUrl, sizes: "192x192", type: "image/png", purpose: "any" },
-            { src: iconUrl, sizes: "512x512", type: "image/png", purpose: "any" },
-            { src: iconUrl, sizes: "512x512", type: "image/png", purpose: "maskable" },
+            { src: iconUrl, sizes: "192x192", type: iconType, purpose: "any" },
+            { src: iconUrl, sizes: "512x512", type: iconType, purpose: "any" },
+            { src: iconUrl, sizes: "512x512", type: iconType, purpose: "maskable" },
           ],
         };
+
 
         return new Response(JSON.stringify(manifest), {
           status: 200,
