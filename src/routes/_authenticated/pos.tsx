@@ -892,6 +892,14 @@ function PosPage() {
             </div>
             <button
               type="button"
+              onClick={() => setScannerOpen(true)}
+              className="shrink-0 h-9 w-9 grid place-items-center rounded-md border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+              title="Scan with camera"
+            >
+              <Camera className="size-4" />
+            </button>
+            <button
+              type="button"
               onClick={() => setMobileTab(mobileTab === "products" ? "cart" : "products")}
               className="lg:hidden shrink-0 h-9 w-9 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
               title={mobileTab === "products" ? "Back to cart" : "Browse products"}
