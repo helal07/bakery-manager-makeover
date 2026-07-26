@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Check,
   Clock,
+  BookOpen,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -45,14 +46,14 @@ import { PermissionGate } from "@/components/permission-gate";
 import { pageTitle } from "@/lib/company-settings";
 import { IngredientPicker } from "@/components/ingredient-picker";
 
-type Search = { product?: string; tab?: "produce" | "recipe" | "history" };
+type Search = { product?: string; tab?: "produce" | "recipe" | "history" | "list" };
 
 export const Route = createFileRoute("/_authenticated/recipes")({
   head: () => ({ meta: [{ title: pageTitle("Production Workbench") }] }),
   validateSearch: (s: Record<string, unknown>): Search => ({
     product: typeof s.product === "string" ? s.product : undefined,
     tab:
-      s.tab === "recipe" || s.tab === "history" || s.tab === "produce"
+      s.tab === "recipe" || s.tab === "history" || s.tab === "produce" || s.tab === "list"
         ? s.tab
         : undefined,
   }),
@@ -66,7 +67,7 @@ export const Route = createFileRoute("/_authenticated/recipes")({
   ),
 });
 
-type TabKey = "produce" | "recipe" | "history";
+type TabKey = "produce" | "recipe" | "history" | "list";
 type BatchRow = {
   id: string;
   qty: number;
@@ -444,18 +445,22 @@ function Workbench() {
 
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 border-b border-border">
+          <div className="flex items-center gap-1 border-b border-border overflow-x-auto">
             <TabButton active={tab === "produce"} onClick={() => setTab("produce")} icon={<Play className="size-3.5" />} label="Produce" />
             <TabButton active={tab === "recipe"} onClick={() => setTab("recipe")} icon={<Pencil className="size-3.5" />} label="Edit Recipe" />
+            <TabButton active={tab === "list"} onClick={() => setTab("list")} icon={<BookOpen className="size-3.5" />} label="Recipe list" />
             <TabButton active={tab === "history"} onClick={() => setTab("history")} icon={<History className="size-3.5" />} label="Batch history" />
           </div>
 
-          {tab === "recipe" && (
+          {tab === "list" && (
             <RecipeAccordionList
               recipes={withRecipes}
               rawMaterials={rawMaterials}
               activeId={activeId}
-              onPick={(id) => setActiveId(id)}
+              onPick={(id) => {
+                setActiveId(id);
+                setTab("recipe");
+              }}
             />
           )}
 
