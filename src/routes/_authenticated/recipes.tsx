@@ -692,6 +692,137 @@ function TabButton({
   );
 }
 
+
+function RecipeAccordionList({
+  recipes,
+  rawMaterials,
+  activeId,
+  onPick,
+}: {
+  recipes: { product: Product; items: Ingredient[] }[];
+  rawMaterials: RawMaterial[];
+  activeId: string;
+  onPick: (id: string) => void;
+}) {
+  const [openId, setOpenId] = useState<string>(activeId);
+  const [q, setQ] = useState("");
+  const rmMap = useMemo(() => {
+    const m: Record<string, RawMaterial> = {};
+    for (const r of rawMaterials) m[r.id] = r;
+    return m;
+  }, [rawMaterials]);
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return recipes;
+    return recipes.filter(
+      (r) =>
+        r.product.name.toLowerCase().includes(term) ||
+        (r.product.sku ?? "").toLowerCase().includes(term),
+    );
+  }, [recipes, q]);
+  return (
+    <Card className="p-3">
+      <div className="flex items-center justify-between mb-2 px-1 gap-2 flex-wrap">
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+          All recipes ({recipes.length})
+        </div>
+        <div className="relative">
+          <Search className="size-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search recipes…"
+            className="h-8 pl-7 pr-2 text-xs rounded-md border border-border bg-background w-52"
+          />
+        </div>
+      </div>
+      <div className="divide-y divide-border border border-border rounded-md overflow-hidden">
+        {filtered.length === 0 && (
+          <div className="p-3 text-xs text-muted-foreground">No matching recipes.</div>
+        )}
+        {filtered.map((r) => {
+          const open = openId === r.product.id;
+          const isActive = activeId === r.product.id;
+          return (
+            <div key={r.product.id} className="bg-background">
+              <button
+                onClick={() => setOpenId(open ? "" : r.product.id)}
+                className={`w-full flex items-center gap-2 px-3 h-10 text-left text-sm transition-colors ${
+                  isActive ? "bg-primary/5" : "hover:bg-accent"
+                }`}
+              >
+                <ChevronDown
+                  className={`size-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
+                />
+                <ChefHat className="size-3.5 text-muted-foreground shrink-0" />
+                <span className="flex-1 truncate">
+                  {r.product.name}
+                  {isActive && (
+                    <span className="ml-2 text-[10px] uppercase tracking-wider text-primary">
+                      editing
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] text-muted-foreground shrink-0">
+                  {r.items.length} ingr.
+                </span>
+                {!isActive && (
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPick(r.product.id);
+                    }}
+                    className="ml-1 inline-flex items-center h-6 px-2 rounded border border-border text-[11px] hover:bg-accent"
+                  >
+                    Edit
+                  </span>
+                )}
+              </button>
+              {open && (
+                <div className="px-3 pb-3 pt-1 bg-muted/30">
+                  {r.items.length === 0 ? (
+                    <div className="text-xs text-muted-foreground py-1">
+                      No ingredients yet.
+                    </div>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-muted-foreground">
+                          <th className="text-left font-normal py-1">Ingredient</th>
+                          <th className="text-right font-normal py-1 w-28">Qty / unit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {r.items.map((it, i) => {
+                          const raw = rmMap[it.materialId];
+                          return (
+                            <tr key={i} className="border-t border-border/60">
+                              <td className="py-1">
+                                {raw?.name ?? "—"}
+                                {raw?.unit && (
+                                  <span className="text-muted-foreground"> ({raw.unit})</span>
+                                )}
+                              </td>
+                              <td className="py-1 text-right tabular-nums">
+                                {it.qty}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
 function ProduceTab({
   productName,
   rows,
