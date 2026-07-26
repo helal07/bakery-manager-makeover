@@ -12,9 +12,15 @@ import { addRawMaterial, loadRawMaterials, type RawMaterial } from "@/lib/raw-ma
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { IngredientPicker } from "@/components/ingredient-picker";
-import { loadRecipeFor, saveRecipe, type Ingredient } from "@/lib/recipe-store";
+import { loadRecipeFor, loadRecipes, saveRecipe, type Ingredient } from "@/lib/recipe-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { uploadImage } from "@/lib/storage";
+
+// Accept up to 6 decimal places. Empty string is allowed while typing.
+const QTY_RE = /^\d*(?:\.\d{0,6})?$/;
+
+// Local editor row keeps qty as a STRING so users can type ".029" naturally.
+type IngredientRow = { materialId: string; qty: string };
 
 type FormState = {
   sku: string;
