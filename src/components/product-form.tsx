@@ -206,12 +206,27 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
       toast.info("Add raw materials first from the Raw Materials page");
       return;
     }
-    setIngredients((l) => [...l, { materialId: next.id, qty: 1 }]);
+    setIngredients((l) => [...l, { materialId: next.id, qty: "" }]);
   };
-  const updateIngredient = (idx: number, patch: Partial<Ingredient>) =>
+  const updateIngredient = (idx: number, patch: Partial<IngredientRow>) =>
     setIngredients((l) => l.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const removeIngredient = (idx: number) =>
     setIngredients((l) => l.filter((_, i) => i !== idx));
+
+  const copyFromSource = async (srcProductId: string) => {
+    if (!srcProductId) return;
+    setCopyBusy(true);
+    try {
+      const rows = await loadRecipeFor(srcProductId);
+      setIngredients(rows.map((r) => ({ materialId: r.materialId, qty: String(r.qty) })));
+      const src = allProducts.find((p) => p.id === srcProductId);
+      toast.success(`Copied ${rows.length} ingredient${rows.length === 1 ? "" : "s"}${src ? ` from ${src.name}` : ""}`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load source recipe");
+    } finally {
+      setCopyBusy(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
