@@ -255,7 +255,16 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         shelfLifeDays: shelf,
         imageUrl: form.imageUrl || undefined,
       };
-      const clean = ingredients.filter((i) => i.materialId && i.qty > 0);
+      const clean: Ingredient[] = recipeEnabled
+        ? ingredients
+            .map((i) => ({ materialId: i.materialId, qty: Number(i.qty) }))
+            .filter((i) => i.materialId && Number.isFinite(i.qty) && i.qty > 0)
+        : [];
+      if (recipeEnabled && clean.length === 0) {
+        toast.error("Add at least one ingredient with quantity > 0, or turn off the recipe toggle");
+        setSaving(false);
+        return;
+      }
 
       if (isEdit && editId) {
         let imageUrl = payload.imageUrl;
