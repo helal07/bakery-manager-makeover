@@ -149,11 +149,15 @@ function RootComponent() {
     let cancelled = false;
     const apply = (href: string) => {
       if (!href || cancelled) return;
-      document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]').forEach((l) => l.remove());
-      const link = document.createElement("link");
-      link.rel = "icon";
-      link.href = href;
-      document.head.appendChild(link);
+      document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"], link[rel="apple-touch-icon"]').forEach((l) => l.remove());
+      const icon = document.createElement("link");
+      icon.rel = "icon";
+      icon.href = href;
+      document.head.appendChild(icon);
+      const apple = document.createElement("link");
+      apple.rel = "apple-touch-icon";
+      apple.href = href;
+      document.head.appendChild(apple);
     };
     const load = async () => {
       try {
