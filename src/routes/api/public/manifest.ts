@@ -30,7 +30,8 @@ export const Route = createFileRoute("/api/public/manifest")({
           if (url && key) {
             const sb = createClient(url, key, { auth: { persistSession: false } });
             // Try is_current=true first, fall back to latest row.
-            let row: { name?: string; logo_url?: string | null } | null = null;
+            type Row = { name?: string; logo_url?: string | null };
+            let row: Row | null = null;
             const primary = await sb
               .from("company_settings")
               .select("name, logo_url, updated_at")
