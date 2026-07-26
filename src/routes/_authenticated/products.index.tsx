@@ -16,6 +16,7 @@ import {
   Download,
   MoreHorizontal,
   Eye,
+  Copy,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -410,6 +411,10 @@ function Products() {
                                 icon={<Pencil className="size-3.5" />}
                                 onClick={() => { setActionOpen(null); navigate({ to: "/products/edit/$id", params: { id: p.id } }); }}
                               >Edit</ActionItem>
+                              <ActionItem
+                                icon={<Copy className="size-3.5" />}
+                                onClick={() => { setActionOpen(null); navigate({ to: "/products/new", search: { from: p.id } }); }}
+                              >Duplicate</ActionItem>
                               <ActionItem
                                 icon={<QrCode className="size-3.5" />}
                                 onClick={() => { setActionOpen(null); setLabelFor(p); setLabelQty(1); }}

@@ -12,9 +12,15 @@ import { addRawMaterial, loadRawMaterials, type RawMaterial } from "@/lib/raw-ma
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { IngredientPicker } from "@/components/ingredient-picker";
-import { loadRecipeFor, saveRecipe, type Ingredient } from "@/lib/recipe-store";
+import { loadRecipeFor, loadRecipes, saveRecipe, type Ingredient } from "@/lib/recipe-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { uploadImage } from "@/lib/storage";
+
+// Accept up to 6 decimal places. Empty string is allowed while typing.
+const QTY_RE = /^\d*(?:\.\d{0,6})?$/;
+
+// Local editor row keeps qty as a STRING so users can type ".029" naturally.
+type IngredientRow = { materialId: string; qty: string };
 
 type FormState = {
   sku: string;
@@ -55,7 +61,7 @@ function genSku(category: ProductCategory, name: string) {
   return `${prefix}-${slug || "NEW"}-${rand}`;
 }
 
-export function ProductForm({ editId }: { editId?: string }) {
+export function ProductForm({ editId, from }: { editId?: string; from?: string }) {
   const navigate = useNavigate();
   const { currentShowroomId } = useShowroomScope();
   const isEdit = !!editId;
@@ -66,27 +72,37 @@ export function ProductForm({ editId }: { editId?: string }) {
   const [rm, setRm] = useState({ name: "", unit: "", cost: "", threshold: "" });
   const [rmSaving, setRmSaving] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [recipeEnabled, setRecipeEnabled] = useState(false);
+  const [ingredients, setIngredients] = useState<IngredientRow[]>([]);
+  const [recipeIndex, setRecipeIndex] = useState<Record<string, number>>({});
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [copySource, setCopySource] = useState<string>("");
+  const [copyBusy, setCopyBusy] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(isEdit);
+  const [loading, setLoading] = useState(isEdit || !!from);
 
   useEffect(() => {
     (async () => {
       try {
-        const [cs, rms, us] = await Promise.all([
+        const [cs, rms, us, allPs, rMap] = await Promise.all([
           loadCategories(),
           loadRawMaterials(currentShowroomId ?? null),
           loadUnits(),
+          loadProducts(currentShowroomId ?? null),
+          loadRecipes(),
         ]);
         setCats(cs);
         setRawMaterials(rms);
         setUnits(us);
+        setAllProducts(allPs);
+        const idx: Record<string, number> = {};
+        for (const pid of Object.keys(rMap)) idx[pid] = (rMap[pid] ?? []).length;
+        setRecipeIndex(idx);
         setRm((s) => ({ ...s, unit: s.unit || us[0]?.code || "" }));
 
         if (isEdit && editId) {
-          const products = await loadProducts(currentShowroomId ?? null);
-          const p = products.find((x) => x.id === editId);
+          const p = allPs.find((x) => x.id === editId);
           if (!p) {
             toast.error("Product not found");
             navigate({ to: "/products" });
@@ -103,9 +119,28 @@ export function ProductForm({ editId }: { editId?: string }) {
             imageUrl: p.imageUrl ?? "",
           });
           try {
-            setIngredients(await loadRecipeFor(p.id));
+            const rows = await loadRecipeFor(p.id);
+            setIngredients(rows.map((r) => ({ materialId: r.materialId, qty: String(r.qty) })));
+            setRecipeEnabled(rows.length > 0);
           } catch {
             setIngredients([]);
+            setRecipeEnabled(false);
+          }
+        } else if (from) {
+          const src = allPs.find((x) => x.id === from);
+          if (!src) {
+            toast.error("Source product not found");
+          } else {
+            setForm({
+              sku: "",
+              name: `${src.name} (Copy)`,
+              category: src.category,
+              price: String(src.price),
+              stock: "0",
+              threshold: String(src.threshold),
+              shelfLifeDays: src.shelfLifeDays !== undefined ? String(src.shelfLifeDays) : "",
+              imageUrl: src.imageUrl ?? "",
+            });
           }
         } else {
           setForm((f) => (f.category ? f : { ...f, category: cs[0] ?? "" }));
@@ -117,7 +152,7 @@ export function ProductForm({ editId }: { editId?: string }) {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentShowroomId, editId]);
+  }, [currentShowroomId, editId, from]);
 
   const submitNewRawMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +168,8 @@ export function ProductForm({ editId }: { editId?: string }) {
       });
       const rms = await loadRawMaterials(currentShowroomId ?? null);
       setRawMaterials(rms);
-      setIngredients((l) => [...l, { materialId: created.id, qty: 1 }]);
+      setIngredients((l) => [...l, { materialId: created.id, qty: "" }]);
+      setRecipeEnabled(true);
       setRm({ name: "", unit: units[0]?.code ?? "", cost: "", threshold: "" });
       setRmOpen(false);
       toast.success(`Added "${created.name}"`);
@@ -170,12 +206,27 @@ export function ProductForm({ editId }: { editId?: string }) {
       toast.info("Add raw materials first from the Raw Materials page");
       return;
     }
-    setIngredients((l) => [...l, { materialId: next.id, qty: 1 }]);
+    setIngredients((l) => [...l, { materialId: next.id, qty: "" }]);
   };
-  const updateIngredient = (idx: number, patch: Partial<Ingredient>) =>
+  const updateIngredient = (idx: number, patch: Partial<IngredientRow>) =>
     setIngredients((l) => l.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const removeIngredient = (idx: number) =>
     setIngredients((l) => l.filter((_, i) => i !== idx));
+
+  const copyFromSource = async (srcProductId: string) => {
+    if (!srcProductId) return;
+    setCopyBusy(true);
+    try {
+      const rows = await loadRecipeFor(srcProductId);
+      setIngredients(rows.map((r) => ({ materialId: r.materialId, qty: String(r.qty) })));
+      const src = allProducts.find((p) => p.id === srcProductId);
+      toast.success(`Copied ${rows.length} ingredient${rows.length === 1 ? "" : "s"}${src ? ` from ${src.name}` : ""}`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load source recipe");
+    } finally {
+      setCopyBusy(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,7 +255,16 @@ export function ProductForm({ editId }: { editId?: string }) {
         shelfLifeDays: shelf,
         imageUrl: form.imageUrl || undefined,
       };
-      const clean = ingredients.filter((i) => i.materialId && i.qty > 0);
+      const clean: Ingredient[] = recipeEnabled
+        ? ingredients
+            .map((i) => ({ materialId: i.materialId, qty: Number(i.qty) }))
+            .filter((i) => i.materialId && Number.isFinite(i.qty) && i.qty > 0)
+        : [];
+      if (recipeEnabled && clean.length === 0) {
+        toast.error("Add at least one ingredient with quantity > 0, or turn off the recipe toggle");
+        setSaving(false);
+        return;
+      }
 
       if (isEdit && editId) {
         let imageUrl = payload.imageUrl;
@@ -353,80 +413,133 @@ export function ProductForm({ editId }: { editId?: string }) {
           </Card>
 
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold">Ingredients & Measurement</h3>
-              <div className="flex items-center gap-2">
-                {rawMaterials.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div>
+                <h3 className="text-sm font-semibold">Recipe & Ingredients</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Turn on to attach a bill-of-materials for this product.
+                </p>
+              </div>
+              <label className="inline-flex items-center gap-2 text-xs cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={recipeEnabled}
+                  onChange={(e) => setRecipeEnabled(e.target.checked)}
+                  className="size-4"
+                />
+                <span>Enable recipe</span>
+              </label>
+            </div>
+
+            {recipeEnabled && (
+              <>
+                <div className="flex flex-wrap items-center gap-2 mb-3 rounded-md border border-dashed border-border bg-muted/20 p-2">
+                  <span className="text-xs text-muted-foreground">Copy from existing recipe:</span>
+                  <select
+                    value={copySource}
+                    onChange={(e) => setCopySource(e.target.value)}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-xs min-w-[180px]"
+                  >
+                    <option value="">Select product…</option>
+                    {allProducts
+                      .filter((p) => (recipeIndex[p.id] ?? 0) > 0 && p.id !== editId)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                  </select>
                   <button
                     type="button"
-                    onClick={addIngredient}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
+                    disabled={!copySource || copyBusy}
+                    onClick={() => copyFromSource(copySource)}
+                    className="text-xs px-2 py-1 rounded border border-border hover:bg-accent disabled:opacity-50"
                   >
-                    <Plus className="size-3" /> Add ingredient
+                    {copyBusy ? "Copying…" : "Copy ingredients"}
                   </button>
+                  <span className="text-[11px] text-muted-foreground">
+                    Edits here override this product's recipe only.
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 mb-2">
+                  {rawMaterials.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={addIngredient}
+                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
+                    >
+                      <Plus className="size-3" /> Add ingredient
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setRmOpen(true)}
+                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Plus className="size-3" /> Add raw material
+                  </button>
+                </div>
+
+                {rawMaterials.length === 0 ? (
+                  <div className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-sm">
+                    <div className="font-medium mb-1">No raw materials yet</div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Ingredients are built from your raw materials (flour, sugar, etc.). Add
+                      one right here without leaving this page.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setRmOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      <Plus className="size-3.5" /> Add raw material
+                    </button>
+                  </div>
+                ) : ingredients.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">
+                    Click <span className="font-medium">Add ingredient</span> above, or copy from an existing recipe.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {ingredients.map((ing, idx) => {
+                      const mat = rawMaterials.find((r) => r.id === ing.materialId);
+                      const usedIds = new Set(
+                        ingredients.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean),
+                      );
+                      return (
+                        <div key={idx} className="flex items-center gap-2">
+                          <IngredientPicker
+                            materials={rawMaterials}
+                            value={ing.materialId}
+                            onChange={(id) => updateIngredient(idx, { materialId: id })}
+                            disabledIds={usedIds}
+                          />
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={ing.qty}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (v === "" || /^\d*\.?\d{0,6}$/.test(v)) {
+                                updateIngredient(idx, { qty: v });
+                              }
+                            }}
+                            className="w-24 text-right"
+                          />
+                          <span className="text-xs text-muted-foreground w-10">{mat?.unit ?? ""}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeIngredient(idx)}
+                            className="size-8 grid place-items-center rounded text-destructive hover:bg-destructive/10"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setRmOpen(true)}
-                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Plus className="size-3" /> Add raw material
-                </button>
-              </div>
-            </div>
-            {rawMaterials.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-sm">
-                <div className="font-medium mb-1">No raw materials yet</div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Ingredients are built from your raw materials (flour, sugar, etc.). Add
-                  one right here without leaving this page.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setRmOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Plus className="size-3.5" /> Add raw material
-                </button>
-              </div>
-            ) : ingredients.length === 0 ? (
-              <div className="text-xs text-muted-foreground py-2">
-                Click <span className="font-medium">Add ingredient</span> above to pick
-                raw materials that will be deducted from stock per unit sold.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {ingredients.map((ing, idx) => {
-                  const mat = rawMaterials.find((r) => r.id === ing.materialId);
-                  const usedIds = new Set(ingredients.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean));
-                  return (
-                    <div key={idx} className="flex items-center gap-2">
-                      <IngredientPicker
-                        materials={rawMaterials}
-                        value={ing.materialId}
-                        onChange={(id) => updateIngredient(idx, { materialId: id })}
-                        disabledIds={usedIds}
-                      />
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.0001"
-                        value={ing.qty}
-                        onChange={(e) => updateIngredient(idx, { qty: Number(e.target.value) || 0 })}
-                        className="w-24"
-                      />
-                      <span className="text-xs text-muted-foreground w-10">{mat?.unit ?? ""}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeIngredient(idx)}
-                        className="size-8 grid place-items-center rounded text-destructive hover:bg-destructive/10"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+              </>
             )}
           </Card>
         </div>
