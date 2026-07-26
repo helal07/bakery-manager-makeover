@@ -42,6 +42,7 @@ import { Route as AuthenticatedProductionIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedEmployeesIndexRouteImport } from './routes/_authenticated/employees.index'
 import { Route as AuthenticatedCrmIndexRouteImport } from './routes/_authenticated/crm.index'
 import { Route as ApiPublicSupabaseProxyRouteImport } from './routes/api/public/supabase-proxy'
+import { Route as ApiPublicManifestRouteImport } from './routes/api/public/manifest'
 import { Route as AuthenticatedTransfersNewRouteImport } from './routes/_authenticated/transfers.new'
 import { Route as AuthenticatedSettingsShowroomsRouteImport } from './routes/_authenticated/settings.showrooms'
 import { Route as AuthenticatedSettingsLandingRouteImport } from './routes/_authenticated/settings.landing'
@@ -258,6 +259,11 @@ const AuthenticatedCrmIndexRoute = AuthenticatedCrmIndexRouteImport.update({
 const ApiPublicSupabaseProxyRoute = ApiPublicSupabaseProxyRouteImport.update({
   id: '/api/public/supabase-proxy',
   path: '/api/public/supabase-proxy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicManifestRoute = ApiPublicManifestRouteImport.update({
+  id: '/api/public/manifest',
+  path: '/api/public/manifest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTransfersNewRoute =
@@ -578,6 +584,7 @@ export interface FileRoutesByFullPath {
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
+  '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/crm/': typeof AuthenticatedCrmIndexRoute
   '/employees/': typeof AuthenticatedEmployeesIndexRoute
@@ -652,6 +659,7 @@ export interface FileRoutesByTo {
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
+  '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/crm': typeof AuthenticatedCrmIndexRoute
   '/employees': typeof AuthenticatedEmployeesIndexRoute
@@ -731,6 +739,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/_authenticated/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/_authenticated/transfers/new': typeof AuthenticatedTransfersNewRoute
+  '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/_authenticated/crm/': typeof AuthenticatedCrmIndexRoute
   '/_authenticated/employees/': typeof AuthenticatedEmployeesIndexRoute
@@ -810,6 +819,7 @@ export interface FileRouteTypes {
     | '/settings/landing'
     | '/settings/showrooms'
     | '/transfers/new'
+    | '/api/public/manifest'
     | '/api/public/supabase-proxy'
     | '/crm/'
     | '/employees/'
@@ -884,6 +894,7 @@ export interface FileRouteTypes {
     | '/settings/landing'
     | '/settings/showrooms'
     | '/transfers/new'
+    | '/api/public/manifest'
     | '/api/public/supabase-proxy'
     | '/crm'
     | '/employees'
@@ -962,6 +973,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/landing'
     | '/_authenticated/settings/showrooms'
     | '/_authenticated/transfers/new'
+    | '/api/public/manifest'
     | '/api/public/supabase-proxy'
     | '/_authenticated/crm/'
     | '/_authenticated/employees/'
@@ -986,6 +998,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
+  ApiPublicManifestRoute: typeof ApiPublicManifestRoute
   ApiPublicSupabaseProxyRoute: typeof ApiPublicSupabaseProxyRoute
 }
 
@@ -1220,6 +1233,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/supabase-proxy'
       fullPath: '/api/public/supabase-proxy'
       preLoaderRoute: typeof ApiPublicSupabaseProxyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/manifest': {
+      id: '/api/public/manifest'
+      path: '/api/public/manifest'
+      fullPath: '/api/public/manifest'
+      preLoaderRoute: typeof ApiPublicManifestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/transfers/new': {
@@ -1733,6 +1753,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   InvoiceIdRoute: InvoiceIdRoute,
+  ApiPublicManifestRoute: ApiPublicManifestRoute,
   ApiPublicSupabaseProxyRoute: ApiPublicSupabaseProxyRoute,
 }
 export const routeTree = rootRouteImport
