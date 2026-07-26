@@ -18,6 +18,7 @@ import {
   listHeldSales, holdSale, deleteHeldSale,
   type RegisterSession, type HeldSaleRow,
 } from "@/lib/pos-v7-store";
+import { BarcodeScannerDialog } from "@/components/barcode-scanner-dialog";
 
 const sb = supabase as any;
 
