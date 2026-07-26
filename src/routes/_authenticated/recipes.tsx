@@ -442,6 +442,35 @@ function Workbench() {
             </div>
           </Card>
 
+          {/* Visible recipe list */}
+          <Card className="p-3">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                All recipes ({withRecipes.length})
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {withRecipes.map((r) => {
+                const isActive = r.product.id === activeId;
+                return (
+                  <button
+                    key={r.product.id}
+                    onClick={() => { setActiveId(r.product.id); setTab("produce"); }}
+                    className={`inline-flex items-center gap-1.5 px-2.5 h-8 rounded-md border text-xs transition-colors ${
+                      isActive
+                        ? "border-primary bg-primary/10 text-foreground font-medium"
+                        : "border-border bg-background hover:bg-accent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <ChefHat className="size-3" />
+                    <span className="truncate max-w-[160px]">{r.product.name}</span>
+                    <span className="text-[10px] opacity-70">· {r.items.length}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+
           {/* Tabs */}
           <div className="flex items-center gap-1 border-b border-border">
             <TabButton active={tab === "produce"} onClick={() => setTab("produce")} icon={<Play className="size-3.5" />} label="Produce" />
@@ -609,6 +638,49 @@ function Workbench() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+const DECIMAL_RE = /^\d*(\.\d{0,6})?$/;
+function DecimalInput({
+  value,
+  onChange,
+  className,
+  placeholder = "0",
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  className?: string;
+  placeholder?: string;
+}) {
+  const [draft, setDraft] = useState<string>(value ? String(value) : "");
+  useEffect(() => {
+    // sync when external value changes and doesn't match current draft
+    const parsed = Number(draft);
+    if (!Number.isFinite(parsed) || parsed !== value) {
+      setDraft(value ? String(value) : "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      placeholder={placeholder}
+      value={draft}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (v === "" || DECIMAL_RE.test(v)) {
+          setDraft(v);
+          const n = v === "" || v === "." ? 0 : Number(v);
+          if (Number.isFinite(n)) onChange(n);
+        }
+      }}
+      onBlur={() => {
+        if (draft === "" || draft === ".") { setDraft(""); onChange(0); }
+      }}
+      className={className}
+    />
   );
 }
 
@@ -843,17 +915,13 @@ function ProduceTab({
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={o.amount}
-                  onChange={(e) => {
-                    const v = Math.max(0, +e.target.value || 0);
+                <DecimalInput
+                  value={Number(o.amount) || 0}
+                  onChange={(v) => {
                     setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, amount: v } : x)));
                   }}
-                  placeholder="৳ Amount"
-                  className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right"
+                  placeholder="৳ 0"
+                  className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right outline-none focus:border-primary tabular-nums"
                 />
                 <button
                   onClick={() => setOverheads((prev) => prev.filter((_, i) => i !== idx))}
@@ -962,17 +1030,13 @@ function RecipeTab(props: {
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={o.amount}
-                onChange={(e) => {
-                  const v = Math.max(0, +e.target.value || 0);
+              <DecimalInput
+                value={Number(o.amount) || 0}
+                onChange={(v) => {
                   props.setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, amount: v } : x)));
                 }}
-                placeholder="৳ Amount"
-                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right"
+                placeholder="৳ 0"
+                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right outline-none focus:border-primary tabular-nums"
               />
               <select
                 value={o.mode}
@@ -1097,15 +1161,12 @@ function RecipeEditorBody({
                     }
                     disabledIds={usedIds}
                   />
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.0001"
-                    value={it.qty}
-                    onChange={(e) =>
+                  <DecimalInput
+                    value={Number(it.qty) || 0}
+                    onChange={(n) =>
                       setItems((arr) =>
                         arr.map((x, i) =>
-                          i === idx ? { ...x, qty: Math.max(0, +e.target.value || 0) } : x,
+                          i === idx ? { ...x, qty: n } : x,
                         ),
                       )
                     }
