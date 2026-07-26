@@ -1140,15 +1140,12 @@ function RecipeEditorBody({
                     }
                     disabledIds={usedIds}
                   />
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.0001"
-                    value={it.qty}
-                    onChange={(e) =>
+                  <DecimalInput
+                    value={Number(it.qty) || 0}
+                    onChange={(n) =>
                       setItems((arr) =>
                         arr.map((x, i) =>
-                          i === idx ? { ...x, qty: Math.max(0, +e.target.value || 0) } : x,
+                          i === idx ? { ...x, qty: n } : x,
                         ),
                       )
                     }
