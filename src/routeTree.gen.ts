@@ -42,6 +42,7 @@ import { Route as AuthenticatedProductionIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedEmployeesIndexRouteImport } from './routes/_authenticated/employees.index'
 import { Route as AuthenticatedCrmIndexRouteImport } from './routes/_authenticated/crm.index'
 import { Route as ApiPublicSupabaseProxyRouteImport } from './routes/api/public/supabase-proxy'
+import { Route as ApiPublicManifestRouteImport } from './routes/api/public/manifest'
 import { Route as AuthenticatedTransfersNewRouteImport } from './routes/_authenticated/transfers.new'
 import { Route as AuthenticatedSettingsShowroomsRouteImport } from './routes/_authenticated/settings.showrooms'
 import { Route as AuthenticatedSettingsLandingRouteImport } from './routes/_authenticated/settings.landing'
@@ -79,7 +80,6 @@ import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authent
 import { Route as AuthenticatedExpensesCategoriesRouteImport } from './routes/_authenticated/expenses.categories'
 import { Route as AuthenticatedEmployeesNewRouteImport } from './routes/_authenticated/employees.new'
 import { Route as AuthenticatedCrmIdIndexRouteImport } from './routes/_authenticated/crm.$id.index'
-import { Route as ApiPublicManifestWebmanifestRouteImport } from './routes/api/public/manifest.webmanifest'
 import { Route as AuthenticatedTransfersReceiveIdRouteImport } from './routes/_authenticated/transfers.receive.$id'
 import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
@@ -259,6 +259,11 @@ const AuthenticatedCrmIndexRoute = AuthenticatedCrmIndexRouteImport.update({
 const ApiPublicSupabaseProxyRoute = ApiPublicSupabaseProxyRouteImport.update({
   id: '/api/public/supabase-proxy',
   path: '/api/public/supabase-proxy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicManifestRoute = ApiPublicManifestRouteImport.update({
+  id: '/api/public/manifest',
+  path: '/api/public/manifest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTransfersNewRoute =
@@ -481,12 +486,6 @@ const AuthenticatedCrmIdIndexRoute = AuthenticatedCrmIdIndexRouteImport.update({
   path: '/crm/$id/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ApiPublicManifestWebmanifestRoute =
-  ApiPublicManifestWebmanifestRouteImport.update({
-    id: '/api/public/manifest/webmanifest',
-    path: '/api/public/manifest/webmanifest',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const AuthenticatedTransfersReceiveIdRoute =
   AuthenticatedTransfersReceiveIdRouteImport.update({
     id: '/transfers/receive/$id',
@@ -585,6 +584,7 @@ export interface FileRoutesByFullPath {
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
+  '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/crm/': typeof AuthenticatedCrmIndexRoute
   '/employees/': typeof AuthenticatedEmployeesIndexRoute
@@ -599,7 +599,6 @@ export interface FileRoutesByFullPath {
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
-  '/api/public/manifest/webmanifest': typeof ApiPublicManifestWebmanifestRoute
   '/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -660,6 +659,7 @@ export interface FileRoutesByTo {
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
+  '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/crm': typeof AuthenticatedCrmIndexRoute
   '/employees': typeof AuthenticatedEmployeesIndexRoute
@@ -674,7 +674,6 @@ export interface FileRoutesByTo {
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
-  '/api/public/manifest/webmanifest': typeof ApiPublicManifestWebmanifestRoute
   '/crm/$id': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRoutesById {
@@ -740,6 +739,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/_authenticated/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/_authenticated/transfers/new': typeof AuthenticatedTransfersNewRoute
+  '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
   '/_authenticated/crm/': typeof AuthenticatedCrmIndexRoute
   '/_authenticated/employees/': typeof AuthenticatedEmployeesIndexRoute
@@ -754,7 +754,6 @@ export interface FileRoutesById {
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
   '/_authenticated/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/_authenticated/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
-  '/api/public/manifest/webmanifest': typeof ApiPublicManifestWebmanifestRoute
   '/_authenticated/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -820,6 +819,7 @@ export interface FileRouteTypes {
     | '/settings/landing'
     | '/settings/showrooms'
     | '/transfers/new'
+    | '/api/public/manifest'
     | '/api/public/supabase-proxy'
     | '/crm/'
     | '/employees/'
@@ -834,7 +834,6 @@ export interface FileRouteTypes {
     | '/products/edit/$id'
     | '/transfers/damaged/new'
     | '/transfers/receive/$id'
-    | '/api/public/manifest/webmanifest'
     | '/crm/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -895,6 +894,7 @@ export interface FileRouteTypes {
     | '/settings/landing'
     | '/settings/showrooms'
     | '/transfers/new'
+    | '/api/public/manifest'
     | '/api/public/supabase-proxy'
     | '/crm'
     | '/employees'
@@ -909,7 +909,6 @@ export interface FileRouteTypes {
     | '/products/edit/$id'
     | '/transfers/damaged/new'
     | '/transfers/receive/$id'
-    | '/api/public/manifest/webmanifest'
     | '/crm/$id'
   id:
     | '__root__'
@@ -974,6 +973,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/landing'
     | '/_authenticated/settings/showrooms'
     | '/_authenticated/transfers/new'
+    | '/api/public/manifest'
     | '/api/public/supabase-proxy'
     | '/_authenticated/crm/'
     | '/_authenticated/employees/'
@@ -988,7 +988,6 @@ export interface FileRouteTypes {
     | '/_authenticated/products/edit/$id'
     | '/_authenticated/transfers/damaged/new'
     | '/_authenticated/transfers/receive/$id'
-    | '/api/public/manifest/webmanifest'
     | '/_authenticated/crm/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -999,8 +998,8 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
+  ApiPublicManifestRoute: typeof ApiPublicManifestRoute
   ApiPublicSupabaseProxyRoute: typeof ApiPublicSupabaseProxyRoute
-  ApiPublicManifestWebmanifestRoute: typeof ApiPublicManifestWebmanifestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1234,6 +1233,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/supabase-proxy'
       fullPath: '/api/public/supabase-proxy'
       preLoaderRoute: typeof ApiPublicSupabaseProxyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/manifest': {
+      id: '/api/public/manifest'
+      path: '/api/public/manifest'
+      fullPath: '/api/public/manifest'
+      preLoaderRoute: typeof ApiPublicManifestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/transfers/new': {
@@ -1495,13 +1501,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/manifest/webmanifest': {
-      id: '/api/public/manifest/webmanifest'
-      path: '/api/public/manifest/webmanifest'
-      fullPath: '/api/public/manifest/webmanifest'
-      preLoaderRoute: typeof ApiPublicManifestWebmanifestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/transfers/receive/$id': {
       id: '/_authenticated/transfers/receive/$id'
       path: '/transfers/receive/$id'
@@ -1754,8 +1753,8 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   InvoiceIdRoute: InvoiceIdRoute,
+  ApiPublicManifestRoute: ApiPublicManifestRoute,
   ApiPublicSupabaseProxyRoute: ApiPublicSupabaseProxyRoute,
-  ApiPublicManifestWebmanifestRoute: ApiPublicManifestWebmanifestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
