@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart,
+  ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart, Camera,
   X, Keyboard, ArrowLeft, User, UserPlus, Users, Pause, PlayCircle, DollarSign,
   Lock, Unlock, Receipt, Calendar, Calculator, Maximize2, Briefcase,
   CircleX, RotateCcw, CreditCard, FileText, History, Info, Pencil, Menu,
@@ -18,6 +18,7 @@ import {
   listHeldSales, holdSale, deleteHeldSale,
   type RegisterSession, type HeldSaleRow,
 } from "@/lib/pos-v7-store";
+import { BarcodeScannerDialog } from "@/components/barcode-scanner-dialog";
 
 const sb = supabase as any;
 
@@ -60,6 +61,7 @@ function PosPage() {
   const [cat, setCat] = useState<ProductCategory | "All">("All");
   const [query, setQuery] = useState("");
   const [scan, setScan] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cursor, setCursor] = useState(0);
   const [mode, setMode] = useState<Mode>("cash");
@@ -428,13 +430,17 @@ function PosPage() {
     });
   const clearCart = () => { setCart({}); setTenders([]); };
 
-  const handleScan = () => {
-    const code = scan.trim();
+  const scanCode = (raw: string) => {
+    const code = raw.trim();
     if (!code) return;
     const hit = skuIndex.get(code.toLowerCase());
     if (!hit) toast.error(`No product for "${code}"`);
     else if (hit.stock <= 0) toast.error(`${hit.name} is out of stock`);
     else { add(hit.id, 1); toast.success(`Added ${hit.name} · ${hit.stock.toFixed(0)} left`, { duration: 1200 }); }
+  };
+
+  const handleScan = () => {
+    scanCode(scan);
     setScan("");
     scanRef.current?.focus();
   };
@@ -886,6 +892,14 @@ function PosPage() {
             </div>
             <button
               type="button"
+              onClick={() => setScannerOpen(true)}
+              className="shrink-0 h-9 w-9 grid place-items-center rounded-md border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+              title="Scan with camera"
+            >
+              <Camera className="size-4" />
+            </button>
+            <button
+              type="button"
               onClick={() => setMobileTab(mobileTab === "products" ? "cart" : "products")}
               className="lg:hidden shrink-0 h-9 w-9 grid place-items-center rounded-md border border-border bg-background hover:bg-accent"
               title={mobileTab === "products" ? "Back to cart" : "Browse products"}
@@ -1051,6 +1065,12 @@ function PosPage() {
           )}
         </aside>
       </div>
+
+      <BarcodeScannerDialog
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetected={(code) => scanCode(code)}
+      />
 
       {multiPayOpen && (
         <MultiPayModal total={total} tenders={tenders} setTenders={setTenders} onClose={() => setMultiPayOpen(false)} />
