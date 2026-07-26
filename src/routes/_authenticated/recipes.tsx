@@ -450,6 +450,16 @@ function Workbench() {
             <TabButton active={tab === "history"} onClick={() => setTab("history")} icon={<History className="size-3.5" />} label="Batch history" />
           </div>
 
+          {tab === "recipe" && (
+            <RecipeAccordionList
+              recipes={withRecipes}
+              rawMaterials={rawMaterials}
+              activeId={activeId}
+              onPick={(id) => setActiveId(id)}
+            />
+          )}
+
+
           {tab === "produce" && active && (
             <ProduceTab
               productName={active.product.name}
