@@ -85,19 +85,24 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   useEffect(() => {
     (async () => {
       try {
-        const [cs, rms, us] = await Promise.all([
+        const [cs, rms, us, allPs, rMap] = await Promise.all([
           loadCategories(),
           loadRawMaterials(currentShowroomId ?? null),
           loadUnits(),
+          loadProducts(currentShowroomId ?? null),
+          loadRecipes(),
         ]);
         setCats(cs);
         setRawMaterials(rms);
         setUnits(us);
+        setAllProducts(allPs);
+        const idx: Record<string, number> = {};
+        for (const pid of Object.keys(rMap)) idx[pid] = (rMap[pid] ?? []).length;
+        setRecipeIndex(idx);
         setRm((s) => ({ ...s, unit: s.unit || us[0]?.code || "" }));
 
         if (isEdit && editId) {
-          const products = await loadProducts(currentShowroomId ?? null);
-          const p = products.find((x) => x.id === editId);
+          const p = allPs.find((x) => x.id === editId);
           if (!p) {
             toast.error("Product not found");
             navigate({ to: "/products" });
@@ -114,9 +119,28 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
             imageUrl: p.imageUrl ?? "",
           });
           try {
-            setIngredients(await loadRecipeFor(p.id));
+            const rows = await loadRecipeFor(p.id);
+            setIngredients(rows.map((r) => ({ materialId: r.materialId, qty: String(r.qty) })));
+            setRecipeEnabled(rows.length > 0);
           } catch {
             setIngredients([]);
+            setRecipeEnabled(false);
+          }
+        } else if (from) {
+          const src = allPs.find((x) => x.id === from);
+          if (!src) {
+            toast.error("Source product not found");
+          } else {
+            setForm({
+              sku: "",
+              name: `${src.name} (Copy)`,
+              category: src.category,
+              price: String(src.price),
+              stock: "0",
+              threshold: String(src.threshold),
+              shelfLifeDays: src.shelfLifeDays !== undefined ? String(src.shelfLifeDays) : "",
+              imageUrl: src.imageUrl ?? "",
+            });
           }
         } else {
           setForm((f) => (f.category ? f : { ...f, category: cs[0] ?? "" }));
@@ -128,7 +152,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentShowroomId, editId]);
+  }, [currentShowroomId, editId, from]);
 
   const submitNewRawMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
