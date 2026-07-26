@@ -1005,17 +1005,13 @@ function RecipeTab(props: {
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={o.amount}
-                onChange={(e) => {
-                  const v = Math.max(0, +e.target.value || 0);
+              <DecimalInput
+                value={Number(o.amount) || 0}
+                onChange={(v) => {
                   props.setOverheads((prev) => prev.map((x, i) => (i === idx ? { ...x, amount: v } : x)));
                 }}
-                placeholder="৳ Amount"
-                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right"
+                placeholder="৳ 0"
+                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-right outline-none focus:border-primary tabular-nums"
               />
               <select
                 value={o.mode}
