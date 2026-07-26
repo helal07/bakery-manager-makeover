@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart,
+  ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart, Camera,
   X, Keyboard, ArrowLeft, User, UserPlus, Users, Pause, PlayCircle, DollarSign,
   Lock, Unlock, Receipt, Calendar, Calculator, Maximize2, Briefcase,
   CircleX, RotateCcw, CreditCard, FileText, History, Info, Pencil, Menu,
