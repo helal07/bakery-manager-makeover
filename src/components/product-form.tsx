@@ -168,7 +168,8 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
       });
       const rms = await loadRawMaterials(currentShowroomId ?? null);
       setRawMaterials(rms);
-      setIngredients((l) => [...l, { materialId: created.id, qty: 1 }]);
+      setIngredients((l) => [...l, { materialId: created.id, qty: "" }]);
+      setRecipeEnabled(true);
       setRm({ name: "", unit: units[0]?.code ?? "", cost: "", threshold: "" });
       setRmOpen(false);
       toast.success(`Added "${created.name}"`);
