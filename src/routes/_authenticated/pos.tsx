@@ -1066,6 +1066,12 @@ function PosPage() {
         </aside>
       </div>
 
+      <BarcodeScannerDialog
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetected={(code) => scanCode(code)}
+      />
+
       {multiPayOpen && (
         <MultiPayModal total={total} tenders={tenders} setTenders={setTenders} onClose={() => setMultiPayOpen(false)} />
       )}
