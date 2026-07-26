@@ -1547,7 +1547,7 @@ function ProductSearchPicker({
                 />
               </div>
             </div>
-            <div className="max-h-72 overflow-auto py-1">
+            <div className="max-h-[60vh] sm:max-h-96 overflow-auto py-1">
               {filtered.length === 0 ? (
                 <div className="px-3 py-6 text-center text-xs text-muted-foreground">
                   No products match “{q}”
@@ -1564,7 +1564,7 @@ function ProductSearchPicker({
                         setOpen(false);
                         setQ("");
                       }}
-                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-accent ${
+                      className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2 hover:bg-accent ${
                         active ? "bg-accent/60" : ""
                       }`}
                     >
@@ -1585,6 +1585,10 @@ function ProductSearchPicker({
                 })
               )}
             </div>
+            <div className="px-3 py-1.5 border-t border-border bg-muted/40 text-[10px] text-muted-foreground text-center">
+              {filtered.length} of {options.length} products
+            </div>
+
           </div>
         </>
       )}
