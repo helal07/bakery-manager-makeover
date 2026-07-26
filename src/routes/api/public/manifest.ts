@@ -39,7 +39,7 @@ export const Route = createFileRoute("/api/public/manifest")({
               .order("updated_at", { ascending: false })
               .limit(1)
               .maybeSingle();
-            row = (primary.data as typeof row) ?? null;
+            row = ((primary.data as unknown) as Row | null) ?? null;
             if (!row) {
               const fallback = await sb
                 .from("company_settings")
@@ -47,7 +47,7 @@ export const Route = createFileRoute("/api/public/manifest")({
                 .order("updated_at", { ascending: false })
                 .limit(1)
                 .maybeSingle();
-              row = (fallback.data as typeof row) ?? null;
+              row = ((fallback.data as unknown) as Row | null) ?? null;
             }
             if (row?.name) {
               name = row.name;
