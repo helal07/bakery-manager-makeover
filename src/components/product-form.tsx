@@ -413,80 +413,133 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
           </Card>
 
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold">Ingredients & Measurement</h3>
-              <div className="flex items-center gap-2">
-                {rawMaterials.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div>
+                <h3 className="text-sm font-semibold">Recipe & Ingredients</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Turn on to attach a bill-of-materials for this product.
+                </p>
+              </div>
+              <label className="inline-flex items-center gap-2 text-xs cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={recipeEnabled}
+                  onChange={(e) => setRecipeEnabled(e.target.checked)}
+                  className="size-4"
+                />
+                <span>Enable recipe</span>
+              </label>
+            </div>
+
+            {recipeEnabled && (
+              <>
+                <div className="flex flex-wrap items-center gap-2 mb-3 rounded-md border border-dashed border-border bg-muted/20 p-2">
+                  <span className="text-xs text-muted-foreground">Copy from existing recipe:</span>
+                  <select
+                    value={copySource}
+                    onChange={(e) => setCopySource(e.target.value)}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-xs min-w-[180px]"
+                  >
+                    <option value="">Select product…</option>
+                    {allProducts
+                      .filter((p) => (recipeIndex[p.id] ?? 0) > 0 && p.id !== editId)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                  </select>
                   <button
                     type="button"
-                    onClick={addIngredient}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
+                    disabled={!copySource || copyBusy}
+                    onClick={() => copyFromSource(copySource)}
+                    className="text-xs px-2 py-1 rounded border border-border hover:bg-accent disabled:opacity-50"
                   >
-                    <Plus className="size-3" /> Add ingredient
+                    {copyBusy ? "Copying…" : "Copy ingredients"}
                   </button>
+                  <span className="text-[11px] text-muted-foreground">
+                    Edits here override this product's recipe only.
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 mb-2">
+                  {rawMaterials.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={addIngredient}
+                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
+                    >
+                      <Plus className="size-3" /> Add ingredient
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setRmOpen(true)}
+                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Plus className="size-3" /> Add raw material
+                  </button>
+                </div>
+
+                {rawMaterials.length === 0 ? (
+                  <div className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-sm">
+                    <div className="font-medium mb-1">No raw materials yet</div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Ingredients are built from your raw materials (flour, sugar, etc.). Add
+                      one right here without leaving this page.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setRmOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      <Plus className="size-3.5" /> Add raw material
+                    </button>
+                  </div>
+                ) : ingredients.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">
+                    Click <span className="font-medium">Add ingredient</span> above, or copy from an existing recipe.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {ingredients.map((ing, idx) => {
+                      const mat = rawMaterials.find((r) => r.id === ing.materialId);
+                      const usedIds = new Set(
+                        ingredients.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean),
+                      );
+                      return (
+                        <div key={idx} className="flex items-center gap-2">
+                          <IngredientPicker
+                            materials={rawMaterials}
+                            value={ing.materialId}
+                            onChange={(id) => updateIngredient(idx, { materialId: id })}
+                            disabledIds={usedIds}
+                          />
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={ing.qty}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (v === "" || /^\d*\.?\d{0,6}$/.test(v)) {
+                                updateIngredient(idx, { qty: v });
+                              }
+                            }}
+                            className="w-24 text-right"
+                          />
+                          <span className="text-xs text-muted-foreground w-10">{mat?.unit ?? ""}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeIngredient(idx)}
+                            className="size-8 grid place-items-center rounded text-destructive hover:bg-destructive/10"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setRmOpen(true)}
-                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Plus className="size-3" /> Add raw material
-                </button>
-              </div>
-            </div>
-            {rawMaterials.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-sm">
-                <div className="font-medium mb-1">No raw materials yet</div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Ingredients are built from your raw materials (flour, sugar, etc.). Add
-                  one right here without leaving this page.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setRmOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Plus className="size-3.5" /> Add raw material
-                </button>
-              </div>
-            ) : ingredients.length === 0 ? (
-              <div className="text-xs text-muted-foreground py-2">
-                Click <span className="font-medium">Add ingredient</span> above to pick
-                raw materials that will be deducted from stock per unit sold.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {ingredients.map((ing, idx) => {
-                  const mat = rawMaterials.find((r) => r.id === ing.materialId);
-                  const usedIds = new Set(ingredients.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean));
-                  return (
-                    <div key={idx} className="flex items-center gap-2">
-                      <IngredientPicker
-                        materials={rawMaterials}
-                        value={ing.materialId}
-                        onChange={(id) => updateIngredient(idx, { materialId: id })}
-                        disabledIds={usedIds}
-                      />
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.0001"
-                        value={ing.qty}
-                        onChange={(e) => updateIngredient(idx, { qty: Number(e.target.value) || 0 })}
-                        className="w-24"
-                      />
-                      <span className="text-xs text-muted-foreground w-10">{mat?.unit ?? ""}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeIngredient(idx)}
-                        className="size-8 grid place-items-center rounded text-destructive hover:bg-destructive/10"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+              </>
             )}
           </Card>
         </div>
