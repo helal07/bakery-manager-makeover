@@ -61,6 +61,7 @@ function PosPage() {
   const [cat, setCat] = useState<ProductCategory | "All">("All");
   const [query, setQuery] = useState("");
   const [scan, setScan] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cursor, setCursor] = useState(0);
   const [mode, setMode] = useState<Mode>("cash");
