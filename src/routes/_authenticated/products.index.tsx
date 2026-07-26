@@ -412,6 +412,10 @@ function Products() {
                                 onClick={() => { setActionOpen(null); navigate({ to: "/products/edit/$id", params: { id: p.id } }); }}
                               >Edit</ActionItem>
                               <ActionItem
+                                icon={<Copy className="size-3.5" />}
+                                onClick={() => { setActionOpen(null); navigate({ to: "/products/new", search: { from: p.id } }); }}
+                              >Duplicate</ActionItem>
+                              <ActionItem
                                 icon={<QrCode className="size-3.5" />}
                                 onClick={() => { setActionOpen(null); setLabelFor(p); setLabelQty(1); }}
                               >Labels</ActionItem>
