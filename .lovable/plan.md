@@ -1,79 +1,58 @@
-# Sub-Recipe (Intermediate Product) ফিচার
+# Product Add/Edit-এ Sub-Recipe হিসাব
 
-## লক্ষ্য
-"বেসিক খামির"-এর মতো master/intermediate recipe তৈরি করা যাবে। ফাইনাল প্রোডাক্টের (যেমন বাটার বান) recipe-এ ingredient হিসেবে raw material + sub-recipe দুটোই ব্যবহার করা যাবে। প্রোডাকশনে সিস্টেম নিজে থেকে nested raw material breakdown হিসাব করে stock deduct করবে।
+এখন Product form-এর "Recipe & Ingredients" section-এ শুধু raw material row যোগ করা যায়। Sub-recipe (যেমন "বেসিক খামির") ingredient হিসেবে select করার UI নেই — যদিও backend (`recipes.sub_recipe_id`, `commit_production_batch` expansion) ও standalone Recipes Workbench এতে prepared আছে। এই প্ল্যান শুধু Product form-এ সেই UI ও হিসাব যোগ করবে; database/RPC-এ কোনো পরিবর্তন লাগবে না।
 
-## কনসেপ্ট
+## স্কোপ
+
+- File: `src/components/product-form.tsx` (Recipe & Ingredients section + save + cost preview)
+- বাকি সব (POS, Production commit, Recipes Workbench) অপরিবর্তিত
+
+## UX ধারণা
+
+Recipe section-এ প্রতিটা ingredient row-এ একটা source-toggle থাকবে:
 
 ```text
-বেসিক খামির (yield: 100 kg)         বাটার বান (per 1 pc, 200 gm)
-├─ ময়দা 80 kg                        ├─ বেসিক খামির 0.2 kg  ←─ sub-recipe
-├─ চিনি 10 kg                         │    auto expand:
-├─ তেল  5 kg                          │    ময়দা 160g, চিনি 20g,
-├─ ইস্ট  2.5 kg                       │    তেল 10g, ইস্ট 5g, মসলা 5g
-└─ মসলা 2.5 kg                        └─ বাটার 0.015 kg
+[ Material ▾ | Sub-Recipe ▾ ]   [ Picker: raw material OR sub-recipe ]   [ Qty ]  [ unit ]  [× remove]
 ```
 
-## Scope (এই phase-এ)
+- Default = Material (existing behavior অক্ষুণ্ণ)
+- "Sub-Recipe" বেছে নিলে picker sub-recipe list দেখায়, unit label sub-recipe-এর `yield_unit` থেকে আসবে
+- "Add ingredient" ড্রপডাউনে দুইটা option: **Add material** / **Add sub-recipe**
+- Duplicate guard: একই material বা একই sub-recipe দ্বিতীয়বার add করা যাবে না (দুটো আলাদা set)
 
-- **Sub-recipe শুধু raw material নেবে** (Phase 1) — nested sub-recipe Phase 2-তে
-- **Yield unit free-form** — kg, gm, L, ml, pc যেকোনো unit (units টেবিল থেকে)
+Recipe panel-এর নিচে ছোট "Expanded raw material preview" (collapsible):
 
-## Data Model (`sql/19_sub_recipes.sql`)
+- Sub-recipe row গুলো auto-expand করে aggregated raw material list + estimated cost per unit product দেখাবে (Recipes Workbench-এর মতো একই expansion logic)
+- এতে user বুঝতে পারবে ১ ইউনিট product বানাতে actual কোন raw material কত লাগবে
 
-**নতুন tables:**
-- `sub_recipes` — id, name, yield_qty numeric, yield_unit text, is_active, timestamps
-- `sub_recipe_items` — id, sub_recipe_id (fk), material_id (fk raw_materials), qty numeric, timestamps
+## হিসাবের নিয়ম (frontend preview মাত্র)
 
-**`recipes` টেবিলে পরিবর্তন:**
-- নতুন nullable column: `sub_recipe_id uuid references sub_recipes`
-- `material_id` কে nullable করা
-- CHECK constraint: exactly one of `(material_id, sub_recipe_id)` non-null
-- Unique index: `(product_id, coalesce(material_id, sub_recipe_id))` — duplicate ban
+প্রতিটা ingredient row per-unit product-এর জন্য:
 
-**GRANTs + RLS:** authenticated CRUD, service_role ALL। Existing recipe patterns follow করবে।
+- Material row → `qty` raw material সরাসরি
+- Sub-recipe row → `ratio = qty / subRecipe.yield_qty`; প্রতিটা `sub_recipe_items[i]` থেকে `child.qty × ratio` raw material
+- একই material একাধিক জায়গা থেকে এলে aggregate
 
-## Backend RPC (`commit_production_batch` v3)
+Cost per unit = Σ (aggregated_qty × raw_material.cost). এই মানটা existing cost preview-এর জায়গায় দেখাবে (যদি recipe enabled থাকে)।
 
-Overload বদলাবে (backwards-compatible):
-- Ingredient JSON item এখন হয় `{ materialId, qty }` অথবা `{ subRecipeId, qty }`
-- Expansion logic:
-  1. Direct materials collect
-  2. প্রতিটি sub-recipe reference-এর জন্য: `sub_recipe_items` fetch → ratio = `qty / yield_qty` → প্রতিটা child material-এর required = `child.qty × ratio × batch`
-  3. একই material-এর requirement aggregate (Map by material_id)
-- Stock lock + shortfall check হবে final aggregated list-এ (partial deduct থেকে বাঁচাতে)
-- Sub-recipe এর ভেতর sub-recipe ban (validation error) — Phase 1
+## State ও Save পরিবর্তন
 
-## Frontend
+- `IngredientRow` type: `{ materialId?: string; subRecipeId?: string; qty: string }`
+- `loadRecipeFor` এখন `subRecipeId` সহ ফেরত দেয় — সেটা state-এ hydrate হবে
+- Save-এ `Ingredient[]` build করার সময় sub-recipe row-এর জন্য `{ subRecipeId, qty }` আর material row-এর জন্য `{ materialId, qty }` পাঠাবে (existing `saveRecipe` এটা handle করে)
+- Validation: qty > 0, প্রতি row-এ material বা sub-recipe যেকোনো একটা থাকতেই হবে, duplicate নেই
+- "Copy ingredients from existing recipe" flow এও sub-recipe row copy করবে
 
-**নতুন Route:** `/recipes/sub-recipes` (sidebar-এ "Sub-Recipes" submenu Production/Recipes-এর নিচে)
-- List + create/edit dialog: name, yield qty + unit picker, ingredient rows (IngredientPicker reuse)
-- Delete guard: কোনো recipe এই sub-recipe reference করলে block
+## ভ্যালিডেশন ও edge case
 
-**Recipe editor (`recipes.tsx` RecipeEditorDialog) আপডেট:**
-- প্রতিটি ingredient row-এ toggle: **Raw Material** | **Sub-Recipe**
-- Sub-Recipe select করলে qty ইনপুট (unit auto-shown from sub_recipe.yield_unit)
-- Live preview panel: expanded raw material breakdown + total cost estimate (sub-recipe cost = Σ material cost × ratio)
+- Sub-recipe list load fail হলে row toggle disabled + tooltip
+- Inactive sub-recipe existing recipe-এ থাকলে read-only badge "inactive" দেখাবে, save block নয় কিন্তু warning
+- Yield unit 0 বা missing হলে expansion থেকে skip + row-এ warning
 
-**Produce tab:**
-- Batch commit-এর আগে expanded material list + shortfall hint দেখাবে
+## Out of scope
 
-**Cost aggregation:**
-- Sub-recipe cost per yield unit = Σ (item.qty × material.cost) ÷ yield_qty
-- Product cost preview এই expanded value use করবে
-
-## Migration ফাইল
-`sql/19_sub_recipes.sql` — idempotent (CREATE IF NOT EXISTS, DROP+CREATE policies, function replace), GRANTs + RLS + updated RPC সব একসাথে। VPS-এ SQL Editor-এ apply।
-`sql/applied.md`-তে entry যোগ।
-
-## App logic-এ ইমপ্যাক্ট
-- Existing recipes অক্ষুণ্ণ (material_id-based rows valid থাকবে)
-- Existing `commit_production_batch` calls same signature — শুধু ingredient item shape optional-ly sub-recipe support করবে
-- `loadRecipeFor` / `saveRecipe` extend করা লাগবে sub-recipe row handle করার জন্য
-
-## Phase 2 (পরে, চাইলে)
-- Nested sub-recipe (recursive expansion, cycle detection)
-- Sub-recipe এ overhead category
-- Sub-recipe batch production tracking (আলাদা stock ধরা)
+- Nested sub-recipe (sub-recipe-এর ভেতরে sub-recipe) — Phase 2
+- Overhead UI product form-এ যোগ করা — Recipes Workbench-এই থাকবে
+- Backend RPC/SQL — আগেই patch 19-এ done
 
 শুরু করব?
