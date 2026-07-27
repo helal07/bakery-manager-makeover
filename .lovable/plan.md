@@ -1,43 +1,79 @@
+# Sub-Recipe (Intermediate Product) ফিচার
 
-আমি ৪টা কাজ আলাদা আলাদা স্টেপে করব। প্রতি স্টেপ শেষে আপনার অনুমতি নিয়ে পরবর্তী স্টেপে যাব।
+## লক্ষ্য
+"বেসিক খামির"-এর মতো master/intermediate recipe তৈরি করা যাবে। ফাইনাল প্রোডাক্টের (যেমন বাটার বান) recipe-এ ingredient হিসেবে raw material + sub-recipe দুটোই ব্যবহার করা যাবে। প্রোডাকশনে সিস্টেম নিজে থেকে nested raw material breakdown হিসাব করে stock deduct করবে।
 
-## Step 1 — "New Recipe" পপআপ বড় ও ইউজার-ফ্রেন্ডলি
-**সমস্যা:** `src/routes/_authenticated/recipes.tsx`-এ New Recipe dialog ছোট, Target Product লিস্টে সব প্রোডাক্ট আসে না বা খুঁজে পেতে কষ্ট হয়।
+## কনসেপ্ট
 
-**করব:**
-- Dialog width `max-w-3xl`, height responsive (মোবাইলে full-screen sheet, ডেস্কটপে বড় modal)
-- Target Product সার্চ ইনপুট + স্ক্রলেবল লিস্ট, সব active products লোড হচ্ছে কিনা verify (query limit চেক)
-- প্রতিটি row-এ: product name, SKU, category badge, "has recipe" hint
-- Recent/Popular sort, keyboard nav (↑↓ Enter)
-- মোবাইলে full-height bottom sheet
+```text
+বেসিক খামির (yield: 100 kg)         বাটার বান (per 1 pc, 200 gm)
+├─ ময়দা 80 kg                        ├─ বেসিক খামির 0.2 kg  ←─ sub-recipe
+├─ চিনি 10 kg                         │    auto expand:
+├─ তেল  5 kg                          │    ময়দা 160g, চিনি 20g,
+├─ ইস্ট  2.5 kg                       │    তেল 10g, ইস্ট 5g, মসলা 5g
+└─ মসলা 2.5 kg                        └─ বাটার 0.015 kg
+```
 
-## Step 2 — পুরো প্রজেক্ট Mobile Responsive
-- সব list pages (`products.index`, `sales.list`, `purchasing.list`, `crm.index`, `transfers.index`, `production.*`, `expenses.*`, `employees.*`) — টেবিলগুলো মোবাইলে card-view / horizontal scroll
-- সব form pages (product, employee, purchase, transfer, recipe) — grid `sm:grid-cols-2` এ collapse, touch-friendly inputs (min-h-11)
-- Dialogs → মোবাইলে full-screen sheet
-- AppShell sidebar → মোবাইলে drawer overlay, sticky top bar height compact
-- POS mobile pass আরেকবার (cart drawer, keypad)
-- Report/print pages preview করে বাদ
+## Scope (এই phase-এ)
 
-## Step 3 — PWA (installable app)
-- `public/manifest.webmanifest` তৈরি — name/short_name from company settings, `display: standalone`, theme/background color from settings
-- `src/routes/__root.tsx` head-এ manifest link + apple-touch-icon
-- **PWA icon = Settings → Company Logo** (dynamic runtime override via generated icons থেকে logoDataUrl)
-- Manifest-only ইনস্টলেবিলিটি (offline/service worker না — Lovable preview safety)
-- Settings → Appearance-এ PWA preview কার্ড (icon + name preview)
+- **Sub-recipe শুধু raw material নেবে** (Phase 1) — nested sub-recipe Phase 2-তে
+- **Yield unit free-form** — kg, gm, L, ml, pc যেকোনো unit (units টেবিল থেকে)
 
-## Step 4 — POS Barcode Scanner (মোবাইল ক্যামেরা)
-- Library: `@zxing/browser` (bundle-friendly, works on iOS Safari 14+)
-- `src/routes/_authenticated/pos.tsx`-এ "Scan" বাটন → full-screen camera sheet
-- Rear camera priority, torch toggle, scan region overlay
-- Barcode detect → products লিস্টে SKU/barcode match → auto-add to cart + beep
-- Continuous scan mode (একাধিক পণ্য পরপর) অথবা single-shot
-- Fallback: keyboard USB scanner (existing text input) untouched
-- Product model-এ যদি `barcode` কলাম না থাকে → SKU দিয়ে match; পরে barcode field add করার সুযোগ
+## Data Model (`sql/19_sub_recipes.sql`)
 
----
+**নতুন tables:**
+- `sub_recipes` — id, name, yield_qty numeric, yield_unit text, is_active, timestamps
+- `sub_recipe_items` — id, sub_recipe_id (fk), material_id (fk raw_materials), qty numeric, timestamps
 
-## Order of execution
-Step 1 → আপনি approve করলে → Step 2 → approve → Step 3 → approve → Step 4।
+**`recipes` টেবিলে পরিবর্তন:**
+- নতুন nullable column: `sub_recipe_id uuid references sub_recipes`
+- `material_id` কে nullable করা
+- CHECK constraint: exactly one of `(material_id, sub_recipe_id)` non-null
+- Unique index: `(product_id, coalesce(material_id, sub_recipe_id))` — duplicate ban
 
-**এখন Step 1 (Recipe popup) দিয়ে শুরু করব?**
+**GRANTs + RLS:** authenticated CRUD, service_role ALL। Existing recipe patterns follow করবে।
+
+## Backend RPC (`commit_production_batch` v3)
+
+Overload বদলাবে (backwards-compatible):
+- Ingredient JSON item এখন হয় `{ materialId, qty }` অথবা `{ subRecipeId, qty }`
+- Expansion logic:
+  1. Direct materials collect
+  2. প্রতিটি sub-recipe reference-এর জন্য: `sub_recipe_items` fetch → ratio = `qty / yield_qty` → প্রতিটা child material-এর required = `child.qty × ratio × batch`
+  3. একই material-এর requirement aggregate (Map by material_id)
+- Stock lock + shortfall check হবে final aggregated list-এ (partial deduct থেকে বাঁচাতে)
+- Sub-recipe এর ভেতর sub-recipe ban (validation error) — Phase 1
+
+## Frontend
+
+**নতুন Route:** `/recipes/sub-recipes` (sidebar-এ "Sub-Recipes" submenu Production/Recipes-এর নিচে)
+- List + create/edit dialog: name, yield qty + unit picker, ingredient rows (IngredientPicker reuse)
+- Delete guard: কোনো recipe এই sub-recipe reference করলে block
+
+**Recipe editor (`recipes.tsx` RecipeEditorDialog) আপডেট:**
+- প্রতিটি ingredient row-এ toggle: **Raw Material** | **Sub-Recipe**
+- Sub-Recipe select করলে qty ইনপুট (unit auto-shown from sub_recipe.yield_unit)
+- Live preview panel: expanded raw material breakdown + total cost estimate (sub-recipe cost = Σ material cost × ratio)
+
+**Produce tab:**
+- Batch commit-এর আগে expanded material list + shortfall hint দেখাবে
+
+**Cost aggregation:**
+- Sub-recipe cost per yield unit = Σ (item.qty × material.cost) ÷ yield_qty
+- Product cost preview এই expanded value use করবে
+
+## Migration ফাইল
+`sql/19_sub_recipes.sql` — idempotent (CREATE IF NOT EXISTS, DROP+CREATE policies, function replace), GRANTs + RLS + updated RPC সব একসাথে। VPS-এ SQL Editor-এ apply।
+`sql/applied.md`-তে entry যোগ।
+
+## App logic-এ ইমপ্যাক্ট
+- Existing recipes অক্ষুণ্ণ (material_id-based rows valid থাকবে)
+- Existing `commit_production_batch` calls same signature — শুধু ingredient item shape optional-ly sub-recipe support করবে
+- `loadRecipeFor` / `saveRecipe` extend করা লাগবে sub-recipe row handle করার জন্য
+
+## Phase 2 (পরে, চাইলে)
+- Nested sub-recipe (recursive expansion, cycle detection)
+- Sub-recipe এ overhead category
+- Sub-recipe batch production tracking (আলাদা stock ধরা)
+
+শুরু করব?

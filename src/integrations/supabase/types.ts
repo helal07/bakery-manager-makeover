@@ -1637,27 +1637,30 @@ export type Database = {
           category_id: string | null
           created_at: string
           id: string
-          material_id: string
+          material_id: string | null
           product_id: string
           qty: number
+          sub_recipe_id: string | null
           updated_at: string
         }
         Insert: {
           category_id?: string | null
           created_at?: string
           id?: string
-          material_id: string
+          material_id?: string | null
           product_id: string
           qty?: number
+          sub_recipe_id?: string | null
           updated_at?: string
         }
         Update: {
           category_id?: string | null
           created_at?: string
           id?: string
-          material_id?: string
+          material_id?: string | null
           product_id?: string
           qty?: number
+          sub_recipe_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1680,6 +1683,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_sub_recipe_id_fkey"
+            columns: ["sub_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "sub_recipes"
             referencedColumns: ["id"]
           },
         ]
@@ -2213,6 +2223,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sub_recipe_items: {
+        Row: {
+          created_at: string
+          id: string
+          material_id: string
+          qty: number
+          sub_recipe_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          material_id: string
+          qty: number
+          sub_recipe_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          material_id?: string
+          qty?: number
+          sub_recipe_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_recipe_items_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_recipe_items_sub_recipe_id_fkey"
+            columns: ["sub_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "sub_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_recipes: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          yield_qty: number
+          yield_unit: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          yield_qty: number
+          yield_unit?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          yield_qty?: number
+          yield_unit?: string
+        }
+        Relationships: []
       }
       supplier_payments: {
         Row: {
