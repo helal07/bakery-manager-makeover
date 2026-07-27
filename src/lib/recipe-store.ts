@@ -17,7 +17,7 @@ export async function loadRecipes(): Promise<RecipeMap> {
   const map: RecipeMap = {};
   for (const r of (data ?? []) as any[]) {
     (map[r.product_id] ||= []).push({
-      materialId: r.material_id ?? undefined,
+      materialId: r.material_id ?? "",
       subRecipeId: r.sub_recipe_id ?? undefined,
       qty: Number(r.qty) || 0,
     });
