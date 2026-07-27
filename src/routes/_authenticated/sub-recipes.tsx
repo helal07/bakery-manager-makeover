@@ -5,7 +5,7 @@ import { IngredientPicker } from "@/components/ingredient-picker";
 import { pageTitle } from "@/lib/company-settings";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChefHat, Plus, Pencil, Trash2, X, Save } from "lucide-react";
+import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy } from "lucide-react";
 import {
   loadSubRecipes,
   saveSubRecipe,
