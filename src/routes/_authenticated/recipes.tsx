@@ -643,6 +643,7 @@ function Workbench() {
                 products={products}
                 recipeMap={recipeMap}
                 rawMaterials={rawMaterials}
+                subRecipes={subRecipes}
                 items={editorItems}
                 setItems={setEditorItems}
               />
