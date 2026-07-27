@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 const sb = supabase as any;
 
 export type Ingredient = {
-  materialId?: string;
+  materialId: string;
   subRecipeId?: string;
   qty: number;
 };
