@@ -39,6 +39,7 @@ import {
 } from "@/lib/production-overhead-store";
 import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
+import { loadSubRecipes, type SubRecipe } from "@/lib/sub-recipe-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -84,6 +85,7 @@ function Workbench() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
+  const [subRecipes, setSubRecipes] = useState<SubRecipe[]>([]);
   const [recipeMap, setRecipeMap] = useState<Record<string, Ingredient[]>>({});
   const [loading, setLoading] = useState(true);
 
@@ -115,16 +117,18 @@ function Workbench() {
 
   const refresh = async () => {
     try {
-      const [ps, rms, rm, ocs] = await Promise.all([
+      const [ps, rms, rm, ocs, srs] = await Promise.all([
         loadProducts(currentShowroomId ?? null),
         loadRawMaterials(null), // factory-only raw stock
         loadRecipes(),
         loadOverheadCategories(),
+        loadSubRecipes(),
       ]);
       setProducts(ps);
       setRawMaterials(rms);
       setRecipeMap(rm);
       setOverheadCats(ocs);
+      setSubRecipes(srs);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to load");
     } finally {
@@ -177,14 +181,44 @@ function Workbench() {
     return m;
   }, [rawMaterials]);
 
-  const rows = items.map((it) => {
-    const raw = rawMaterials.find((r) => r.id === it.materialId);
-    const need = it.qty * batch;
-    const have = stock[it.materialId] ?? 0;
-    const short = Math.max(0, need - have);
-    const lineCost = (raw?.cost ?? 0) * need;
-    return { it, raw, need, have, short, lineCost, ok: short === 0 };
-  });
+  const subRecipeMap = useMemo(() => {
+    const m: Record<string, SubRecipe> = {};
+    for (const s of subRecipes) m[s.id] = s;
+    return m;
+  }, [subRecipes]);
+
+  // Expand ingredients into aggregated per-material requirement (per batch)
+  const rows = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const it of items) {
+      const per = (Number(it.qty) || 0) * batch;
+      if (it.subRecipeId) {
+        const sub = subRecipeMap[it.subRecipeId];
+        if (!sub || sub.yield_qty <= 0) continue;
+        const ratio = per / sub.yield_qty;
+        for (const si of sub.items) {
+          totals.set(si.materialId, (totals.get(si.materialId) ?? 0) + si.qty * ratio);
+        }
+      } else if (it.materialId) {
+        totals.set(it.materialId, (totals.get(it.materialId) ?? 0) + per);
+      }
+    }
+    return Array.from(totals.entries()).map(([materialId, need]) => {
+      const raw = rawMaterials.find((r) => r.id === materialId);
+      const have = stock[materialId] ?? 0;
+      const short = Math.max(0, need - have);
+      const lineCost = (raw?.cost ?? 0) * need;
+      return {
+        it: { materialId, qty: batch > 0 ? need / batch : 0 } as Ingredient,
+        raw,
+        need,
+        have,
+        short,
+        lineCost,
+        ok: short === 0,
+      };
+    });
+  }, [items, batch, rawMaterials, subRecipeMap, stock]);
 
   const shortRows = rows.filter((r) => !r.ok);
   const materialCost = rows.reduce((s, r) => s + r.lineCost, 0);
@@ -194,7 +228,7 @@ function Workbench() {
   const materialUnitCost = batch > 0 ? materialCost / batch : 0;
   const overheadUnitCost = batch > 0 ? overheadCost / batch : 0;
   const canProduce =
-    !!active && rows.length > 0 && shortRows.length === 0 && !busy;
+    !!active && items.length > 0 && shortRows.length === 0 && !busy;
 
   // Load recipe overheads for the active product, and derive produce-tab
   // overheads from them (per_unit lines auto-scale with batch qty).
@@ -268,20 +302,25 @@ function Workbench() {
   };
   const saveEditor = async (opts?: { closeDialog?: boolean }) => {
     if (!editorProductId) return toast.error("Select a product");
-    const populated = editorItems.filter((i) => i.materialId);
+    const populated = editorItems.filter((i) => i.materialId || i.subRecipeId);
     if (populated.length === 0) return toast.error("Add at least one ingredient");
     const bad = populated.find((i) => !(Number(i.qty) > 0));
     if (bad) {
-      const raw = rawMaterials.find((r) => r.id === bad.materialId);
-      return toast.error(`Quantity must be greater than zero${raw ? ` for ${raw.name}` : ""}`);
+      const label = bad.subRecipeId
+        ? subRecipes.find((s) => s.id === bad.subRecipeId)?.name
+        : rawMaterials.find((r) => r.id === bad.materialId)?.name;
+      return toast.error(`Quantity must be greater than zero${label ? ` for ${label}` : ""}`);
     }
     const seen = new Set<string>();
     for (const i of populated) {
-      if (seen.has(i.materialId)) {
-        const raw = rawMaterials.find((r) => r.id === i.materialId);
-        return toast.error(`Duplicate ingredient: ${raw?.name ?? i.materialId}`);
+      const key = i.subRecipeId ? `sub:${i.subRecipeId}` : `mat:${i.materialId}`;
+      if (seen.has(key)) {
+        const label = i.subRecipeId
+          ? subRecipes.find((s) => s.id === i.subRecipeId)?.name
+          : rawMaterials.find((r) => r.id === i.materialId)?.name;
+        return toast.error(`Duplicate ingredient: ${label ?? key}`);
       }
-      seen.add(i.materialId);
+      seen.add(key);
     }
     // Validate overheads: no duplicate (category, mode); positive amounts only kept
     const seenOv = new Set<string>();
@@ -493,6 +532,7 @@ function Workbench() {
               products={products}
               recipeMap={recipeMap}
               rawMaterials={rawMaterials}
+              subRecipes={subRecipes}
               items={editorItems}
               setItems={setEditorItems}
               overheads={editorOverheads}
@@ -604,6 +644,7 @@ function Workbench() {
                 products={products}
                 recipeMap={recipeMap}
                 rawMaterials={rawMaterials}
+                subRecipes={subRecipes}
                 items={editorItems}
                 setItems={setEditorItems}
               />
@@ -1069,6 +1110,7 @@ function RecipeTab(props: {
   products: Product[];
   recipeMap: Record<string, Ingredient[]>;
   rawMaterials: RawMaterial[];
+  subRecipes: SubRecipe[];
   items: Ingredient[];
   setItems: React.Dispatch<React.SetStateAction<Ingredient[]>>;
   overheads: RecipeOverhead[];
@@ -1104,6 +1146,7 @@ function RecipeTab(props: {
         products={props.products}
         recipeMap={props.recipeMap}
         rawMaterials={props.rawMaterials}
+        subRecipes={props.subRecipes}
         items={props.items}
         setItems={props.setItems}
       />
@@ -1213,6 +1256,7 @@ function RecipeEditorBody({
   products,
   recipeMap,
   rawMaterials,
+  subRecipes,
   items,
   setItems,
 }: {
@@ -1221,6 +1265,7 @@ function RecipeEditorBody({
   products: Product[];
   recipeMap: Record<string, Ingredient[]>;
   rawMaterials: RawMaterial[];
+  subRecipes: SubRecipe[];
   items: Ingredient[];
   setItems: React.Dispatch<React.SetStateAction<Ingredient[]>>;
 }) {
@@ -1250,12 +1295,22 @@ function RecipeEditorBody({
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Ingredients (per unit)
           </label>
-          <button
-            onClick={() => setItems((it) => [...it, { materialId: "", qty: 0 }])}
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-          >
-            <Plus className="size-3" /> Add ingredient
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setItems((it) => [...it, { materialId: "", qty: 0 }])}
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <Plus className="size-3" /> Raw material
+            </button>
+            <button
+              onClick={() => setItems((it) => [...it, { materialId: "", subRecipeId: "", qty: 0 }])}
+              disabled={subRecipes.length === 0}
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+              title={subRecipes.length === 0 ? "Create sub-recipes first" : ""}
+            >
+              <Plus className="size-3" /> Sub-recipe
+            </button>
+          </div>
         </div>
         {rawMaterials.length === 0 ? (
           <div className="text-sm text-muted-foreground border border-dashed border-border rounded-md p-4 text-center">
@@ -1268,42 +1323,88 @@ function RecipeEditorBody({
         ) : (
           <div className="space-y-2">
             {items.map((it, idx) => {
+              const isSub = it.subRecipeId !== undefined;
               const raw = rawMaterials.find((r) => r.id === it.materialId);
-              const usedIds = new Set(
-                items.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean),
+              const sub = subRecipes.find((s) => s.id === it.subRecipeId);
+              const usedMatIds = new Set(
+                items
+                  .filter((_, i) => i !== idx)
+                  .filter((i) => !i.subRecipeId)
+                  .map((i) => i.materialId)
+                  .filter(Boolean),
               );
-              const lineCost = (raw?.cost ?? 0) * (Number(it.qty) || 0);
+              const usedSubIds = new Set(
+                items
+                  .filter((_, i) => i !== idx)
+                  .map((i) => i.subRecipeId)
+                  .filter(Boolean) as string[],
+              );
+              const unitCostPerYield =
+                sub && sub.yield_qty > 0
+                  ? sub.items.reduce((s, si) => {
+                      const rm = rawMaterials.find((r) => r.id === si.materialId);
+                      return s + (rm?.cost ?? 0) * si.qty;
+                    }, 0) / sub.yield_qty
+                  : 0;
+              const lineCost = isSub
+                ? unitCostPerYield * (Number(it.qty) || 0)
+                : (raw?.cost ?? 0) * (Number(it.qty) || 0);
+              const unitLabel = isSub ? sub?.yield_unit ?? "" : raw?.unit ?? "";
               return (
                 <div key={idx} className="flex items-center gap-2">
-                  <IngredientPicker
-                    materials={rawMaterials}
-                    value={it.materialId}
-                    onChange={(id) =>
-                      setItems((arr) =>
-                        arr.map((x, i) => (i === idx ? { ...x, materialId: id } : x)),
-                      )
-                    }
-                    disabledIds={usedIds}
-                  />
+                  {isSub ? (
+                    <select
+                      value={it.subRecipeId ?? ""}
+                      onChange={(e) =>
+                        setItems((arr) =>
+                          arr.map((x, i) =>
+                            i === idx ? { ...x, subRecipeId: e.target.value, materialId: "" } : x,
+                          ),
+                        )
+                      }
+                      className="flex-1 min-w-0 h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
+                    >
+                      <option value="">Select sub-recipe…</option>
+                      {subRecipes.map((s) => (
+                        <option
+                          key={s.id}
+                          value={s.id}
+                          disabled={usedSubIds.has(s.id) && s.id !== it.subRecipeId}
+                        >
+                          {s.name} (yield {s.yield_qty} {s.yield_unit})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <IngredientPicker
+                      materials={rawMaterials}
+                      value={it.materialId}
+                      onChange={(id) =>
+                        setItems((arr) =>
+                          arr.map((x, i) => (i === idx ? { ...x, materialId: id } : x)),
+                        )
+                      }
+                      disabledIds={usedMatIds}
+                    />
+                  )}
                   <DecimalInput
                     value={Number(it.qty) || 0}
                     onChange={(n) =>
-                      setItems((arr) =>
-                        arr.map((x, i) =>
-                          i === idx ? { ...x, qty: n } : x,
-                        ),
-                      )
+                      setItems((arr) => arr.map((x, i) => (i === idx ? { ...x, qty: n } : x)))
                     }
                     className="w-24 h-10 px-2 rounded-md border border-border bg-background text-sm text-right outline-none focus:border-primary tabular-nums"
                   />
-                  <span className="text-xs text-muted-foreground w-10 shrink-0">{raw?.unit ?? ""}</span>
+                  <span className="text-xs text-muted-foreground w-10 shrink-0">{unitLabel}</span>
                   <span className="text-xs text-muted-foreground w-20 text-right shrink-0 tabular-nums">
-                    {raw ? `৳${lineCost.toFixed(2)}` : ""}
+                    {lineCost > 0 ? `৳${lineCost.toFixed(2)}` : ""}
                   </span>
+                  {isSub && (
+                    <span className="text-[10px] uppercase tracking-wider text-primary/70 shrink-0">
+                      sub
+                    </span>
+                  )}
                   <button
-                    onClick={() =>
-                      setItems((arr) => arr.filter((_, i) => i !== idx))
-                    }
+                    onClick={() => setItems((arr) => arr.filter((_, i) => i !== idx))}
                     className="size-9 grid place-items-center rounded-md hover:bg-destructive/10 text-destructive shrink-0"
                     aria-label="Remove ingredient"
                   >
