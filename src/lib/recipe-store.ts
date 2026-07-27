@@ -70,7 +70,7 @@ export async function commitProduction(params: {
   const cleanIngredients = ingredients
     .filter((i) => (i.materialId || i.subRecipeId) && Number(i.qty) > 0)
     .map((i) => ({
-      materialId: i.materialId ?? null,
+      materialId: i.subRecipeId ? null : i.materialId,
       subRecipeId: i.subRecipeId ?? null,
       qty: Number(i.qty),
     }));
