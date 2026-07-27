@@ -39,6 +39,7 @@ import {
 } from "@/lib/production-overhead-store";
 import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
+import { loadSubRecipes, type SubRecipe } from "@/lib/sub-recipe-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
