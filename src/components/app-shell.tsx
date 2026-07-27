@@ -118,6 +118,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
           { to: "/production/factory-stock", label: "Factory Stock", icon: Boxes, permission: "production.access" },
           { to: "/raw-materials", label: "Raw Materials", icon: Wheat, permission: "production.raw_materials.view" },
           { to: "/recipes", label: "Recipes & Production", icon: ChefHat, permission: "production.recipes.view" },
+          { to: "/sub-recipes", label: "Sub-Recipes", icon: ChefHat, permission: "production.recipes.view" },
           
 
           
