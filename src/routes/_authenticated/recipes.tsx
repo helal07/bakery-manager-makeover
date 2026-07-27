@@ -117,16 +117,18 @@ function Workbench() {
 
   const refresh = async () => {
     try {
-      const [ps, rms, rm, ocs] = await Promise.all([
+      const [ps, rms, rm, ocs, srs] = await Promise.all([
         loadProducts(currentShowroomId ?? null),
         loadRawMaterials(null), // factory-only raw stock
         loadRecipes(),
         loadOverheadCategories(),
+        loadSubRecipes(),
       ]);
       setProducts(ps);
       setRawMaterials(rms);
       setRecipeMap(rm);
       setOverheadCats(ocs);
+      setSubRecipes(srs);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to load");
     } finally {
