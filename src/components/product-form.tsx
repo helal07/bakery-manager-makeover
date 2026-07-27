@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { type ProductCategory, loadCategories, addCategory } from "@/lib/product-types";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,16 +11,21 @@ import { addProduct, updateProduct, loadProducts, type Product } from "@/lib/pro
 import { addRawMaterial, loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { IngredientPicker } from "@/components/ingredient-picker";
 import { loadRecipeFor, loadRecipes, saveRecipe, type Ingredient } from "@/lib/recipe-store";
+import { loadSubRecipes, type SubRecipe } from "@/lib/sub-recipe-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { uploadImage } from "@/lib/storage";
 
-// Accept up to 6 decimal places. Empty string is allowed while typing.
-const QTY_RE = /^\d*(?:\.\d{0,6})?$/;
-
 // Local editor row keeps qty as a STRING so users can type ".029" naturally.
-type IngredientRow = { materialId: string; qty: string };
+// Exactly one of materialId / subRecipeId is set.
+type IngredientRow = { materialId?: string; subRecipeId?: string; qty: string };
 
 type FormState = {
   sku: string;
@@ -67,6 +72,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   const isEdit = !!editId;
   const [cats, setCats] = useState<ProductCategory[]>([]);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
+  const [subRecipes, setSubRecipes] = useState<SubRecipe[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [rmOpen, setRmOpen] = useState(false);
   const [rm, setRm] = useState({ name: "", unit: "", cost: "", threshold: "" });
@@ -81,21 +87,24 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit || !!from);
+  const [showExpanded, setShowExpanded] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const [cs, rms, us, allPs, rMap] = await Promise.all([
+        const [cs, rms, us, allPs, rMap, subs] = await Promise.all([
           loadCategories(),
           loadRawMaterials(currentShowroomId ?? null),
           loadUnits(),
           loadProducts(currentShowroomId ?? null),
           loadRecipes(),
+          loadSubRecipes().catch(() => [] as SubRecipe[]),
         ]);
         setCats(cs);
         setRawMaterials(rms);
         setUnits(us);
         setAllProducts(allPs);
+        setSubRecipes(subs);
         const idx: Record<string, number> = {};
         for (const pid of Object.keys(rMap)) idx[pid] = (rMap[pid] ?? []).length;
         setRecipeIndex(idx);
@@ -120,7 +129,13 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
           });
           try {
             const rows = await loadRecipeFor(p.id);
-            setIngredients(rows.map((r) => ({ materialId: r.materialId, qty: String(r.qty) })));
+            setIngredients(
+              rows.map((r) => ({
+                materialId: r.subRecipeId ? undefined : r.materialId,
+                subRecipeId: r.subRecipeId,
+                qty: String(r.qty),
+              })),
+            );
             setRecipeEnabled(rows.length > 0);
           } catch {
             setIngredients([]);
@@ -199,14 +214,35 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
     [imageFile, form.imageUrl],
   );
 
-  const addIngredient = () => {
-    const used = new Set(ingredients.map((i) => i.materialId));
+  const subMap = useMemo(() => {
+    const m: Record<string, SubRecipe> = {};
+    for (const s of subRecipes) m[s.id] = s;
+    return m;
+  }, [subRecipes]);
+  const rawMap = useMemo(() => {
+    const m: Record<string, RawMaterial> = {};
+    for (const r of rawMaterials) m[r.id] = r;
+    return m;
+  }, [rawMaterials]);
+
+  const addMaterialRow = () => {
+    const used = new Set(ingredients.map((i) => i.materialId).filter(Boolean) as string[]);
     const next = rawMaterials.find((r) => !used.has(r.id));
     if (!next) {
-      toast.info("Add raw materials first from the Raw Materials page");
+      toast.info("All raw materials are already used. Add a new one first.");
       return;
     }
     setIngredients((l) => [...l, { materialId: next.id, qty: "" }]);
+  };
+  const addSubRecipeRow = () => {
+    const active = subRecipes.filter((s) => s.is_active);
+    if (active.length === 0) {
+      toast.info("No sub-recipes yet. Create one from the Sub-Recipes page.");
+      return;
+    }
+    const used = new Set(ingredients.map((i) => i.subRecipeId).filter(Boolean) as string[]);
+    const next = active.find((s) => !used.has(s.id)) ?? active[0];
+    setIngredients((l) => [...l, { subRecipeId: next.id, qty: "" }]);
   };
   const updateIngredient = (idx: number, patch: Partial<IngredientRow>) =>
     setIngredients((l) => l.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
@@ -218,7 +254,13 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
     setCopyBusy(true);
     try {
       const rows = await loadRecipeFor(srcProductId);
-      setIngredients(rows.map((r) => ({ materialId: r.materialId, qty: String(r.qty) })));
+      setIngredients(
+        rows.map((r) => ({
+          materialId: r.subRecipeId ? undefined : r.materialId,
+          subRecipeId: r.subRecipeId,
+          qty: String(r.qty),
+        })),
+      );
       const src = allProducts.find((p) => p.id === srcProductId);
       toast.success(`Copied ${rows.length} ingredient${rows.length === 1 ? "" : "s"}${src ? ` from ${src.name}` : ""}`);
     } catch (e: any) {
@@ -227,6 +269,35 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
       setCopyBusy(false);
     }
   };
+
+  // Expand sub-recipes into aggregated raw-material demand per unit of product.
+  const expandedPerUnit = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const row of ingredients) {
+      const qty = Number(row.qty);
+      if (!Number.isFinite(qty) || qty <= 0) continue;
+      if (row.subRecipeId) {
+        const sub = subMap[row.subRecipeId];
+        if (!sub || sub.yield_qty <= 0) continue;
+        const ratio = qty / sub.yield_qty;
+        for (const si of sub.items) {
+          totals.set(si.materialId, (totals.get(si.materialId) ?? 0) + si.qty * ratio);
+        }
+      } else if (row.materialId) {
+        totals.set(row.materialId, (totals.get(row.materialId) ?? 0) + qty);
+      }
+    }
+    return Array.from(totals.entries()).map(([materialId, qty]) => {
+      const raw = rawMap[materialId];
+      const cost = (raw?.cost ?? 0) * qty;
+      return { materialId, raw, qty, cost };
+    });
+  }, [ingredients, subMap, rawMap]);
+
+  const estimatedCost = useMemo(
+    () => expandedPerUnit.reduce((s, r) => s + r.cost, 0),
+    [expandedPerUnit],
+  );
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,15 +326,37 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         shelfLifeDays: shelf,
         imageUrl: form.imageUrl || undefined,
       };
-      const clean: Ingredient[] = recipeEnabled
-        ? ingredients
-            .map((i) => ({ materialId: i.materialId, qty: Number(i.qty) }))
-            .filter((i) => i.materialId && Number.isFinite(i.qty) && i.qty > 0)
-        : [];
-      if (recipeEnabled && clean.length === 0) {
-        toast.error("Add at least one ingredient with quantity > 0, or turn off the recipe toggle");
-        setSaving(false);
-        return;
+
+      let clean: Ingredient[] = [];
+      if (recipeEnabled) {
+        const seenMat = new Set<string>();
+        const seenSub = new Set<string>();
+        for (const i of ingredients) {
+          const qty = Number(i.qty);
+          if (!Number.isFinite(qty) || qty <= 0) continue;
+          if (i.subRecipeId) {
+            if (seenSub.has(i.subRecipeId)) {
+              toast.error("Duplicate sub-recipe in the recipe");
+              setSaving(false);
+              return;
+            }
+            seenSub.add(i.subRecipeId);
+            clean.push({ materialId: "", subRecipeId: i.subRecipeId, qty });
+          } else if (i.materialId) {
+            if (seenMat.has(i.materialId)) {
+              toast.error("Duplicate material in the recipe");
+              setSaving(false);
+              return;
+            }
+            seenMat.add(i.materialId);
+            clean.push({ materialId: i.materialId, qty });
+          }
+        }
+        if (clean.length === 0) {
+          toast.error("Add at least one ingredient with quantity > 0, or turn off the recipe toggle");
+          setSaving(false);
+          return;
+        }
       }
 
       if (isEdit && editId) {
@@ -417,7 +510,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
               <div>
                 <h3 className="text-sm font-semibold">Recipe & Ingredients</h3>
                 <p className="text-[11px] text-muted-foreground">
-                  Turn on to attach a bill-of-materials for this product.
+                  Turn on to attach a bill-of-materials. Rows can be raw materials or sub-recipes.
                 </p>
               </div>
               <label className="inline-flex items-center gap-2 text-xs cursor-pointer select-none">
@@ -461,15 +554,25 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                 </div>
 
                 <div className="flex items-center justify-end gap-2 mb-2">
-                  {rawMaterials.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={addIngredient}
-                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
-                    >
-                      <Plus className="size-3" /> Add ingredient
-                    </button>
-                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
+                      >
+                        <Plus className="size-3" /> Add ingredient
+                        <ChevronDown className="size-3 opacity-60" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => addMaterialRow()}>
+                        Raw material
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => addSubRecipeRow()}>
+                        Sub-recipe
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <button
                     type="button"
                     onClick={() => setRmOpen(true)}
@@ -479,7 +582,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   </button>
                 </div>
 
-                {rawMaterials.length === 0 ? (
+                {rawMaterials.length === 0 && ingredients.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-sm">
                     <div className="font-medium mb-1">No raw materials yet</div>
                     <p className="text-xs text-muted-foreground mb-3">
@@ -496,21 +599,90 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   </div>
                 ) : ingredients.length === 0 ? (
                   <div className="text-xs text-muted-foreground py-2">
-                    Click <span className="font-medium">Add ingredient</span> above, or copy from an existing recipe.
+                    Click <span className="font-medium">Add ingredient</span> to add a raw material or sub-recipe.
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {ingredients.map((ing, idx) => {
-                      const mat = rawMaterials.find((r) => r.id === ing.materialId);
+                      if (ing.subRecipeId) {
+                        const sub = subMap[ing.subRecipeId];
+                        const usedSub = new Set(
+                          ingredients
+                            .filter((_, i) => i !== idx)
+                            .map((i) => i.subRecipeId)
+                            .filter(Boolean) as string[],
+                        );
+                        return (
+                          <div key={idx} className="flex items-center gap-2">
+                            <div className="flex-1 flex items-center gap-2 min-w-0">
+                              <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                                Sub
+                              </span>
+                              <select
+                                value={ing.subRecipeId}
+                                onChange={(e) =>
+                                  updateIngredient(idx, { subRecipeId: e.target.value, materialId: undefined })
+                                }
+                                className="flex-1 min-w-0 h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
+                              >
+                                {subRecipes.map((s) => (
+                                  <option
+                                    key={s.id}
+                                    value={s.id}
+                                    disabled={usedSub.has(s.id) && s.id !== ing.subRecipeId}
+                                  >
+                                    {s.name} (yields {s.yield_qty} {s.yield_unit})
+                                    {!s.is_active ? " · inactive" : ""}
+                                  </option>
+                                ))}
+                                {!sub && (
+                                  <option value={ing.subRecipeId}>Unknown sub-recipe</option>
+                                )}
+                              </select>
+                            </div>
+                            <Input
+                              type="text"
+                              inputMode="decimal"
+                              placeholder="0"
+                              value={ing.qty}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (v === "" || /^\d*\.?\d{0,6}$/.test(v)) {
+                                  updateIngredient(idx, { qty: v });
+                                }
+                              }}
+                              className="w-24 text-right"
+                            />
+                            <span className="text-xs text-muted-foreground w-10">
+                              {sub?.yield_unit ?? ""}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeIngredient(idx)}
+                              className="size-8 grid place-items-center rounded text-destructive hover:bg-destructive/10"
+                            >
+                              <X className="size-3.5" />
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      const mat = ing.materialId ? rawMap[ing.materialId] : undefined;
                       const usedIds = new Set(
-                        ingredients.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean),
+                        ingredients
+                          .filter((_, i) => i !== idx)
+                          .map((i) => i.materialId)
+                          .filter(Boolean) as string[],
                       );
                       return (
                         <div key={idx} className="flex items-center gap-2">
+                          <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            Mat
+                          </span>
                           <IngredientPicker
                             materials={rawMaterials}
-                            value={ing.materialId}
-                            onChange={(id) => updateIngredient(idx, { materialId: id })}
+                            value={ing.materialId ?? ""}
+                            onChange={(id) => updateIngredient(idx, { materialId: id, subRecipeId: undefined })}
                             disabledIds={usedIds}
                           />
                           <Input
@@ -537,6 +709,48 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {ingredients.length > 0 && (
+                  <div className="mt-4 rounded-md border border-border bg-muted/20">
+                    <button
+                      type="button"
+                      onClick={() => setShowExpanded((s) => !s)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium hover:bg-accent/50"
+                    >
+                      <span>
+                        Expanded raw material preview · Est. cost/unit ৳{estimatedCost.toFixed(2)}
+                      </span>
+                      <ChevronDown
+                        className={`size-3.5 transition-transform ${showExpanded ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {showExpanded && (
+                      <div className="border-t border-border p-3">
+                        {expandedPerUnit.length === 0 ? (
+                          <div className="text-[11px] text-muted-foreground">
+                            Add quantities to see the expanded breakdown.
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            {expandedPerUnit.map((r) => (
+                              <div
+                                key={r.materialId}
+                                className="flex items-center justify-between gap-2 text-xs"
+                              >
+                                <span className="truncate">
+                                  {r.raw?.name ?? "Unknown material"}
+                                </span>
+                                <span className="tabular-nums text-muted-foreground shrink-0">
+                                  {r.qty.toFixed(4)} {r.raw?.unit ?? ""} · ৳{r.cost.toFixed(2)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -627,4 +841,3 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
     </AppShell>
   );
 }
-
