@@ -45,7 +45,7 @@ export async function saveRecipe(productId: string, ingredients: Ingredient[]): 
     .filter((i) => (i.materialId || i.subRecipeId) && i.qty > 0)
     .map((i) => ({
       product_id: productId,
-      material_id: i.materialId ?? null,
+      material_id: i.subRecipeId ? null : i.materialId,
       sub_recipe_id: i.subRecipeId ?? null,
       qty: i.qty,
     }));
