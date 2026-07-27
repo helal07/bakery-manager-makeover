@@ -32,7 +32,7 @@ export async function loadRecipeFor(productId: string): Promise<Ingredient[]> {
     .eq("product_id", productId);
   if (error) throw error;
   return ((data ?? []) as any[]).map((r) => ({
-    materialId: r.material_id ?? undefined,
+    materialId: r.material_id ?? "",
     subRecipeId: r.sub_recipe_id ?? undefined,
     qty: Number(r.qty) || 0,
   }));
