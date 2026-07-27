@@ -85,6 +85,7 @@ function Workbench() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
+  const [subRecipes, setSubRecipes] = useState<SubRecipe[]>([]);
   const [recipeMap, setRecipeMap] = useState<Record<string, Ingredient[]>>({});
   const [loading, setLoading] = useState(true);
 
