@@ -181,14 +181,44 @@ function Workbench() {
     return m;
   }, [rawMaterials]);
 
-  const rows = items.map((it) => {
-    const raw = rawMaterials.find((r) => r.id === it.materialId);
-    const need = it.qty * batch;
-    const have = stock[it.materialId] ?? 0;
-    const short = Math.max(0, need - have);
-    const lineCost = (raw?.cost ?? 0) * need;
-    return { it, raw, need, have, short, lineCost, ok: short === 0 };
-  });
+  const subRecipeMap = useMemo(() => {
+    const m: Record<string, SubRecipe> = {};
+    for (const s of subRecipes) m[s.id] = s;
+    return m;
+  }, [subRecipes]);
+
+  // Expand ingredients into aggregated per-material requirement (per batch)
+  const rows = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const it of items) {
+      const per = (Number(it.qty) || 0) * batch;
+      if (it.subRecipeId) {
+        const sub = subRecipeMap[it.subRecipeId];
+        if (!sub || sub.yield_qty <= 0) continue;
+        const ratio = per / sub.yield_qty;
+        for (const si of sub.items) {
+          totals.set(si.materialId, (totals.get(si.materialId) ?? 0) + si.qty * ratio);
+        }
+      } else if (it.materialId) {
+        totals.set(it.materialId, (totals.get(it.materialId) ?? 0) + per);
+      }
+    }
+    return Array.from(totals.entries()).map(([materialId, need]) => {
+      const raw = rawMaterials.find((r) => r.id === materialId);
+      const have = stock[materialId] ?? 0;
+      const short = Math.max(0, need - have);
+      const lineCost = (raw?.cost ?? 0) * need;
+      return {
+        it: { materialId, qty: batch > 0 ? need / batch : 0 } as Ingredient,
+        raw,
+        need,
+        have,
+        short,
+        lineCost,
+        ok: short === 0,
+      };
+    });
+  }, [items, batch, rawMaterials, subRecipeMap, stock]);
 
   const shortRows = rows.filter((r) => !r.ok);
   const materialCost = rows.reduce((s, r) => s + r.lineCost, 0);
@@ -198,7 +228,7 @@ function Workbench() {
   const materialUnitCost = batch > 0 ? materialCost / batch : 0;
   const overheadUnitCost = batch > 0 ? overheadCost / batch : 0;
   const canProduce =
-    !!active && rows.length > 0 && shortRows.length === 0 && !busy;
+    !!active && items.length > 0 && shortRows.length === 0 && !busy;
 
   // Load recipe overheads for the active product, and derive produce-tab
   // overheads from them (per_unit lines auto-scale with batch qty).
