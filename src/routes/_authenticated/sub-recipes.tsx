@@ -96,6 +96,18 @@ function SubRecipesPage() {
     });
     setOpen(true);
   };
+  const openDuplicate = (sr: SubRecipe) => {
+    setForm({
+      name: `${sr.name} (Copy)`,
+      yield_qty: String(sr.yield_qty),
+      yield_unit: sr.yield_unit,
+      items:
+        sr.items.length > 0
+          ? sr.items.map((i) => ({ materialId: i.materialId, qty: String(i.qty) }))
+          : [{ materialId: "", qty: "" }],
+    });
+    setOpen(true);
+  };
 
   const addRow = () =>
     setForm({ ...form, items: [...form.items, { materialId: "", qty: "" }] });
