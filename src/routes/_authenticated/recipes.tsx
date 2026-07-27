@@ -1109,6 +1109,7 @@ function RecipeTab(props: {
   products: Product[];
   recipeMap: Record<string, Ingredient[]>;
   rawMaterials: RawMaterial[];
+  subRecipes: SubRecipe[];
   items: Ingredient[];
   setItems: React.Dispatch<React.SetStateAction<Ingredient[]>>;
   overheads: RecipeOverhead[];
