@@ -302,20 +302,25 @@ function Workbench() {
   };
   const saveEditor = async (opts?: { closeDialog?: boolean }) => {
     if (!editorProductId) return toast.error("Select a product");
-    const populated = editorItems.filter((i) => i.materialId);
+    const populated = editorItems.filter((i) => i.materialId || i.subRecipeId);
     if (populated.length === 0) return toast.error("Add at least one ingredient");
     const bad = populated.find((i) => !(Number(i.qty) > 0));
     if (bad) {
-      const raw = rawMaterials.find((r) => r.id === bad.materialId);
-      return toast.error(`Quantity must be greater than zero${raw ? ` for ${raw.name}` : ""}`);
+      const label = bad.subRecipeId
+        ? subRecipes.find((s) => s.id === bad.subRecipeId)?.name
+        : rawMaterials.find((r) => r.id === bad.materialId)?.name;
+      return toast.error(`Quantity must be greater than zero${label ? ` for ${label}` : ""}`);
     }
     const seen = new Set<string>();
     for (const i of populated) {
-      if (seen.has(i.materialId)) {
-        const raw = rawMaterials.find((r) => r.id === i.materialId);
-        return toast.error(`Duplicate ingredient: ${raw?.name ?? i.materialId}`);
+      const key = i.subRecipeId ? `sub:${i.subRecipeId}` : `mat:${i.materialId}`;
+      if (seen.has(key)) {
+        const label = i.subRecipeId
+          ? subRecipes.find((s) => s.id === i.subRecipeId)?.name
+          : rawMaterials.find((r) => r.id === i.materialId)?.name;
+        return toast.error(`Duplicate ingredient: ${label ?? key}`);
       }
-      seen.add(i.materialId);
+      seen.add(key);
     }
     // Validate overheads: no duplicate (category, mode); positive amounts only kept
     const seenOv = new Set<string>();
