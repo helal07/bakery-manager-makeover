@@ -1144,6 +1144,7 @@ function RecipeTab(props: {
         products={props.products}
         recipeMap={props.recipeMap}
         rawMaterials={props.rawMaterials}
+        subRecipes={props.subRecipes}
         items={props.items}
         setItems={props.setItems}
       />
