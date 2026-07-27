@@ -1252,6 +1252,7 @@ function RecipeEditorBody({
   products,
   recipeMap,
   rawMaterials,
+  subRecipes,
   items,
   setItems,
 }: {
@@ -1260,6 +1261,7 @@ function RecipeEditorBody({
   products: Product[];
   recipeMap: Record<string, Ingredient[]>;
   rawMaterials: RawMaterial[];
+  subRecipes: SubRecipe[];
   items: Ingredient[];
   setItems: React.Dispatch<React.SetStateAction<Ingredient[]>>;
 }) {
@@ -1289,12 +1291,22 @@ function RecipeEditorBody({
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Ingredients (per unit)
           </label>
-          <button
-            onClick={() => setItems((it) => [...it, { materialId: "", qty: 0 }])}
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-          >
-            <Plus className="size-3" /> Add ingredient
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setItems((it) => [...it, { materialId: "", qty: 0 }])}
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <Plus className="size-3" /> Raw material
+            </button>
+            <button
+              onClick={() => setItems((it) => [...it, { materialId: "", subRecipeId: "", qty: 0 }])}
+              disabled={subRecipes.length === 0}
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+              title={subRecipes.length === 0 ? "Create sub-recipes first" : ""}
+            >
+              <Plus className="size-3" /> Sub-recipe
+            </button>
+          </div>
         </div>
         {rawMaterials.length === 0 ? (
           <div className="text-sm text-muted-foreground border border-dashed border-border rounded-md p-4 text-center">
@@ -1307,42 +1319,88 @@ function RecipeEditorBody({
         ) : (
           <div className="space-y-2">
             {items.map((it, idx) => {
+              const isSub = it.subRecipeId !== undefined;
               const raw = rawMaterials.find((r) => r.id === it.materialId);
-              const usedIds = new Set(
-                items.filter((_, i) => i !== idx).map((i) => i.materialId).filter(Boolean),
+              const sub = subRecipes.find((s) => s.id === it.subRecipeId);
+              const usedMatIds = new Set(
+                items
+                  .filter((_, i) => i !== idx)
+                  .filter((i) => !i.subRecipeId)
+                  .map((i) => i.materialId)
+                  .filter(Boolean),
               );
-              const lineCost = (raw?.cost ?? 0) * (Number(it.qty) || 0);
+              const usedSubIds = new Set(
+                items
+                  .filter((_, i) => i !== idx)
+                  .map((i) => i.subRecipeId)
+                  .filter(Boolean) as string[],
+              );
+              const unitCostPerYield =
+                sub && sub.yield_qty > 0
+                  ? sub.items.reduce((s, si) => {
+                      const rm = rawMaterials.find((r) => r.id === si.materialId);
+                      return s + (rm?.cost ?? 0) * si.qty;
+                    }, 0) / sub.yield_qty
+                  : 0;
+              const lineCost = isSub
+                ? unitCostPerYield * (Number(it.qty) || 0)
+                : (raw?.cost ?? 0) * (Number(it.qty) || 0);
+              const unitLabel = isSub ? sub?.yield_unit ?? "" : raw?.unit ?? "";
               return (
                 <div key={idx} className="flex items-center gap-2">
-                  <IngredientPicker
-                    materials={rawMaterials}
-                    value={it.materialId}
-                    onChange={(id) =>
-                      setItems((arr) =>
-                        arr.map((x, i) => (i === idx ? { ...x, materialId: id } : x)),
-                      )
-                    }
-                    disabledIds={usedIds}
-                  />
+                  {isSub ? (
+                    <select
+                      value={it.subRecipeId ?? ""}
+                      onChange={(e) =>
+                        setItems((arr) =>
+                          arr.map((x, i) =>
+                            i === idx ? { ...x, subRecipeId: e.target.value, materialId: "" } : x,
+                          ),
+                        )
+                      }
+                      className="flex-1 min-w-0 h-10 px-3 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
+                    >
+                      <option value="">Select sub-recipe…</option>
+                      {subRecipes.map((s) => (
+                        <option
+                          key={s.id}
+                          value={s.id}
+                          disabled={usedSubIds.has(s.id) && s.id !== it.subRecipeId}
+                        >
+                          {s.name} (yield {s.yield_qty} {s.yield_unit})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <IngredientPicker
+                      materials={rawMaterials}
+                      value={it.materialId}
+                      onChange={(id) =>
+                        setItems((arr) =>
+                          arr.map((x, i) => (i === idx ? { ...x, materialId: id } : x)),
+                        )
+                      }
+                      disabledIds={usedMatIds}
+                    />
+                  )}
                   <DecimalInput
                     value={Number(it.qty) || 0}
                     onChange={(n) =>
-                      setItems((arr) =>
-                        arr.map((x, i) =>
-                          i === idx ? { ...x, qty: n } : x,
-                        ),
-                      )
+                      setItems((arr) => arr.map((x, i) => (i === idx ? { ...x, qty: n } : x)))
                     }
                     className="w-24 h-10 px-2 rounded-md border border-border bg-background text-sm text-right outline-none focus:border-primary tabular-nums"
                   />
-                  <span className="text-xs text-muted-foreground w-10 shrink-0">{raw?.unit ?? ""}</span>
+                  <span className="text-xs text-muted-foreground w-10 shrink-0">{unitLabel}</span>
                   <span className="text-xs text-muted-foreground w-20 text-right shrink-0 tabular-nums">
-                    {raw ? `৳${lineCost.toFixed(2)}` : ""}
+                    {lineCost > 0 ? `৳${lineCost.toFixed(2)}` : ""}
                   </span>
+                  {isSub && (
+                    <span className="text-[10px] uppercase tracking-wider text-primary/70 shrink-0">
+                      sub
+                    </span>
+                  )}
                   <button
-                    onClick={() =>
-                      setItems((arr) => arr.filter((_, i) => i !== idx))
-                    }
+                    onClick={() => setItems((arr) => arr.filter((_, i) => i !== idx))}
                     className="size-9 grid place-items-center rounded-md hover:bg-destructive/10 text-destructive shrink-0"
                     aria-label="Remove ingredient"
                   >
