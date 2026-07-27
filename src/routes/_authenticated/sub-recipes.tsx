@@ -5,7 +5,7 @@ import { IngredientPicker } from "@/components/ingredient-picker";
 import { pageTitle } from "@/lib/company-settings";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChefHat, Plus, Pencil, Trash2, X, Save } from "lucide-react";
+import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy } from "lucide-react";
 import {
   loadSubRecipes,
   saveSubRecipe,
@@ -87,6 +87,18 @@ function SubRecipesPage() {
     setForm({
       id: sr.id,
       name: sr.name,
+      yield_qty: String(sr.yield_qty),
+      yield_unit: sr.yield_unit,
+      items:
+        sr.items.length > 0
+          ? sr.items.map((i) => ({ materialId: i.materialId, qty: String(i.qty) }))
+          : [{ materialId: "", qty: "" }],
+    });
+    setOpen(true);
+  };
+  const openDuplicate = (sr: SubRecipe) => {
+    setForm({
+      name: `${sr.name} (Copy)`,
       yield_qty: String(sr.yield_qty),
       yield_unit: sr.yield_unit,
       items:
@@ -181,50 +193,62 @@ function SubRecipesPage() {
           </button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {subRecipes.map((sr) => {
             const cost = costPerYieldUnit(sr);
             return (
-              <Card key={sr.id} className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <div className="font-semibold">{sr.name}</div>
-                    <div className="text-xs text-muted-foreground">
+              <Card key={sr.id} className="p-3">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm truncate">{sr.name}</div>
+                    <div className="text-[11px] text-muted-foreground">
                       Yield: {sr.yield_qty} {sr.yield_unit}
                     </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-0.5 shrink-0">
                     <button
                       onClick={() => openEdit(sr)}
-                      className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                      title="Edit"
+                      className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
                     >
                       <Pencil className="size-3.5" />
                     </button>
                     <button
+                      onClick={() => openDuplicate(sr)}
+                      title="Duplicate"
+                      className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                    >
+                      <Copy className="size-3.5" />
+                    </button>
+                    <button
                       onClick={() => remove(sr)}
-                      className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                      title="Delete"
+                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                     >
                       <Trash2 className="size-3.5" />
                     </button>
                   </div>
                 </div>
-                <div className="space-y-1 text-xs border-t border-border pt-2">
-                  {sr.items.map((it) => {
+                <div className="space-y-0.5 text-[11px] border-t border-border pt-1.5">
+                  {sr.items.slice(0, 4).map((it) => {
                     const raw = rawMaterials.find((r) => r.id === it.materialId);
                     return (
-                      <div key={it.materialId} className="flex justify-between">
-                        <span className="text-muted-foreground">{raw?.name ?? "—"}</span>
-                        <span className="tabular-nums">
+                      <div key={it.materialId} className="flex justify-between gap-2">
+                        <span className="text-muted-foreground truncate">{raw?.name ?? "—"}</span>
+                        <span className="tabular-nums shrink-0">
                           {it.qty} {raw?.unit ?? ""}
                         </span>
                       </div>
                     );
                   })}
+                  {sr.items.length > 4 && (
+                    <div className="text-muted-foreground">+{sr.items.length - 4} more</div>
+                  )}
                   {sr.items.length === 0 && (
                     <div className="text-muted-foreground italic">No ingredients</div>
                   )}
                 </div>
-                <div className="text-xs mt-2 pt-2 border-t border-border flex justify-between">
+                <div className="text-[11px] mt-1.5 pt-1.5 border-t border-border flex justify-between">
                   <span className="text-muted-foreground">Cost / {sr.yield_unit}</span>
                   <span className="font-semibold tabular-nums">৳{cost.toFixed(2)}</span>
                 </div>
