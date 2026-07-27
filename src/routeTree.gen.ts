@@ -16,6 +16,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
+import { Route as AuthenticatedSubRecipesRouteImport } from './routes/_authenticated/sub-recipes'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRecipesRouteImport } from './routes/_authenticated/recipes'
 import { Route as AuthenticatedRawMaterialsRouteImport } from './routes/_authenticated/raw-materials'
@@ -119,6 +120,11 @@ const InvoiceIdRoute = InvoiceIdRouteImport.update({
 const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
   id: '/suppliers',
   path: '/suppliers',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSubRecipesRoute = AuthenticatedSubRecipesRouteImport.update({
+  id: '/sub-recipes',
+  path: '/sub-recipes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
@@ -546,6 +552,7 @@ export interface FileRoutesByFullPath {
   '/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/recipes': typeof AuthenticatedRecipesRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
+  '/sub-recipes': typeof AuthenticatedSubRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
@@ -621,6 +628,7 @@ export interface FileRoutesByTo {
   '/raw-material-stock': typeof AuthenticatedRawMaterialStockRoute
   '/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/recipes': typeof AuthenticatedRecipesRoute
+  '/sub-recipes': typeof AuthenticatedSubRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
@@ -701,6 +709,7 @@ export interface FileRoutesById {
   '/_authenticated/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/_authenticated/recipes': typeof AuthenticatedRecipesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
+  '/_authenticated/sub-recipes': typeof AuthenticatedSubRecipesRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/_authenticated/employees/new': typeof AuthenticatedEmployeesNewRoute
@@ -781,6 +790,7 @@ export interface FileRouteTypes {
     | '/raw-materials'
     | '/recipes'
     | '/reports'
+    | '/sub-recipes'
     | '/suppliers'
     | '/invoice/$id'
     | '/employees/new'
@@ -856,6 +866,7 @@ export interface FileRouteTypes {
     | '/raw-material-stock'
     | '/raw-materials'
     | '/recipes'
+    | '/sub-recipes'
     | '/suppliers'
     | '/invoice/$id'
     | '/employees/new'
@@ -935,6 +946,7 @@ export interface FileRouteTypes {
     | '/_authenticated/raw-materials'
     | '/_authenticated/recipes'
     | '/_authenticated/reports'
+    | '/_authenticated/sub-recipes'
     | '/_authenticated/suppliers'
     | '/invoice/$id'
     | '/_authenticated/employees/new'
@@ -1051,6 +1063,13 @@ declare module '@tanstack/react-router' {
       path: '/suppliers'
       fullPath: '/suppliers'
       preLoaderRoute: typeof AuthenticatedSuppliersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sub-recipes': {
+      id: '/_authenticated/sub-recipes'
+      path: '/sub-recipes'
+      fullPath: '/sub-recipes'
+      preLoaderRoute: typeof AuthenticatedSubRecipesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reports': {
@@ -1664,6 +1683,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRawMaterialsRoute: typeof AuthenticatedRawMaterialsRoute
   AuthenticatedRecipesRoute: typeof AuthenticatedRecipesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
+  AuthenticatedSubRecipesRoute: typeof AuthenticatedSubRecipesRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
   AuthenticatedProductsCategoriesRoute: typeof AuthenticatedProductsCategoriesRoute
   AuthenticatedProductsNewRoute: typeof AuthenticatedProductsNewRoute
@@ -1712,6 +1732,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRawMaterialsRoute: AuthenticatedRawMaterialsRoute,
   AuthenticatedRecipesRoute: AuthenticatedRecipesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
+  AuthenticatedSubRecipesRoute: AuthenticatedSubRecipesRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
   AuthenticatedProductsCategoriesRoute: AuthenticatedProductsCategoriesRoute,
   AuthenticatedProductsNewRoute: AuthenticatedProductsNewRoute,
