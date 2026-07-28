@@ -69,7 +69,7 @@ function Products() {
   const [query, setQuery] = useState("");
   const [pageSize, setPageSize] = useState(25);
   const [page, setPage] = useState(1);
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [tab, setTab] = useState<"products" | "stock">("products");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -79,6 +79,10 @@ function Products() {
   const [labelFor, setLabelFor] = useState<Product | null>(null);
   const [labelSize, setLabelSize] = useState<LabelSize>("38x25");
   const [labelQty, setLabelQty] = useState(1);
+
+  const [addCatOpen, setAddCatOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+
 
   const aggregateAll = filters.businessLocation === "All";
   const effectiveShowroomId = useMemo(() => {
