@@ -544,6 +544,34 @@ function Products() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={addCatOpen} onOpenChange={(o) => { setAddCatOpen(o); if (!o) setNewCatName(""); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add category</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => { e.preventDefault(); submitAddCategory(); }}
+            className="space-y-3 py-2"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="cat-name">Category name</Label>
+              <Input
+                id="cat-name"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                placeholder="e.g. কেক / Cake"
+                lang="bn"
+                inputMode="text"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddCatOpen(false)}>Cancel</Button>
+              <Button type="submit">Add</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
