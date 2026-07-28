@@ -226,23 +226,10 @@ function Products() {
 
   return (
     <AppShell title="Products" subtitle="Manage your products">
-      {/* Filters Card */}
-      <Card className="mb-5 overflow-hidden border-l-[3px] border-l-primary">
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20"
-        >
-          <span className="inline-flex items-center gap-2 text-sm font-semibold">
-            <span className="size-7 grid place-items-center rounded-full bg-primary/10 text-primary">
-              <Filter className="size-3.5" />
-            </span>
-            Filters
-          </span>
-          <ChevronDown className={`size-4 text-muted-foreground transition-transform ${filtersOpen ? "" : "-rotate-90"}`} />
-        </button>
-        {filtersOpen && (
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Filters (collapsed by default) */}
+      {filtersOpen && (
+        <Card className="mb-4 overflow-hidden border-l-[3px] border-l-primary">
+          <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <FilterSelect
               label="Product Type:"
               value={filters.productType}
@@ -267,8 +254,8 @@ function Products() {
               options={["All", ...showrooms.map((s) => s.name)]}
               onChange={(v) => setFilters({ ...filters, businessLocation: v })}
             />
-            <div className="flex items-end gap-3">
-              <label className="inline-flex items-center gap-2 text-sm h-9">
+            <div className="flex items-end gap-2">
+              <label className="inline-flex items-center gap-2 text-xs h-9">
                 <input
                   type="checkbox"
                   checked={filters.notForSelling}
@@ -277,13 +264,11 @@ function Products() {
                 />
                 Not for selling
               </label>
-            </div>
-            <div className="flex items-end">
               <Button variant="outline" size="sm" onClick={resetFilters}>Reset</Button>
             </div>
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
 
       {/* Table Card */}
       <Card className="overflow-hidden">
@@ -294,61 +279,68 @@ function Products() {
         </div>
 
         {tab === "products" && (
-          <div className="p-4">
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2 text-sm">
+          <div className="p-3 sm:p-4">
+            {/* Compact toolbar */}
+            <div className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b border-border">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-card text-xs font-medium hover:bg-muted"
+              >
+                <Filter className="size-3.5" />
+                {filtersOpen ? "Hide filters" : "Show filters"}
+                <ChevronDown className={`size-3.5 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span>Show</span>
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="h-8 px-2 rounded-md border border-input bg-background text-sm"
+                  className="h-8 px-2 rounded-md border border-input bg-background text-xs"
                 >
                   {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
-                <span>entries</span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <ToolBtn onClick={exportCSV} icon={<FileText className="size-3.5" />}>Export CSV</ToolBtn>
-                <ToolBtn onClick={exportCSV} icon={<FileSpreadsheet className="size-3.5" />}>Export Excel</ToolBtn>
+              <div className="hidden md:flex items-center gap-1.5">
+                <ToolBtn onClick={exportCSV} icon={<FileText className="size-3.5" />}>CSV</ToolBtn>
+                <ToolBtn onClick={exportCSV} icon={<FileSpreadsheet className="size-3.5" />}>Excel</ToolBtn>
                 <ToolBtn onClick={printList} icon={<Printer className="size-3.5" />}>Print</ToolBtn>
-                <ToolBtn icon={<Columns3 className="size-3.5" />}>Column visibility</ToolBtn>
-                <ToolBtn icon={<FileText className="size-3.5" />}>Export PDF ▾</ToolBtn>
+                <ToolBtn icon={<Columns3 className="size-3.5" />}>Columns</ToolBtn>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/products/new"
-                  className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 shadow-sm"
-                >
-                  <Plus className="size-4" /> Add
-                </Link>
-                <button
-                  onClick={exportCSV}
-                  className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 shadow-sm"
-                >
-                  <Download className="size-4" /> Download Excel
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-3">
               <button
-                onClick={promptAddCategory}
+                onClick={() => setAddCatOpen(true)}
                 className="text-xs text-primary hover:underline inline-flex items-center gap-1"
               >
                 <Plus className="size-3" /> Add category
               </button>
-              <div className="relative w-full sm:w-64">
-                <label className="text-xs text-muted-foreground mr-2">Search:</label>
+
+              <div className="ml-auto flex items-center gap-2">
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="h-8 px-3 rounded-md border border-input bg-background text-sm w-48 outline-none focus:border-primary"
+                  placeholder="Search…"
+                  className="h-8 px-3 rounded-md border border-input bg-background text-xs w-40 sm:w-52 outline-none focus:border-primary"
                 />
+                <Link
+                  to="/products/new"
+                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90"
+                >
+                  <Plus className="size-3.5" /> Add
+                </Link>
+                <button
+                  onClick={exportCSV}
+                  title="Download Excel"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-card text-xs font-medium hover:bg-muted"
+                >
+                  <Download className="size-3.5" /> Excel
+                </button>
               </div>
             </div>
+
+
 
             <div className="overflow-x-auto border-t border-border">
               <table className="w-full min-w-[1200px] text-sm">
