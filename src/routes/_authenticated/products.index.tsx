@@ -176,17 +176,20 @@ function Products() {
     setSelected(next);
   };
 
-  const promptAddCategory = async () => {
-    const name = window.prompt("New category name")?.trim();
-    if (!name) return;
+  const submitAddCategory = async () => {
+    const name = newCatName.trim();
+    if (!name) return toast.error("Name is required");
     try {
       await addCategory(name);
       setEditableCats(await loadCategories());
       toast.success(`Added category "${name}"`);
+      setNewCatName("");
+      setAddCatOpen(false);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to add category");
     }
   };
+
 
   const remove = async (id: string) => {
     try {
