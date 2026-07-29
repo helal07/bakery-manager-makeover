@@ -647,6 +647,8 @@ function NavEntry({ item, pathname, hash, openMenu, setOpenMenu }: {
     return null;
   })();
 
+  const isProduction = item.label === "Production";
+
   return (
     <div>
       <button
@@ -654,15 +656,20 @@ function NavEntry({ item, pathname, hash, openMenu, setOpenMenu }: {
         onClick={() => setOpenMenu(open ? null : item.to)}
         className={cn(
           "w-full flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors",
+          isProduction && "ring-1 ring-primary/40 bg-primary/5 hover:bg-primary/10",
           selfActive || childActive
             ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
             : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          isProduction && !(selfActive || childActive) && "text-primary font-semibold",
         )}
       >
-        <Icon className="size-4" />
-        <span className="flex-1 text-left">{item.label}</span>
+        <Icon className={cn("size-4", isProduction && "text-primary")} />
+        <span className={cn("flex-1 text-left", isProduction && "uppercase tracking-wide text-[13px]")}>
+          {item.label}
+        </span>
         <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} />
       </button>
+
       <div
         className={cn(
           "grid transition-all duration-300 ease-in-out",
