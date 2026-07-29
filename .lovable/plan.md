@@ -1,58 +1,74 @@
-# Product Add/Edit-এ Sub-Recipe হিসাব
+## 1. Finished-Product Wastage + Damaged-goods বিক্রয়
 
-এখন Product form-এর "Recipe & Ingredients" section-এ শুধু raw material row যোগ করা যায়। Sub-recipe (যেমন "বেসিক খামির") ingredient হিসেবে select করার UI নেই — যদিও backend (`recipes.sub_recipe_id`, `commit_production_batch` expansion) ও standalone Recipes Workbench এতে prepared আছে। এই প্ল্যান শুধু Product form-এ সেই UI ও হিসাব যোগ করবে; database/RPC-এ কোনো পরিবর্তন লাগবে না।
+বর্তমান state: `wastage_log` শুধু raw material handle করে। ফিনিশড প্রোডাক্ট নষ্ট হলে record নাই। কিন্তু `damaged_stock`, `damaged_ledger`, `repurpose_queue`, `commit_damaged_movement` — সব RPC + tables আগেই আছে (reverse-logistics migration থেকে)।
 
-## স্কোপ
-
-- File: `src/components/product-form.tsx` (Recipe & Ingredients section + save + cost preview)
-- বাকি সব (POS, Production commit, Recipes Workbench) অপরিবর্তিত
-
-## UX ধারণা
-
-Recipe section-এ প্রতিটা ingredient row-এ একটা source-toggle থাকবে:
+**নতুন workflow (production-side damage):**
 
 ```text
-[ Material ▾ | Sub-Recipe ▾ ]   [ Picker: raw material OR sub-recipe ]   [ Qty ]  [ unit ]  [× remove]
+Finished product damaged
+        │
+        ├─▶ Deduct from product_stock (kind=wastage_out)
+        └─▶ Add to damaged_stock (kind=damaged_in)
+                │
+                ├─▶ Discard fully (repurpose → discarded)
+                ├─▶ Repurpose to raw material (existing)
+                └─▶ Sell as-is (নতুন — খাবার/feed হিসেবে বিক্রি)
 ```
 
-- Default = Material (existing behavior অক্ষুণ্ণ)
-- "Sub-Recipe" বেছে নিলে picker sub-recipe list দেখায়, unit label sub-recipe-এর `yield_unit` থেকে আসবে
-- "Add ingredient" ড্রপডাউনে দুইটা option: **Add material** / **Add sub-recipe**
-- Duplicate guard: একই material বা একই sub-recipe দ্বিতীয়বার add করা যাবে না (দুটো আলাদা set)
+**Plan:**
 
-Recipe panel-এর নিচে ছোট "Expanded raw material preview" (collapsible):
+### a. Log finished-product wastage
+- `src/lib/wastage-store.ts` — নতুন `logFinishedProductWastage({ productId, showroomId, qty, reason, notes })`:
+  - `commit_stock_movement` দিয়ে product_stock থেকে −qty (kind = `wastage_out`)
+  - `commit_damaged_movement` দিয়ে damaged_stock-এ +qty (kind = `damaged_in`, ref = wastage)
+  - `wastage_log`-এ `product_id` সহ row insert (schema-এ কলাম আগেই আছে)
+  - পাশাপাশি `repurpose_queue`-এ status = `pending` একটা row create — যাতে এটা repurpose UI-তেও দেখা যায়
 
-- Sub-recipe row গুলো auto-expand করে aggregated raw material list + estimated cost per unit product দেখাবে (Recipes Workbench-এর মতো একই expansion logic)
-- এতে user বুঝতে পারবে ১ ইউনিট product বানাতে actual কোন raw material কত লাগবে
+### b. Wastage page UI (`production.wastage.tsx`)
+- "Log wastage" কার্ডে টগল: **Raw material** vs **Finished product**
+- Finished product হলে product search + showroom scope
+- Recent wastage list-এ দুটোই দেখাবে, origin badge সহ
 
-## হিসাবের নিয়ম (frontend preview মাত্র)
+### c. Damaged-goods বিক্রয় (নতুন — টাকা recover করার জন্য)
+নতুন RPC `commit_damaged_sale` (migration লাগবে):
+- Input: `_product_id`, `_showroom_id`, `_qty`, `_unit_price`, `_customer_name?`, `_note?`
+- Damaged_stock থেকে −qty deduct (kind = `sale_out`)
+- একটা lightweight `sales` row বানাবে flag সহ (`payment_mode = 'damaged_sale'`, সরাসরি cash paid, no product_stock touch) — বা `damaged_ledger`-এই amount সহ log করা যায় income tracking-এর জন্য
 
-প্রতিটা ingredient row per-unit product-এর জন্য:
+সহজ approach — regular `sales` table use না করে, damaged_ledger-এ `note` + একটা নতুন কলাম `sale_amount numeric` দিয়ে income track করা। তাহলে reports-এ "Damaged sales revenue" আলাদা দেখানো যাবে।
 
-- Material row → `qty` raw material সরাসরি
-- Sub-recipe row → `ratio = qty / subRecipe.yield_qty`; প্রতিটা `sub_recipe_items[i]` থেকে `child.qty × ratio` raw material
-- একই material একাধিক জায়গা থেকে এলে aggregate
+**Migration:** `sql/20_damaged_sale.sql`
+- `ALTER TABLE damaged_ledger ADD COLUMN IF NOT EXISTS sale_amount numeric`
+- `ALTER TABLE damaged_ledger ADD COLUMN IF NOT EXISTS customer_name text`
+- নতুন RPC `commit_damaged_sale(_product_id, _showroom_id, _qty, _unit_price, _customer_name, _note)`
+- Permission: `production.damaged.sell`
 
-Cost per unit = Σ (aggregated_qty × raw_material.cost). এই মানটা existing cost preview-এর জায়গায় দেখাবে (যদি recipe enabled থাকে)।
+**UI:** Wastage page-এ (বা Repurpose page-এ) damaged_stock rows-এর পাশে "Sell" button — dialog-এ qty, unit price, customer name → RPC call → income recorded।
 
-## State ও Save পরিবর্তন
+Repurpose page-এ প্রতিটা queued row-এ এখন **তিনটা** action: Repurpose to material / Discard / **Sell as damaged goods**।
 
-- `IngredientRow` type: `{ materialId?: string; subRecipeId?: string; qty: string }`
-- `loadRecipeFor` এখন `subRecipeId` সহ ফেরত দেয় — সেটা state-এ hydrate হবে
-- Save-এ `Ingredient[]` build করার সময় sub-recipe row-এর জন্য `{ subRecipeId, qty }` আর material row-এর জন্য `{ materialId, qty }` পাঠাবে (existing `saveRecipe` এটা handle করে)
-- Validation: qty > 0, প্রতি row-এ material বা sub-recipe যেকোনো একটা থাকতেই হবে, duplicate নেই
-- "Copy ingredients from existing recipe" flow এও sub-recipe row copy করবে
+### d. Report
+`reports.index.tsx`-এ ছোট widget: এই মাসের "Damaged goods sold" = SUM(damaged_ledger.sale_amount) → recovered income।
 
-## ভ্যালিডেশন ও edge case
+---
 
-- Sub-recipe list load fail হলে row toggle disabled + tooltip
-- Inactive sub-recipe existing recipe-এ থাকলে read-only badge "inactive" দেখাবে, save block নয় কিন্তু warning
-- Yield unit 0 বা missing হলে expansion থেকে skip + row-এ warning
+## 2. Bangla text সাপোর্ট (category)
 
-## Out of scope
+`src/routes/_authenticated/products.categories.tsx:46` — zod regex `^[A-Za-z0-9][A-Za-z0-9 &'\-]*$` "বেকারি" reject করছে। Fix: `^[\p{L}\p{N}][\p{L}\p{N} &'\-]*$/u` + error message নিরপেক্ষ করা হবে।
 
-- Nested sub-recipe (sub-recipe-এর ভেতরে sub-recipe) — Phase 2
-- Overhead UI product form-এ যোগ করা — Recipes Workbench-এই থাকবে
-- Backend RPC/SQL — আগেই patch 19-এ done
+---
 
-শুরু করব?
+## 3. Production মেনু হাইলাইট
+
+`src/components/app-shell.tsx:113` — সাইডবারে "Production" group label-এর জন্য special class: primary color + uppercase tracking + subtle left accent bar। শুধু Production label-এ apply হবে (`item.label === "Production"` check), বাকি groups অপরিবর্তিত।
+
+---
+
+## Files to touch
+- **Migration:** `sql/20_damaged_sale.sql` (new — columns + RPC + permission)
+- `src/lib/wastage-store.ts` — finished-product logging + damaged-sale helper
+- `src/routes/_authenticated/production.wastage.tsx` — mode toggle + list updates
+- `src/routes/_authenticated/production.repurpose.tsx` — add "Sell" action next to Repurpose/Discard
+- `src/routes/_authenticated/products.categories.tsx` — Unicode regex
+- `src/components/app-shell.tsx` — Production group highlight
+- `src/routes/_authenticated/reports.index.tsx` — damaged-sale revenue widget (optional, small)
