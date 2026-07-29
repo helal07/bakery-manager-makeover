@@ -43,7 +43,11 @@ const nameSchema = z
   .trim()
   .min(2, "Must be at least 2 characters")
   .max(30, "Must be 30 characters or less")
-  .regex(/^[A-Za-z0-9][A-Za-z0-9 &'\-]*$/, "Use letters, numbers, spaces or & ' -");
+  .regex(
+    /^[\p{L}\p{N}][\p{L}\p{N}\p{M} &'\-]*$/u,
+    "Use letters (any language), numbers, spaces or & ' -",
+  );
+
 
 function CategoriesAdmin() {
   const { can, isSuperadmin, loading: permsLoading } = usePermissions();
@@ -295,9 +299,10 @@ function CategoriesAdmin() {
                 <p className="text-xs text-destructive">{err}</p>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  2–30 characters. Letters, numbers, spaces, and &amp; ' - allowed.
+                  2–30 characters. Bangla, English, numbers, spaces &amp; ' - allowed.
                 </p>
               )}
+
             </div>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
