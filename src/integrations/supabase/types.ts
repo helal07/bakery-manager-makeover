@@ -333,6 +333,7 @@ export type Database = {
       damaged_ledger: {
         Row: {
           created_at: string
+          customer_name: string | null
           id: string
           kind: string
           note: string | null
@@ -340,10 +341,12 @@ export type Database = {
           qty: number
           ref_id: string | null
           ref_type: string | null
+          sale_amount: number | null
           showroom_id: string | null
         }
         Insert: {
           created_at?: string
+          customer_name?: string | null
           id?: string
           kind: string
           note?: string | null
@@ -351,10 +354,12 @@ export type Database = {
           qty: number
           ref_id?: string | null
           ref_type?: string | null
+          sale_amount?: number | null
           showroom_id?: string | null
         }
         Update: {
           created_at?: string
+          customer_name?: string | null
           id?: string
           kind?: string
           note?: string | null
@@ -362,6 +367,7 @@ export type Database = {
           qty?: number
           ref_id?: string | null
           ref_type?: string | null
+          sale_amount?: number | null
           showroom_id?: string | null
         }
         Relationships: [
@@ -2793,6 +2799,17 @@ export type Database = {
         }
         Returns: string
       }
+      commit_damaged_sale: {
+        Args: {
+          _customer_name?: string
+          _note?: string
+          _product_id: string
+          _qty: number
+          _showroom_id: string
+          _unit_price: number
+        }
+        Returns: string
+      }
       commit_damaged_transfer_approve: {
         Args: { _transfer_id: string }
         Returns: undefined
@@ -2866,6 +2883,16 @@ export type Database = {
         Returns: boolean
       }
       is_bootstrap_superadmin: { Args: { _user: string }; Returns: boolean }
+      log_finished_product_wastage: {
+        Args: {
+          _note?: string
+          _product_id: string
+          _qty: number
+          _reason: string
+          _showroom_id: string
+        }
+        Returns: string
+      }
       user_has_showroom_access: {
         Args: { _showroom: string; _user: string }
         Returns: boolean
