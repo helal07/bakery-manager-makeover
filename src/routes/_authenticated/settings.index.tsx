@@ -181,7 +181,7 @@ function SettingsPage() {
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
       a.download = `database-backup-${stamp}.json`;
       a.click(); URL.revokeObjectURL(a.href);
-      const total = Object.values(dump.counts ?? {}).reduce((s, n) => s + Number(n || 0), 0);
+      const total = Object.values(dump.counts ?? {}).reduce((s: number, n: any) => s + Number(n || 0), 0);
       toast.success(`Database exported — ${total} rows`);
       if (res.skipped?.length) toast.warning(`${res.skipped.length} table(s) skipped`);
     } catch (e) {
@@ -198,7 +198,7 @@ function SettingsPage() {
       try {
         const d = JSON.parse(String(r.result)) as BackupFile;
         if (d?.format !== "bakery-manager-db-dump" || !d.tables) throw new Error("bad");
-        const total = Object.values(d.tables).reduce((s, rows: any) => s + (rows?.length ?? 0), 0);
+        const total = Object.values(d.tables).reduce((s: number, rows: any) => s + (rows?.length ?? 0), 0);
         setPending({ name: f.name, dump: d, total });
         setConfirmText("");
       } catch {
@@ -213,7 +213,7 @@ function SettingsPage() {
     setDbBusy("restore");
     try {
       const res: any = await runRestoreDb({ data: { dump: pending.dump } } as any);
-      const total = Object.values(res.inserted ?? {}).reduce((s: number, n: any) => s + Number(n || 0), 0);
+      const total: number = Object.values(res.inserted ?? {}).reduce((s: number, n: any) => s + Number(n || 0), 0);
       if (res.errors?.length) {
         toast.warning(`Restored ${total} rows with ${res.errors.length} issue(s): ${res.errors[0].table} — ${res.errors[0].error}`);
       } else {
