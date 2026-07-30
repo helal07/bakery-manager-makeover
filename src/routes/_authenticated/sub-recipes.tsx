@@ -576,6 +576,38 @@ function SubRecipesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={guardOpen}
+        title="Unsaved changes"
+        description="এই sub-recipe-তে save না করা পরিবর্তন আছে। Save করবেন, নাকি বাদ দেবেন?"
+        confirmLabel="Save"
+        altLabel="Don't save"
+        cancelLabel="Keep editing"
+        busy={guardBusy || saving}
+        onConfirm={() => void saveAndProceed()}
+        onAlt={discardChanges}
+        onCancel={cancelLeave}
+      />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete sub-recipe?"
+        description={
+          pendingDelete
+            ? `"${pendingDelete.name}" মুছে ফেলা হবে। এটি কোনো product recipe-এ ব্যবহৃত হলে delete হবে না।`
+            : undefined
+        }
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          const target = pendingDelete;
+          setPendingDelete(null);
+          if (target) void remove(target);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </AppShell>
+
   );
 }
