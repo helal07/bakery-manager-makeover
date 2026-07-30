@@ -856,7 +856,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate({ to: "/products" })}
+                onClick={() => guard(() => navigate({ to: "/products" }))}
                 disabled={saving}
               >
                 Cancel
@@ -908,6 +908,19 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={guardOpen}
+        title="Unsaved changes"
+        description="এই product-এ save না করা পরিবর্তন আছে। Save করবেন, নাকি বাদ দেবেন?"
+        confirmLabel="Save"
+        altLabel="Don't save"
+        cancelLabel="Keep editing"
+        busy={guardBusy || saving}
+        onConfirm={() => void saveAndProceed()}
+        onAlt={discardChanges}
+        onCancel={cancelLeave}
+      />
     </AppShell>
   );
 }
