@@ -19,7 +19,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { IngredientPicker } from "@/components/ingredient-picker";
 import { loadRecipeFor, loadRecipes, saveRecipe, type Ingredient } from "@/lib/recipe-store";
-import { loadSubRecipes, type SubRecipe } from "@/lib/sub-recipe-store";
+import {
+  loadSubRecipes,
+  expandIngredients,
+  findOverlaps,
+  type SubRecipe,
+} from "@/lib/sub-recipe-store";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { uploadImage } from "@/lib/storage";
 
