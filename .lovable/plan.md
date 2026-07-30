@@ -1,74 +1,75 @@
-## 1. Finished-Product Wastage + Damaged-goods বিক্রয়
+## 1. একাধিক সাব-রেসিপি দিয়ে একটা প্রোডাকশন
 
-বর্তমান state: `wastage_log` শুধু raw material handle করে। ফিনিশড প্রোডাক্ট নষ্ট হলে record নাই। কিন্তু `damaged_stock`, `damaged_ledger`, `repurpose_queue`, `commit_damaged_movement` — সব RPC + tables আগেই আছে (reverse-logistics migration থেকে)।
+**বর্তমান অবস্থা (কোড পড়ে যাচাই করা):** প্রোডাক্ট রেসিপিতে ইতিমধ্যেই একাধিক সাব-রেসিপি row যোগ করা যায় (`product-form.tsx` ও `recipes.tsx` দুই জায়গাতেই), এবং `commit_production_batch` RPC সব সাব-রেসিপি expand করে raw material অটো কেটে নেয় — একই material দুই সাব-রেসিপিতে থাকলে যোগ করে একবারেই deduct করে। শুধু একই সাব-রেসিপি দুইবার যোগ করা ব্লকড, ভিন্ন সাব-রেসিপি নয়।
 
-**নতুন workflow (production-side damage):**
+বাকি কাজ = **overlap warning + স্পষ্ট UI**:
+
+- **Overlap detection**: সব সাব-রেসিপি expand করে দেখা হবে কোন raw material একাধিক উৎসে (দুই সাব-রেসিপি, বা সাব-রেসিপি + সরাসরি material) আছে। থাকলে amber warning banner:
+  > "ময়দা ২টি সাব-রেসিপিতে আছে (ক্রিম বেস, কেক বান) — মোট ৩.২ কেজি একসাথে কাটা হবে"
+  Blocking নয়, শুধু সতর্কতা।
+- জায়গা: `product-form.tsx`-এর ingredient section এবং `recipes.tsx`-এর Produce/Edit Recipe ট্যাব — একই helper দিয়ে।
+- **Expanded breakdown**: কোন material কোন সাব-রেসিপি থেকে কত আসছে, source badge সহ।
+
+ডাটাবেস পরিবর্তন লাগবে না।
+
+## 2. সাব-রেসিপি Add বাটন আলাদা করা
+
+নতুন প্রোডাক্ট তৈরি/এডিটে "Add sub-recipe" ingredient row-এর ভেতরের টগল থেকে বের করে **হেডারের পাশে আলাদা বাটন**:
 
 ```text
-Finished product damaged
-        │
-        ├─▶ Deduct from product_stock (kind=wastage_out)
-        └─▶ Add to damaged_stock (kind=damaged_in)
-                │
-                ├─▶ Discard fully (repurpose → discarded)
-                ├─▶ Repurpose to raw material (existing)
-                └─▶ Sell as-is (নতুন — খাবার/feed হিসেবে বিক্রি)
+Ingredients            [+ Add ingredient]  [+ Add sub-recipe]
 ```
 
-**Plan:**
+- দুইটা আলাদা বাটন পাশাপাশি (মোবাইলে stack)।
+- "Add sub-recipe" ক্লিকে সরাসরি সাব-রেসিপি row যোগ হবে (সার্চেবল পিকার সহ); row-এর ভেতরের raw-material/sub-recipe টগল বাদ যাবে।
+- সাব-রেসিপি row-এ ছোট "Sub-recipe" badge।
 
-### a. Log finished-product wastage
-- `src/lib/wastage-store.ts` — নতুন `logFinishedProductWastage({ productId, showroomId, qty, reason, notes })`:
-  - `commit_stock_movement` দিয়ে product_stock থেকে −qty (kind = `wastage_out`)
-  - `commit_damaged_movement` দিয়ে damaged_stock-এ +qty (kind = `damaged_in`, ref = wastage)
-  - `wastage_log`-এ `product_id` সহ row insert (schema-এ কলাম আগেই আছে)
-  - পাশাপাশি `repurpose_queue`-এ status = `pending` একটা row create — যাতে এটা repurpose UI-তেও দেখা যায়
+## 3. Unsaved-changes গার্ড (সেভ / ডোন্ট সেভ)
 
-### b. Wastage page UI (`production.wastage.tsx`)
-- "Log wastage" কার্ডে টগল: **Raw material** vs **Finished product**
-- Finished product হলে product search + showroom scope
-- Recent wastage list-এ দুটোই দেখাবে, origin badge সহ
+ইউজার কিছু বদলানোর পর ক্লোজ/ক্যানসেল/নেভিগেট করলে confirm dialog:
 
-### c. Damaged-goods বিক্রয় (নতুন — টাকা recover করার জন্য)
-নতুন RPC `commit_damaged_sale` (migration লাগবে):
-- Input: `_product_id`, `_showroom_id`, `_qty`, `_unit_price`, `_customer_name?`, `_note?`
-- Damaged_stock থেকে −qty deduct (kind = `sale_out`)
-- একটা lightweight `sales` row বানাবে flag সহ (`payment_mode = 'damaged_sale'`, সরাসরি cash paid, no product_stock touch) — বা `damaged_ledger`-এই amount সহ log করা যায় income tracking-এর জন্য
+```text
+পরিবর্তন সেভ করা হয়নি
+[ সেভ করুন ]  [ সেভ ছাড়া বন্ধ করুন ]  [ বাতিল ]
+```
 
-সহজ approach — regular `sales` table use না করে, damaged_ledger-এ `note` + একটা নতুন কলাম `sale_amount numeric` দিয়ে income track করা। তাহলে reports-এ "Damaged sales revenue" আলাদা দেখানো যাবে।
+**কভারেজ:**
+- Sub-Recipe editor modal
+- Recipes পেজের Edit Recipe ট্যাব ও New Recipe dialog
+- **Product list → New Product (`products.new.tsx`) ও Edit Product (`products.edit.$id.tsx`)** — এগুলো ফুল-পেজ রুট, তাই Cancel/Back বাটন, সাইডবার নেভিগেশন, ব্রাউজার back — সব ক্ষেত্রেই গার্ড কাজ করবে। "সেভ করুন" চাপলে ফর্মের normal submit চলবে (validation fail করলে navigation বাতিল হবে)।
 
-**Migration:** `sql/20_damaged_sale.sql`
-- `ALTER TABLE damaged_ledger ADD COLUMN IF NOT EXISTS sale_amount numeric`
-- `ALTER TABLE damaged_ledger ADD COLUMN IF NOT EXISTS customer_name text`
-- নতুন RPC `commit_damaged_sale(_product_id, _showroom_id, _qty, _unit_price, _customer_name, _note)`
-- Permission: `production.damaged.sell`
+**কারিগরি:**
+- Dirty tracking: initial snapshot বনাম current state তুলনা — কিছু না বদলালে dialog আসবে না।
+- Trigger: X/Cancel বাটন, backdrop, Esc, TanStack Router-এর route blocker, আর ফুল-পেজে `beforeunload` (ট্যাব বন্ধ/রিলোড)।
+- **Destructive action-এও confirm**: ingredient/sub-recipe row মুছলে ও Delete sub-recipe/product-এ নেটিভ `confirm()`-এর বদলে একই confirm dialog।
+- একটাই shared `<ConfirmDialog />` + `useUnsavedChanges()` হুক, যাতে সব জায়গায় একই আচরণ থাকে।
 
-**UI:** Wastage page-এ (বা Repurpose page-এ) damaged_stock rows-এর পাশে "Sell" button — dialog-এ qty, unit price, customer name → RPC call → income recorded।
+## 4. Yield qty অটো হিসাব
 
-Repurpose page-এ প্রতিটা queued row-এ এখন **তিনটা** action: Repurpose to material / Discard / **Sell as damaged goods**।
+`sub-recipes.tsx` এডিটরে:
 
-### d. Report
-`reports.index.tsx`-এ ছোট widget: এই মাসের "Damaged goods sold" = SUM(damaged_ledger.sale_amount) → recovered income।
+- ডিফল্টে **Auto** মোড: ইনগ্রেডিয়েন্টের qty-গুলোর যোগফল লাইভ Yield qty-তে বসবে (read-only, "auto" ব্যাজ)।
+- পাশে **Manual** টগল — কেউ চাইলে নিজে লিখবে (রান্নায় পানি শুকিয়ে গেলে yield কম হয়)। Edit/Duplicate-এ পুরনো ভ্যালু manual হিসেবে লোড হবে, ইনগ্রেডিয়েন্ট বদলালে "Auto করুন?" hint।
+- ইউনিট না মিললে নোট: "ইউনিট ভিন্ন — যোগফল আনুমানিক"।
 
----
+## 5. সিরিয়াল নম্বর + সর্টিং
 
-## 2. Bangla text সাপোর্ট (category)
+- প্রতিটা accordion row-এর শুরুতে **সিরিয়াল নম্বর** badge (১, ২, ৩…)।
+- সার্চের পাশে **Sort** ড্রপডাউন: Name (A→Z / Z→A), Ingredient সংখ্যা, Yield qty, খরচ/ইউনিট, নতুন আগে।
+- সর্ট করলেও সিরিয়াল ১ থেকে দেখানো হবে।
 
-`src/routes/_authenticated/products.categories.tsx:46` — zod regex `^[A-Za-z0-9][A-Za-z0-9 &'\-]*$` "বেকারি" reject করছে। Fix: `^[\p{L}\p{N}][\p{L}\p{N} &'\-]*$/u` + error message নিরপেক্ষ করা হবে।
+## Technical notes
 
----
-
-## 3. Production মেনু হাইলাইট
-
-`src/components/app-shell.tsx:113` — সাইডবারে "Production" group label-এর জন্য special class: primary color + uppercase tracking + subtle left accent bar। শুধু Production label-এ apply হবে (`item.label === "Production"` check), বাকি groups অপরিবর্তিত।
-
----
+- `src/lib/sub-recipe-store.ts`-এ `expandIngredients()` helper — ingredient list → `{ materialId, total, sources: [{ subRecipeName, qty }] }`, সব পেজে reuse।
+- `loadSubRecipes()`-এ `created_at` সিলেক্ট যোগ (সর্টিং)।
+- নতুন `src/components/confirm-dialog.tsx` + `src/hooks/use-unsaved-changes.ts`।
+- কোনো SQL migration লাগছে না।
 
 ## Files to touch
-- **Migration:** `sql/20_damaged_sale.sql` (new — columns + RPC + permission)
-- `src/lib/wastage-store.ts` — finished-product logging + damaged-sale helper
-- `src/routes/_authenticated/production.wastage.tsx` — mode toggle + list updates
-- `src/routes/_authenticated/production.repurpose.tsx` — add "Sell" action next to Repurpose/Discard
-- `src/routes/_authenticated/products.categories.tsx` — Unicode regex
-- `src/components/app-shell.tsx` — Production group highlight
-- `src/routes/_authenticated/reports.index.tsx` — damaged-sale revenue widget (optional, small)
+- `src/lib/sub-recipe-store.ts` — expand helper + created_at
+- `src/components/confirm-dialog.tsx` (new), `src/hooks/use-unsaved-changes.ts` (new)
+- `src/routes/_authenticated/sub-recipes.tsx` — auto yield, serial, sort, unsaved guard
+- `src/components/product-form.tsx` — আলাদা Add sub-recipe বাটন, overlap warning, dirty state expose
+- `src/routes/_authenticated/products.new.tsx` — unsaved guard
+- `src/routes/_authenticated/products.edit.$id.tsx` — unsaved guard
+- `src/routes/_authenticated/recipes.tsx` — overlap warning, আলাদা বাটন, unsaved guard
