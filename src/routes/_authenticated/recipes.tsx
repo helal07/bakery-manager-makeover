@@ -39,6 +39,8 @@ import {
 } from "@/lib/production-overhead-store";
 import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import {
   loadSubRecipes,
   expandIngredients,
@@ -106,6 +108,7 @@ function Workbench() {
   const [editorItems, setEditorItems] = useState<Ingredient[]>([]);
   const [editorOverheads, setEditorOverheads] = useState<RecipeOverhead[]>([]);
   const [editorSaving, setEditorSaving] = useState(false);
+  const [editorBaseline, setEditorBaseline] = useState<string>("");
 
   // Overhead categories master list
   const [overheadCats, setOverheadCats] = useState<OverheadCategory[]>([]);
@@ -297,6 +300,7 @@ function Workbench() {
     setEditorProductId(firstFree?.id ?? products[0]?.id ?? "");
     setEditorItems([{ materialId: "", qty: 0 }]);
     setEditorOverheads([]);
+    setEditorBaseline(JSON.stringify({ items: [{ materialId: "", qty: 0 }], ov: [] }));
     setEditorOpen(true);
   };
   const openEditActive = () => {
@@ -304,18 +308,25 @@ function Workbench() {
     setEditorProductId(active.product.id);
     setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 0 }]);
     setEditorOverheads(activeRecipeOverheads.map((r) => ({ ...r })));
+    setEditorBaseline(
+      JSON.stringify({
+        items: items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 0 }],
+        ov: activeRecipeOverheads.map((r) => ({ ...r })),
+      }),
+    );
     setTab("recipe");
   };
   const saveEditor = async (opts?: { closeDialog?: boolean }) => {
-    if (!editorProductId) return toast.error("Select a product");
+    if (!editorProductId) { toast.error("Select a product"); return false; }
     const populated = editorItems.filter((i) => i.materialId || i.subRecipeId);
-    if (populated.length === 0) return toast.error("Add at least one ingredient");
+    if (populated.length === 0) { toast.error("Add at least one ingredient"); return false; }
     const bad = populated.find((i) => !(Number(i.qty) > 0));
     if (bad) {
       const label = bad.subRecipeId
         ? subRecipes.find((s) => s.id === bad.subRecipeId)?.name
         : rawMaterials.find((r) => r.id === bad.materialId)?.name;
-      return toast.error(`Quantity must be greater than zero${label ? ` for ${label}` : ""}`);
+      toast.error(`Quantity must be greater than zero${label ? ` for ${label}` : ""}`);
+      return false;
     }
     const seen = new Set<string>();
     for (const i of populated) {
@@ -324,7 +335,8 @@ function Workbench() {
         const label = i.subRecipeId
           ? subRecipes.find((s) => s.id === i.subRecipeId)?.name
           : rawMaterials.find((r) => r.id === i.materialId)?.name;
-        return toast.error(`Duplicate ingredient: ${label ?? key}`);
+        toast.error(`Duplicate ingredient: ${label ?? key}`);
+        return false;
       }
       seen.add(key);
     }
@@ -335,7 +347,8 @@ function Workbench() {
       const key = `${o.categoryId}::${o.mode}`;
       if (seenOv.has(key)) {
         const cat = overheadCats.find((c) => c.id === o.categoryId);
-        return toast.error(`Duplicate overhead: ${cat?.name ?? o.categoryId} (${o.mode})`);
+        toast.error(`Duplicate overhead: ${cat?.name ?? o.categoryId} (${o.mode})`);
+        return false;
       }
       seenOv.add(key);
     }
@@ -344,6 +357,7 @@ function Workbench() {
       await saveRecipe(editorProductId, populated);
       await saveRecipeOverheads(editorProductId, cleanOverheads);
       toast.success("Recipe saved");
+      setEditorBaseline(JSON.stringify({ items: populated, ov: cleanOverheads }));
       if (opts?.closeDialog) setEditorOpen(false);
       setActiveId(editorProductId);
       // Refresh the active recipe overheads if we just edited the active product
@@ -353,12 +367,30 @@ function Workbench() {
         } catch { /* ignore */ }
       }
       await refresh();
+      return true;
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save recipe");
+      return false;
     } finally {
       setEditorSaving(false);
     }
   };
+
+  const editorDirty =
+    !!editorBaseline &&
+    JSON.stringify({ items: editorItems, ov: editorOverheads }) !== editorBaseline;
+
+  const editorGuard = useUnsavedChanges({
+    dirty: editorDirty,
+    enabled: editorOpen || tab === "recipe",
+    onSave: () => saveEditor(),
+  });
+
+  const closeEditor = () =>
+    editorGuard.guard(() => {
+      setEditorBaseline("");
+      setEditorOpen(false);
+    });
 
   const deleteActiveRecipe = async () => {
     if (!active) return;
@@ -618,7 +650,7 @@ function Workbench() {
       {editorOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center sm:p-4 overflow-y-auto"
-          onClick={() => !editorSaving && setEditorOpen(false)}
+          onClick={() => !editorSaving && closeEditor()}
         >
           <div
             className="bg-card border border-border sm:rounded-xl shadow-2xl w-full sm:max-w-5xl h-full sm:h-[95vh] flex flex-col overflow-hidden my-auto"
@@ -635,7 +667,7 @@ function Workbench() {
                 </p>
               </div>
               <button
-                onClick={() => !editorSaving && setEditorOpen(false)}
+                onClick={() => !editorSaving && closeEditor()}
                 className="size-9 grid place-items-center rounded-md hover:bg-accent text-muted-foreground shrink-0"
                 aria-label="Close"
               >
@@ -658,7 +690,7 @@ function Workbench() {
 
             <div className="p-3 sm:p-4 border-t border-border flex items-center justify-end gap-2 sticky bottom-0 bg-card">
               <button
-                onClick={() => setEditorOpen(false)}
+                onClick={closeEditor}
                 disabled={editorSaving}
                 className="px-4 h-10 rounded-md border border-border bg-background text-sm hover:bg-accent disabled:opacity-50"
               >
@@ -677,6 +709,18 @@ function Workbench() {
         </div>
       )}
 
+      <ConfirmDialog
+        open={editorGuard.open}
+        title="Unsaved recipe changes"
+        description="Recipe-এ save না করা পরিবর্তন আছে। Save করবেন, নাকি বাদ দেবেন?"
+        confirmLabel="Save"
+        altLabel="Don't save"
+        cancelLabel="Keep editing"
+        busy={editorGuard.busy || editorSaving}
+        onConfirm={() => void editorGuard.saveAndProceed()}
+        onAlt={() => { setEditorBaseline(""); editorGuard.proceed(); }}
+        onCancel={editorGuard.cancel}
+      />
     </AppShell>
   );
 }
