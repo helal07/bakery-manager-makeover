@@ -276,14 +276,29 @@ function SubRecipesPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          <div className="relative">
-            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search sub-recipe or ingredient…"
-              className="w-full h-10 pl-9 pr-3 rounded-lg border border-input bg-background text-sm"
-            />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search sub-recipe or ingredient…"
+                className="w-full h-10 pl-9 pr-3 rounded-lg border border-input bg-background text-sm"
+              />
+            </div>
+            <div className="relative shrink-0">
+              <ArrowUpDown className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                className="h-10 pl-9 pr-3 rounded-lg border border-input bg-background text-sm w-full sm:w-48"
+              >
+                <option value="name">Sort: Name (A–Z)</option>
+                <option value="qty">Sort: Yield qty</option>
+                <option value="cost">Sort: Cost / unit</option>
+                <option value="created">Sort: Newest first</option>
+              </select>
+            </div>
           </div>
 
           {filtered.length === 0 ? (
@@ -292,12 +307,16 @@ function SubRecipesPage() {
             </Card>
           ) : (
             <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
-              {filtered.map((sr) => {
+              {filtered.map((sr, srIdx) => {
                 const cost = costPerYieldUnit(sr);
                 const isOpen = expanded.has(sr.id);
                 return (
                   <div key={sr.id} className={isOpen ? "bg-accent/30" : "hover:bg-accent/20 transition-colors"}>
                     <div className="flex items-center gap-2 p-3">
+                      <span className="shrink-0 w-6 text-xs font-semibold tabular-nums text-muted-foreground text-right">
+                        {srIdx + 1}.
+                      </span>
+
                       <button
                         onClick={() => toggleExpand(sr.id)}
                         className="flex-1 min-w-0 flex items-center gap-2.5 text-left"
