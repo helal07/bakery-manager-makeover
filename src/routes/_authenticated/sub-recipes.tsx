@@ -184,6 +184,16 @@ function SubRecipesPage() {
     }
   };
 
+  const {
+    open: guardOpen,
+    busy: guardBusy,
+    guard,
+    proceed: discardChanges,
+    cancel: cancelLeave,
+    saveAndProceed,
+  } = useUnsavedChanges({ dirty, onSave: save });
+
+
   const closeEditor = () =>
     guard(() => {
       setOpen(false);
