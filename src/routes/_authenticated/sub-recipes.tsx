@@ -56,7 +56,12 @@ function SubRecipesPage() {
   const [form, setForm] = useState<EditorState>(empty);
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("name");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [baseline, setBaseline] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<SubRecipe | null>(null);
+  const dirty = open && baseline !== null && JSON.stringify(form) !== baseline;
+
 
   const toggleExpand = (id: string) =>
     setExpanded((prev) => {
