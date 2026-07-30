@@ -5,7 +5,7 @@ import { IngredientPicker } from "@/components/ingredient-picker";
 import { pageTitle } from "@/lib/company-settings";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy } from "lucide-react";
+import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy, Search, ChevronDown } from "lucide-react";
 import {
   loadSubRecipes,
   saveSubRecipe,
@@ -48,6 +48,15 @@ function SubRecipesPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<EditorState>(empty);
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   const refresh = async () => {
     try {
