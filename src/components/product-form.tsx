@@ -600,26 +600,21 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   </span>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 mb-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
-                      >
-                        <Plus className="size-3" /> Add ingredient
-                        <ChevronDown className="size-3 opacity-60" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => addMaterialRow()}>
-                        Raw material
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => addSubRecipeRow()}>
-                        Sub-recipe
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div className="flex flex-wrap items-center justify-end gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={addMaterialRow}
+                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
+                  >
+                    <Plus className="size-3" /> Add ingredient
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addSubRecipeRow}
+                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                  >
+                    <ChefHat className="size-3" /> Add sub-recipe
+                  </button>
                   <button
                     type="button"
                     onClick={() => setRmOpen(true)}
@@ -628,6 +623,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                     <Plus className="size-3" /> Add raw material
                   </button>
                 </div>
+
 
                 {rawMaterials.length === 0 && ingredients.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-sm">
