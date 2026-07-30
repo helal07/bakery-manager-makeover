@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { type ProductCategory, loadCategories, addCategory } from "@/lib/product-types";
-import { ArrowLeft, ChevronDown, Plus, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, Plus, X, AlertTriangle, ChefHat } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,15 +11,17 @@ import { addProduct, updateProduct, loadProducts, type Product } from "@/lib/pro
 import { addRawMaterial, loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { IngredientPicker } from "@/components/ingredient-picker";
 import { loadRecipeFor, loadRecipes, saveRecipe, type Ingredient } from "@/lib/recipe-store";
-import { loadSubRecipes, type SubRecipe } from "@/lib/sub-recipe-store";
+import {
+  loadSubRecipes,
+  expandIngredients,
+  findOverlaps,
+  type SubRecipe,
+} from "@/lib/sub-recipe-store";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { uploadImage } from "@/lib/storage";
 
@@ -88,6 +90,24 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit || !!from);
   const [showExpanded, setShowExpanded] = useState(false);
+  const [baseline, setBaseline] = useState<string | null>(null);
+  const [savedClean, setSavedClean] = useState(false);
+
+  // Snapshot used for the unsaved-changes guard.
+  const snapshot = useMemo(
+    () => JSON.stringify({ form, recipeEnabled, ingredients, image: imageFile?.name ?? null }),
+    [form, recipeEnabled, ingredients, imageFile],
+  );
+  const dirty = !loading && !savedClean && baseline !== null && snapshot !== baseline;
+
+  // Establish the baseline once the initial data finished loading.
+  useEffect(() => {
+    if (loading) return;
+    setBaseline((b) => b ?? snapshot);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+
 
   useEffect(() => {
     (async () => {
@@ -271,48 +291,49 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   };
 
   // Expand sub-recipes into aggregated raw-material demand per unit of product.
+  // Multiple sub-recipes are merged; each material keeps track of its sources.
   const expandedPerUnit = useMemo(() => {
-    const totals = new Map<string, number>();
-    for (const row of ingredients) {
-      const qty = Number(row.qty);
-      if (!Number.isFinite(qty) || qty <= 0) continue;
-      if (row.subRecipeId) {
-        const sub = subMap[row.subRecipeId];
-        if (!sub || sub.yield_qty <= 0) continue;
-        const ratio = qty / sub.yield_qty;
-        for (const si of sub.items) {
-          totals.set(si.materialId, (totals.get(si.materialId) ?? 0) + si.qty * ratio);
-        }
-      } else if (row.materialId) {
-        totals.set(row.materialId, (totals.get(row.materialId) ?? 0) + qty);
-      }
-    }
-    return Array.from(totals.entries()).map(([materialId, qty]) => {
-      const raw = rawMap[materialId];
-      const cost = (raw?.cost ?? 0) * qty;
-      return { materialId, raw, qty, cost };
+    const rows = expandIngredients(
+      ingredients.map((i) => ({
+        materialId: i.materialId,
+        subRecipeId: i.subRecipeId,
+        qty: Number(i.qty) || 0,
+      })),
+      subMap,
+    );
+    return rows.map((r) => {
+      const raw = rawMap[r.materialId];
+      return { materialId: r.materialId, raw, qty: r.total, cost: (raw?.cost ?? 0) * r.total, sources: r.sources };
     });
   }, [ingredients, subMap, rawMap]);
+
+  // Materials that arrive from more than one source (two sub-recipes, or a
+  // sub-recipe plus a direct material) — surfaced as a warning, not an error.
+  const overlaps = useMemo(
+    () => findOverlaps(expandedPerUnit.map((r) => ({ materialId: r.materialId, total: r.qty, sources: r.sources }))),
+    [expandedPerUnit],
+  );
+
 
   const estimatedCost = useMemo(
     () => expandedPerUnit.reduce((s, r) => s + r.cost, 0),
     [expandedPerUnit],
   );
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSave = async (opts?: { navigateAfter?: boolean }): Promise<boolean> => {
+    const navigateAfter = opts?.navigateAfter !== false;
     if (!form.name.trim()) {
       toast.error("Product name is required");
-      return;
+      return false;
     }
     if (!form.category) {
       toast.error("Please select a category");
-      return;
+      return false;
     }
     const shelf = form.shelfLifeDays.trim() ? Number(form.shelfLifeDays) : undefined;
     if (shelf !== undefined && (!Number.isFinite(shelf) || shelf < 0)) {
       toast.error("Max validity must be a positive number of days");
-      return;
+      return false;
     }
     setSaving(true);
     try {
@@ -338,7 +359,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
             if (seenSub.has(i.subRecipeId)) {
               toast.error("Duplicate sub-recipe in the recipe");
               setSaving(false);
-              return;
+              return false;
             }
             seenSub.add(i.subRecipeId);
             clean.push({ materialId: "", subRecipeId: i.subRecipeId, qty });
@@ -346,7 +367,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
             if (seenMat.has(i.materialId)) {
               toast.error("Duplicate material in the recipe");
               setSaving(false);
-              return;
+              return false;
             }
             seenMat.add(i.materialId);
             clean.push({ materialId: i.materialId, qty });
@@ -355,7 +376,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         if (clean.length === 0) {
           toast.error("Add at least one ingredient with quantity > 0, or turn off the recipe toggle");
           setSaving(false);
-          return;
+          return false;
         }
       }
 
@@ -380,13 +401,33 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         await saveRecipe(created.id, clean);
         toast.success("Product added");
       }
-      navigate({ to: "/products" });
+      setSavedClean(true);
+      if (navigateAfter) navigate({ to: "/products" });
+      return true;
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save product");
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void doSave();
+  };
+
+  const {
+    open: guardOpen,
+    busy: guardBusy,
+    guard,
+    proceed: discardChanges,
+    cancel: cancelLeave,
+    saveAndProceed,
+  } = useUnsavedChanges({
+    dirty,
+    onSave: () => doSave({ navigateAfter: false }),
+  });
 
   return (
     <AppShell
@@ -553,26 +594,21 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   </span>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 mb-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
-                      >
-                        <Plus className="size-3" /> Add ingredient
-                        <ChevronDown className="size-3 opacity-60" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => addMaterialRow()}>
-                        Raw material
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => addSubRecipeRow()}>
-                        Sub-recipe
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div className="flex flex-wrap items-center justify-end gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={addMaterialRow}
+                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
+                  >
+                    <Plus className="size-3" /> Add ingredient
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addSubRecipeRow}
+                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                  >
+                    <ChefHat className="size-3" /> Add sub-recipe
+                  </button>
                   <button
                     type="button"
                     onClick={() => setRmOpen(true)}
@@ -581,6 +617,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                     <Plus className="size-3" /> Add raw material
                   </button>
                 </div>
+
 
                 {rawMaterials.length === 0 && ingredients.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-sm">
@@ -712,7 +749,30 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   </div>
                 )}
 
+                {overlaps.length > 0 && (
+                  <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+                    <div className="flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-400">
+                      <AlertTriangle className="size-3.5" /> একই raw material একাধিক জায়গা থেকে আসছে
+                    </div>
+                    <ul className="mt-1.5 space-y-0.5 pl-5 list-disc text-muted-foreground">
+                      {overlaps.map((o) => (
+                        <li key={o.materialId}>
+                          <span className="font-medium text-foreground">
+                            {rawMap[o.materialId]?.name ?? "Unknown material"}
+                          </span>{" "}
+                          — {o.sources.map((s) => s.label).join(" + ")} (total {o.total.toFixed(4)}{" "}
+                          {rawMap[o.materialId]?.unit ?? ""})
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-1.5 text-[11px] text-muted-foreground">
+                      Production-এ এগুলো যোগ করে একবারেই stock থেকে কাটা হবে — ঠিক আছে কিনা দেখে নিন।
+                    </div>
+                  </div>
+                )}
+
                 {ingredients.length > 0 && (
+
                   <div className="mt-4 rounded-md border border-border bg-muted/20">
                     <button
                       type="button"
@@ -733,24 +793,34 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                             Add quantities to see the expanded breakdown.
                           </div>
                         ) : (
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             {expandedPerUnit.map((r) => (
-                              <div
-                                key={r.materialId}
-                                className="flex items-center justify-between gap-2 text-xs"
-                              >
-                                <span className="truncate">
-                                  {r.raw?.name ?? "Unknown material"}
-                                </span>
-                                <span className="tabular-nums text-muted-foreground shrink-0">
-                                  {r.qty.toFixed(4)} {r.raw?.unit ?? ""} · ৳{r.cost.toFixed(2)}
-                                </span>
+                              <div key={r.materialId} className="text-xs">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="truncate flex items-center gap-1">
+                                    {r.sources.length > 1 && (
+                                      <AlertTriangle className="size-3 text-amber-500 shrink-0" />
+                                    )}
+                                    {r.raw?.name ?? "Unknown material"}
+                                  </span>
+                                  <span className="tabular-nums text-muted-foreground shrink-0">
+                                    {r.qty.toFixed(4)} {r.raw?.unit ?? ""} · ৳{r.cost.toFixed(2)}
+                                  </span>
+                                </div>
+                                {r.sources.length > 1 && (
+                                  <div className="pl-4 text-[10px] text-muted-foreground">
+                                    {r.sources
+                                      .map((s) => `${s.label}: ${s.qty.toFixed(4)}`)
+                                      .join(" + ")}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
                     )}
+
                   </div>
                 )}
               </>
@@ -786,7 +856,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate({ to: "/products" })}
+                onClick={() => guard(() => navigate({ to: "/products" }))}
                 disabled={saving}
               >
                 Cancel
@@ -838,6 +908,19 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={guardOpen}
+        title="Unsaved changes"
+        description="এই product-এ save না করা পরিবর্তন আছে। Save করবেন, নাকি বাদ দেবেন?"
+        confirmLabel="Save"
+        altLabel="Don't save"
+        cancelLabel="Keep editing"
+        busy={guardBusy || saving}
+        onConfirm={() => void saveAndProceed()}
+        onAlt={discardChanges}
+        onCancel={cancelLeave}
+      />
     </AppShell>
   );
 }

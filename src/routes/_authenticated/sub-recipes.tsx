@@ -2,10 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { PermissionGate } from "@/components/permission-gate";
 import { IngredientPicker } from "@/components/ingredient-picker";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { pageTitle } from "@/lib/company-settings";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy, Search, ChevronDown } from "lucide-react";
+import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy, Search, ChevronDown, ArrowUpDown } from "lucide-react";
 import {
   loadSubRecipes,
   saveSubRecipe,
@@ -30,6 +32,7 @@ type EditorState = {
   name: string;
   yield_qty: string;
   yield_unit: string;
+  autoYield: boolean;
   items: { materialId: string; qty: string }[];
 };
 
@@ -37,8 +40,12 @@ const empty: EditorState = {
   name: "",
   yield_qty: "100",
   yield_unit: "kg",
+  autoYield: true,
   items: [{ materialId: "", qty: "" }],
 };
+
+type SortKey = "name" | "qty" | "cost" | "created";
+
 
 function SubRecipesPage() {
   const [subRecipes, setSubRecipes] = useState<SubRecipe[]>([]);
@@ -49,7 +56,12 @@ function SubRecipesPage() {
   const [form, setForm] = useState<EditorState>(empty);
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("name");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [baseline, setBaseline] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<SubRecipe | null>(null);
+  const dirty = open && baseline !== null && JSON.stringify(form) !== baseline;
+
 
   const toggleExpand = (id: string) =>
     setExpanded((prev) => {
@@ -88,53 +100,68 @@ function SubRecipesPage() {
     return sr.yield_qty > 0 ? total / sr.yield_qty : 0;
   };
 
-  const openNew = () => {
-    setForm(empty);
-    setOpen(true);
-  };
-  const openEdit = (sr: SubRecipe) => {
-    setForm({
-      id: sr.id,
-      name: sr.name,
-      yield_qty: String(sr.yield_qty),
-      yield_unit: sr.yield_unit,
-      items:
-        sr.items.length > 0
-          ? sr.items.map((i) => ({ materialId: i.materialId, qty: String(i.qty) }))
-          : [{ materialId: "", qty: "" }],
+  const fromSubRecipe = (sr: SubRecipe, copy = false): EditorState => ({
+    id: copy ? undefined : sr.id,
+    name: copy ? `${sr.name} (Copy)` : sr.name,
+    yield_qty: String(sr.yield_qty),
+    yield_unit: sr.yield_unit,
+    autoYield: false,
+    items:
+      sr.items.length > 0
+        ? sr.items.map((i) => ({ materialId: i.materialId, qty: String(i.qty) }))
+        : [{ materialId: "", qty: "" }],
+  });
+
+  const openWith = (next: EditorState) => {
+    guard(() => {
+      setForm(next);
+      setBaseline(JSON.stringify(next));
+      setOpen(true);
     });
-    setOpen(true);
-  };
-  const openDuplicate = (sr: SubRecipe) => {
-    setForm({
-      name: `${sr.name} (Copy)`,
-      yield_qty: String(sr.yield_qty),
-      yield_unit: sr.yield_unit,
-      items:
-        sr.items.length > 0
-          ? sr.items.map((i) => ({ materialId: i.materialId, qty: String(i.qty) }))
-          : [{ materialId: "", qty: "" }],
-    });
-    setOpen(true);
   };
 
-  const addRow = () =>
-    setForm({ ...form, items: [...form.items, { materialId: "", qty: "" }] });
+  const openNew = () => openWith(empty);
+  const openEdit = (sr: SubRecipe) => openWith(fromSubRecipe(sr));
+  const openDuplicate = (sr: SubRecipe) => openWith(fromSubRecipe(sr, true));
+
+  /** Auto-calculated yield = sum of ingredient quantities. */
+  const autoYieldTotal = useMemo(
+    () => form.items.reduce((s, i) => s + (Number(i.qty) || 0), 0),
+    [form.items],
+  );
+
+  const patchForm = (patch: Partial<EditorState>) =>
+    setForm((f) => {
+      const next = { ...f, ...patch };
+      if (next.autoYield) {
+        const total = next.items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+        next.yield_qty = total > 0 ? String(Number(total.toFixed(4))) : "";
+      }
+      return next;
+    });
+
+  const addRow = () => patchForm({ items: [...form.items, { materialId: "", qty: "" }] });
   const removeRow = (idx: number) =>
-    setForm({ ...form, items: form.items.filter((_, i) => i !== idx) });
+    patchForm({ items: form.items.filter((_, i) => i !== idx) });
   const setRow = (idx: number, patch: Partial<{ materialId: string; qty: string }>) =>
-    setForm({
-      ...form,
-      items: form.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)),
-    });
+    patchForm({ items: form.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) });
 
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     const items = form.items
       .filter((i) => i.materialId && Number(i.qty) > 0)
       .map((i) => ({ materialId: i.materialId, qty: Number(i.qty) }));
-    if (!form.name.trim()) return toast.error("Name required");
-    if (!(Number(form.yield_qty) > 0)) return toast.error("Yield qty must be > 0");
-    if (items.length === 0) return toast.error("At least one ingredient with qty > 0");
+    if (!form.name.trim()) {
+      toast.error("Name required");
+      return false;
+    }
+    if (!(Number(form.yield_qty) > 0)) {
+      toast.error("Yield qty must be > 0");
+      return false;
+    }
+    if (items.length === 0) {
+      toast.error("At least one ingredient with qty > 0");
+      return false;
+    }
     setSaving(true);
     try {
       await saveSubRecipe({
@@ -145,17 +172,35 @@ function SubRecipesPage() {
         items,
       });
       toast.success("Sub-recipe saved");
+      setBaseline(JSON.stringify(form));
       setOpen(false);
       await refresh();
+      return true;
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save");
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
+  const {
+    open: guardOpen,
+    busy: guardBusy,
+    guard,
+    proceed: discardChanges,
+    cancel: cancelLeave,
+    saveAndProceed,
+  } = useUnsavedChanges({ dirty, onSave: save });
+
+
+  const closeEditor = () =>
+    guard(() => {
+      setOpen(false);
+      setBaseline(null);
+    });
+
   const remove = async (sr: SubRecipe) => {
-    if (!confirm(`Delete sub-recipe "${sr.name}"?`)) return;
     try {
       await deleteSubRecipe(sr.id);
       toast.success("Deleted");
@@ -174,13 +219,28 @@ function SubRecipesPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return subRecipes;
-    return subRecipes.filter(
-      (sr) =>
-        sr.name.toLowerCase().includes(q) ||
-        sr.items.some((it) => matName(it.materialId).toLowerCase().includes(q)),
-    );
-  }, [subRecipes, query, rawMaterials]);
+    const base = !q
+      ? subRecipes
+      : subRecipes.filter(
+          (sr) =>
+            sr.name.toLowerCase().includes(q) ||
+            sr.items.some((it) => matName(it.materialId).toLowerCase().includes(q)),
+        );
+    const sorted = [...base].sort((a, b) => {
+      switch (sort) {
+        case "qty":
+          return b.yield_qty - a.yield_qty;
+        case "cost":
+          return costPerYieldUnit(b) - costPerYieldUnit(a);
+        case "created":
+          return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+    return sorted;
+  }, [subRecipes, query, rawMaterials, sort]);
+
 
 
   return (
@@ -216,14 +276,29 @@ function SubRecipesPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          <div className="relative">
-            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search sub-recipe or ingredient…"
-              className="w-full h-10 pl-9 pr-3 rounded-lg border border-input bg-background text-sm"
-            />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search sub-recipe or ingredient…"
+                className="w-full h-10 pl-9 pr-3 rounded-lg border border-input bg-background text-sm"
+              />
+            </div>
+            <div className="relative shrink-0">
+              <ArrowUpDown className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                className="h-10 pl-9 pr-3 rounded-lg border border-input bg-background text-sm w-full sm:w-48"
+              >
+                <option value="name">Sort: Name (A–Z)</option>
+                <option value="qty">Sort: Yield qty</option>
+                <option value="cost">Sort: Cost / unit</option>
+                <option value="created">Sort: Newest first</option>
+              </select>
+            </div>
           </div>
 
           {filtered.length === 0 ? (
@@ -232,12 +307,16 @@ function SubRecipesPage() {
             </Card>
           ) : (
             <div className="rounded-xl border border-border overflow-hidden divide-y divide-border bg-card">
-              {filtered.map((sr) => {
+              {filtered.map((sr, srIdx) => {
                 const cost = costPerYieldUnit(sr);
                 const isOpen = expanded.has(sr.id);
                 return (
                   <div key={sr.id} className={isOpen ? "bg-accent/30" : "hover:bg-accent/20 transition-colors"}>
                     <div className="flex items-center gap-2 p-3">
+                      <span className="shrink-0 w-6 text-xs font-semibold tabular-nums text-muted-foreground text-right">
+                        {srIdx + 1}.
+                      </span>
+
                       <button
                         onClick={() => toggleExpand(sr.id)}
                         className="flex-1 min-w-0 flex items-center gap-2.5 text-left"
@@ -275,7 +354,7 @@ function SubRecipesPage() {
                           <Copy className="size-4" />
                         </button>
                         <button
-                          onClick={() => remove(sr)}
+                          onClick={() => setPendingDelete(sr)}
                           title="Delete"
                           className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                         >
@@ -368,7 +447,7 @@ function SubRecipesPage() {
                 <ChefHat className="size-4" />
                 {form.id ? "Edit Sub-Recipe" : "New Sub-Recipe"}
               </div>
-              <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-accent">
+              <button onClick={closeEditor} className="p-1 rounded hover:bg-accent">
                 <X className="size-4" />
               </button>
             </div>
@@ -385,15 +464,35 @@ function SubRecipesPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Yield qty *</label>
+                  <label className="text-xs text-muted-foreground flex items-center justify-between gap-1">
+                    <span>Yield qty *</span>
+                    <label className="inline-flex items-center gap-1 cursor-pointer text-[10px]">
+                      <input
+                        type="checkbox"
+                        checked={form.autoYield}
+                        onChange={(e) =>
+                          patchForm({ autoYield: e.target.checked })
+                        }
+                        className="size-3 accent-current"
+                      />
+                      Auto
+                    </label>
+                  </label>
                   <input
                     type="text"
                     inputMode="decimal"
                     value={form.yield_qty}
-                    onChange={(e) => setForm({ ...form, yield_qty: e.target.value })}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm tabular-nums"
+                    readOnly={form.autoYield}
+                    onChange={(e) => patchForm({ yield_qty: e.target.value })}
+                    className={`w-full h-10 px-3 rounded-md border border-input bg-background text-sm tabular-nums ${form.autoYield ? "opacity-70 cursor-not-allowed" : ""}`}
                   />
+                  {form.autoYield && (
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      = ingredient total ({autoYieldTotal.toFixed(4).replace(/\.?0+$/, "")})
+                    </div>
+                  )}
                 </div>
+
                 <div>
                   <label className="text-xs text-muted-foreground">Unit</label>
                   <select
@@ -461,13 +560,13 @@ function SubRecipesPage() {
             </div>
             <div className="p-4 border-t border-border flex justify-end gap-2">
               <button
-                onClick={() => setOpen(false)}
+                onClick={closeEditor}
                 className="h-9 px-3 rounded-md border border-input text-sm hover:bg-accent"
               >
                 Cancel
               </button>
               <button
-                onClick={save}
+                onClick={() => void save()}
                 disabled={saving}
                 className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 hover:bg-primary/90 disabled:opacity-50"
               >
@@ -477,6 +576,38 @@ function SubRecipesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={guardOpen}
+        title="Unsaved changes"
+        description="এই sub-recipe-তে save না করা পরিবর্তন আছে। Save করবেন, নাকি বাদ দেবেন?"
+        confirmLabel="Save"
+        altLabel="Don't save"
+        cancelLabel="Keep editing"
+        busy={guardBusy || saving}
+        onConfirm={() => void saveAndProceed()}
+        onAlt={discardChanges}
+        onCancel={cancelLeave}
+      />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete sub-recipe?"
+        description={
+          pendingDelete
+            ? `"${pendingDelete.name}" মুছে ফেলা হবে। এটি কোনো product recipe-এ ব্যবহৃত হলে delete হবে না।`
+            : undefined
+        }
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          const target = pendingDelete;
+          setPendingDelete(null);
+          if (target) void remove(target);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </AppShell>
+
   );
 }

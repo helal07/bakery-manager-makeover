@@ -10,13 +10,14 @@ export type SubRecipe = {
   yield_qty: number;
   yield_unit: string;
   is_active: boolean;
+  created_at?: string;
   items: SubRecipeItem[];
 };
 
 export async function loadSubRecipes(): Promise<SubRecipe[]> {
   const { data: heads, error: e1 } = await sb
     .from("sub_recipes")
-    .select("id,name,yield_qty,yield_unit,is_active")
+    .select("id,name,yield_qty,yield_unit,is_active,created_at")
     .eq("is_active", true)
     .order("name");
   if (e1) throw e1;
@@ -40,9 +41,65 @@ export async function loadSubRecipes(): Promise<SubRecipe[]> {
     yield_qty: Number(h.yield_qty) || 0,
     yield_unit: h.yield_unit,
     is_active: h.is_active,
+    created_at: h.created_at ?? undefined,
     items: byId[h.id] ?? [],
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Shared expansion helper — turns a mixed ingredient list (raw materials and
+// sub-recipes) into aggregated per-material demand, tracking which source(s)
+// each material came from so the UI can warn about overlaps.
+// ---------------------------------------------------------------------------
+
+export type ExpandRow = { materialId?: string; subRecipeId?: string; qty: number };
+
+export type ExpandedMaterial = {
+  materialId: string;
+  total: number;
+  sources: { label: string; qty: number; kind: "material" | "sub" }[];
+};
+
+export function expandIngredients(
+  rows: ExpandRow[],
+  subRecipes: SubRecipe[] | Record<string, SubRecipe>,
+  multiplier = 1,
+): ExpandedMaterial[] {
+  const subMap: Record<string, SubRecipe> = Array.isArray(subRecipes)
+    ? Object.fromEntries(subRecipes.map((s) => [s.id, s]))
+    : subRecipes;
+
+  const acc = new Map<string, ExpandedMaterial>();
+  const push = (materialId: string, qty: number, label: string, kind: "material" | "sub") => {
+    if (!materialId || !(qty > 0)) return;
+    const cur = acc.get(materialId) ?? { materialId, total: 0, sources: [] };
+    cur.total += qty;
+    const existing = cur.sources.find((s) => s.label === label && s.kind === kind);
+    if (existing) existing.qty += qty;
+    else cur.sources.push({ label, qty, kind });
+    acc.set(materialId, cur);
+  };
+
+  for (const row of rows) {
+    const qty = (Number(row.qty) || 0) * multiplier;
+    if (!(qty > 0)) continue;
+    if (row.subRecipeId) {
+      const sub = subMap[row.subRecipeId];
+      if (!sub || !(sub.yield_qty > 0)) continue;
+      const ratio = qty / sub.yield_qty;
+      for (const si of sub.items) push(si.materialId, si.qty * ratio, sub.name, "sub");
+    } else if (row.materialId) {
+      push(row.materialId, qty, "Direct", "material");
+    }
+  }
+  return Array.from(acc.values());
+}
+
+/** Materials that come from more than one source (two sub-recipes, or sub + direct). */
+export function findOverlaps(expanded: ExpandedMaterial[]): ExpandedMaterial[] {
+  return expanded.filter((e) => e.sources.length > 1);
+}
+
 
 export async function saveSubRecipe(input: {
   id?: string;

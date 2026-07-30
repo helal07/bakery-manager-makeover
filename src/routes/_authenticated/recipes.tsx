@@ -39,7 +39,14 @@ import {
 } from "@/lib/production-overhead-store";
 import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
-import { loadSubRecipes, type SubRecipe } from "@/lib/sub-recipe-store";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import {
+  loadSubRecipes,
+  expandIngredients,
+  type SubRecipe,
+} from "@/lib/sub-recipe-store";
+
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -101,6 +108,7 @@ function Workbench() {
   const [editorItems, setEditorItems] = useState<Ingredient[]>([]);
   const [editorOverheads, setEditorOverheads] = useState<RecipeOverhead[]>([]);
   const [editorSaving, setEditorSaving] = useState(false);
+  const [editorBaseline, setEditorBaseline] = useState<string>("");
 
   // Overhead categories master list
   const [overheadCats, setOverheadCats] = useState<OverheadCategory[]>([]);
@@ -187,38 +195,39 @@ function Workbench() {
     return m;
   }, [subRecipes]);
 
-  // Expand ingredients into aggregated per-material requirement (per batch)
+  // Expand ingredients into aggregated per-material requirement (per batch).
+  // Multiple sub-recipes are merged; sources are kept for overlap warnings.
   const rows = useMemo(() => {
-    const totals = new Map<string, number>();
-    for (const it of items) {
-      const per = (Number(it.qty) || 0) * batch;
-      if (it.subRecipeId) {
-        const sub = subRecipeMap[it.subRecipeId];
-        if (!sub || sub.yield_qty <= 0) continue;
-        const ratio = per / sub.yield_qty;
-        for (const si of sub.items) {
-          totals.set(si.materialId, (totals.get(si.materialId) ?? 0) + si.qty * ratio);
-        }
-      } else if (it.materialId) {
-        totals.set(it.materialId, (totals.get(it.materialId) ?? 0) + per);
-      }
-    }
-    return Array.from(totals.entries()).map(([materialId, need]) => {
-      const raw = rawMaterials.find((r) => r.id === materialId);
-      const have = stock[materialId] ?? 0;
+    const expanded = expandIngredients(
+      items.map((it) => ({
+        materialId: it.materialId || undefined,
+        subRecipeId: it.subRecipeId || undefined,
+        qty: Number(it.qty) || 0,
+      })),
+      subRecipeMap,
+      batch,
+    );
+    return expanded.map((e) => {
+      const raw = rawMaterials.find((r) => r.id === e.materialId);
+      const need = e.total;
+      const have = stock[e.materialId] ?? 0;
       const short = Math.max(0, need - have);
       const lineCost = (raw?.cost ?? 0) * need;
       return {
-        it: { materialId, qty: batch > 0 ? need / batch : 0 } as Ingredient,
+        it: { materialId: e.materialId, qty: batch > 0 ? need / batch : 0 } as Ingredient,
         raw,
         need,
         have,
         short,
         lineCost,
+        sources: e.sources,
         ok: short === 0,
       };
     });
   }, [items, batch, rawMaterials, subRecipeMap, stock]);
+
+  const overlapRows = useMemo(() => rows.filter((r) => r.sources.length > 1), [rows]);
+
 
   const shortRows = rows.filter((r) => !r.ok);
   const materialCost = rows.reduce((s, r) => s + r.lineCost, 0);
@@ -291,6 +300,7 @@ function Workbench() {
     setEditorProductId(firstFree?.id ?? products[0]?.id ?? "");
     setEditorItems([{ materialId: "", qty: 0 }]);
     setEditorOverheads([]);
+    setEditorBaseline(JSON.stringify({ items: [{ materialId: "", qty: 0 }], ov: [] }));
     setEditorOpen(true);
   };
   const openEditActive = () => {
@@ -298,18 +308,25 @@ function Workbench() {
     setEditorProductId(active.product.id);
     setEditorItems(items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 0 }]);
     setEditorOverheads(activeRecipeOverheads.map((r) => ({ ...r })));
+    setEditorBaseline(
+      JSON.stringify({
+        items: items.length ? items.map((i) => ({ ...i })) : [{ materialId: "", qty: 0 }],
+        ov: activeRecipeOverheads.map((r) => ({ ...r })),
+      }),
+    );
     setTab("recipe");
   };
   const saveEditor = async (opts?: { closeDialog?: boolean }) => {
-    if (!editorProductId) return toast.error("Select a product");
+    if (!editorProductId) { toast.error("Select a product"); return false; }
     const populated = editorItems.filter((i) => i.materialId || i.subRecipeId);
-    if (populated.length === 0) return toast.error("Add at least one ingredient");
+    if (populated.length === 0) { toast.error("Add at least one ingredient"); return false; }
     const bad = populated.find((i) => !(Number(i.qty) > 0));
     if (bad) {
       const label = bad.subRecipeId
         ? subRecipes.find((s) => s.id === bad.subRecipeId)?.name
         : rawMaterials.find((r) => r.id === bad.materialId)?.name;
-      return toast.error(`Quantity must be greater than zero${label ? ` for ${label}` : ""}`);
+      toast.error(`Quantity must be greater than zero${label ? ` for ${label}` : ""}`);
+      return false;
     }
     const seen = new Set<string>();
     for (const i of populated) {
@@ -318,7 +335,8 @@ function Workbench() {
         const label = i.subRecipeId
           ? subRecipes.find((s) => s.id === i.subRecipeId)?.name
           : rawMaterials.find((r) => r.id === i.materialId)?.name;
-        return toast.error(`Duplicate ingredient: ${label ?? key}`);
+        toast.error(`Duplicate ingredient: ${label ?? key}`);
+        return false;
       }
       seen.add(key);
     }
@@ -329,7 +347,8 @@ function Workbench() {
       const key = `${o.categoryId}::${o.mode}`;
       if (seenOv.has(key)) {
         const cat = overheadCats.find((c) => c.id === o.categoryId);
-        return toast.error(`Duplicate overhead: ${cat?.name ?? o.categoryId} (${o.mode})`);
+        toast.error(`Duplicate overhead: ${cat?.name ?? o.categoryId} (${o.mode})`);
+        return false;
       }
       seenOv.add(key);
     }
@@ -338,6 +357,7 @@ function Workbench() {
       await saveRecipe(editorProductId, populated);
       await saveRecipeOverheads(editorProductId, cleanOverheads);
       toast.success("Recipe saved");
+      setEditorBaseline(JSON.stringify({ items: populated, ov: cleanOverheads }));
       if (opts?.closeDialog) setEditorOpen(false);
       setActiveId(editorProductId);
       // Refresh the active recipe overheads if we just edited the active product
@@ -347,12 +367,30 @@ function Workbench() {
         } catch { /* ignore */ }
       }
       await refresh();
+      return true;
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save recipe");
+      return false;
     } finally {
       setEditorSaving(false);
     }
   };
+
+  const editorDirty =
+    !!editorBaseline &&
+    JSON.stringify({ items: editorItems, ov: editorOverheads }) !== editorBaseline;
+
+  const editorGuard = useUnsavedChanges({
+    dirty: editorDirty,
+    enabled: editorOpen || tab === "recipe",
+    onSave: () => saveEditor(),
+  });
+
+  const closeEditor = () =>
+    editorGuard.guard(() => {
+      setEditorBaseline("");
+      setEditorOpen(false);
+    });
 
   const deleteActiveRecipe = async () => {
     if (!active) return;
@@ -612,7 +650,7 @@ function Workbench() {
       {editorOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-stretch sm:items-center justify-center sm:p-4 overflow-y-auto"
-          onClick={() => !editorSaving && setEditorOpen(false)}
+          onClick={() => !editorSaving && closeEditor()}
         >
           <div
             className="bg-card border border-border sm:rounded-xl shadow-2xl w-full sm:max-w-5xl h-full sm:h-[95vh] flex flex-col overflow-hidden my-auto"
@@ -629,7 +667,7 @@ function Workbench() {
                 </p>
               </div>
               <button
-                onClick={() => !editorSaving && setEditorOpen(false)}
+                onClick={() => !editorSaving && closeEditor()}
                 className="size-9 grid place-items-center rounded-md hover:bg-accent text-muted-foreground shrink-0"
                 aria-label="Close"
               >
@@ -652,7 +690,7 @@ function Workbench() {
 
             <div className="p-3 sm:p-4 border-t border-border flex items-center justify-end gap-2 sticky bottom-0 bg-card">
               <button
-                onClick={() => setEditorOpen(false)}
+                onClick={closeEditor}
                 disabled={editorSaving}
                 className="px-4 h-10 rounded-md border border-border bg-background text-sm hover:bg-accent disabled:opacity-50"
               >
@@ -671,6 +709,18 @@ function Workbench() {
         </div>
       )}
 
+      <ConfirmDialog
+        open={editorGuard.open}
+        title="Unsaved recipe changes"
+        description="Recipe-এ save না করা পরিবর্তন আছে। Save করবেন, নাকি বাদ দেবেন?"
+        confirmLabel="Save"
+        altLabel="Don't save"
+        cancelLabel="Keep editing"
+        busy={editorGuard.busy || editorSaving}
+        onConfirm={() => void editorGuard.saveAndProceed()}
+        onAlt={() => { setEditorBaseline(""); editorGuard.proceed(); }}
+        onCancel={editorGuard.cancel}
+      />
     </AppShell>
   );
 }
@@ -894,7 +944,16 @@ function ProduceTab({
   setOverheads,
 }: {
   productName: string;
-  rows: Array<{ it: Ingredient; raw?: RawMaterial; need: number; have: number; short: number; lineCost: number; ok: boolean }>;
+  rows: Array<{
+    it: Ingredient;
+    raw?: RawMaterial;
+    need: number;
+    have: number;
+    short: number;
+    lineCost: number;
+    ok: boolean;
+    sources?: { label: string; qty: number; kind: "material" | "sub" }[];
+  }>;
   batch: number;
   setBatch: (v: number | ((b: number) => number)) => void;
   unitCost: number;
@@ -962,6 +1021,22 @@ function ProduceTab({
           <span>Material</span><span className="text-right text-foreground">৳{materialUnitCost.toFixed(2)}/unit</span>
           <span>Overhead</span><span className="text-right text-foreground">৳{overheadUnitCost.toFixed(2)}/unit</span>
         </div>
+
+        {rows.some((r) => (r.sources?.length ?? 0) > 1) && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs space-y-1">
+            <div className="flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="size-3.5" /> একই material একাধিক সোর্স থেকে
+            </div>
+            {rows
+              .filter((r) => (r.sources?.length ?? 0) > 1)
+              .map((r) => (
+                <div key={`ov-${r.it.materialId}`} className="text-muted-foreground">
+                  · <span className="text-foreground font-medium">{r.raw?.name ?? r.it.materialId}</span>{" "}
+                  — {r.sources!.map((s) => s.label).join(" + ")} (total {r.need.toFixed(4)} {r.raw?.unit ?? ""})
+                </div>
+              ))}
+          </div>
+        )}
 
         {shortRows.length > 0 && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 text-destructive p-3 text-xs space-y-1">
