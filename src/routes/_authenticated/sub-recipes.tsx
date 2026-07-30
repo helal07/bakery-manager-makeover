@@ -2,10 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { PermissionGate } from "@/components/permission-gate";
 import { IngredientPicker } from "@/components/ingredient-picker";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { pageTitle } from "@/lib/company-settings";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy, Search, ChevronDown } from "lucide-react";
+import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy, Search, ChevronDown, ArrowUpDown } from "lucide-react";
 import {
   loadSubRecipes,
   saveSubRecipe,
@@ -30,6 +32,7 @@ type EditorState = {
   name: string;
   yield_qty: string;
   yield_unit: string;
+  autoYield: boolean;
   items: { materialId: string; qty: string }[];
 };
 
@@ -37,8 +40,12 @@ const empty: EditorState = {
   name: "",
   yield_qty: "100",
   yield_unit: "kg",
+  autoYield: true,
   items: [{ materialId: "", qty: "" }],
 };
+
+type SortKey = "name" | "qty" | "cost" | "created";
+
 
 function SubRecipesPage() {
   const [subRecipes, setSubRecipes] = useState<SubRecipe[]>([]);
