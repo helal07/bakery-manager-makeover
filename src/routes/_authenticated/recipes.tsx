@@ -187,38 +187,39 @@ function Workbench() {
     return m;
   }, [subRecipes]);
 
-  // Expand ingredients into aggregated per-material requirement (per batch)
+  // Expand ingredients into aggregated per-material requirement (per batch).
+  // Multiple sub-recipes are merged; sources are kept for overlap warnings.
   const rows = useMemo(() => {
-    const totals = new Map<string, number>();
-    for (const it of items) {
-      const per = (Number(it.qty) || 0) * batch;
-      if (it.subRecipeId) {
-        const sub = subRecipeMap[it.subRecipeId];
-        if (!sub || sub.yield_qty <= 0) continue;
-        const ratio = per / sub.yield_qty;
-        for (const si of sub.items) {
-          totals.set(si.materialId, (totals.get(si.materialId) ?? 0) + si.qty * ratio);
-        }
-      } else if (it.materialId) {
-        totals.set(it.materialId, (totals.get(it.materialId) ?? 0) + per);
-      }
-    }
-    return Array.from(totals.entries()).map(([materialId, need]) => {
-      const raw = rawMaterials.find((r) => r.id === materialId);
-      const have = stock[materialId] ?? 0;
+    const expanded = expandIngredients(
+      items.map((it) => ({
+        materialId: it.materialId || undefined,
+        subRecipeId: it.subRecipeId || undefined,
+        qty: Number(it.qty) || 0,
+      })),
+      subRecipeMap,
+      batch,
+    );
+    return expanded.map((e) => {
+      const raw = rawMaterials.find((r) => r.id === e.materialId);
+      const need = e.total;
+      const have = stock[e.materialId] ?? 0;
       const short = Math.max(0, need - have);
       const lineCost = (raw?.cost ?? 0) * need;
       return {
-        it: { materialId, qty: batch > 0 ? need / batch : 0 } as Ingredient,
+        it: { materialId: e.materialId, qty: batch > 0 ? need / batch : 0 } as Ingredient,
         raw,
         need,
         have,
         short,
         lineCost,
+        sources: e.sources,
         ok: short === 0,
       };
     });
   }, [items, batch, rawMaterials, subRecipeMap, stock]);
+
+  const overlapRows = useMemo(() => rows.filter((r) => r.sources.length > 1), [rows]);
+
 
   const shortRows = rows.filter((r) => !r.ok);
   const materialCost = rows.reduce((s, r) => s + r.lineCost, 0);
