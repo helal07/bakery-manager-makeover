@@ -540,14 +540,56 @@ function SettingsPage() {
                     options={[["daily","Daily"],["weekly","Weekly"],["monthly","Monthly"]]} />
                 </Fld>
               </div>
-              <div className="mt-6 pt-4 border-t border-border flex flex-wrap gap-2">
+              <div className="mt-6 pt-4 border-t border-border">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Full database</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Export dumps every table (products, sales, stock, ledgers, settings…). Restore erases all current data and loads the file.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button onClick={exportDatabaseDump} disabled={dbBusy !== "idle"}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm disabled:opacity-60">
+                    <Download className="size-3.5" />{dbBusy === "export" ? "Exporting…" : "Export database"}
+                  </button>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-destructive/50 text-destructive text-sm hover:bg-destructive/10 cursor-pointer">
+                    <Upload className="size-3.5" />Restore database
+                    <input type="file" accept="application/json" className="hidden"
+                      onChange={e => { pickDbFile(e.target.files?.[0]); e.target.value = ""; }} />
+                  </label>
+                </div>
+                {pending && (
+                  <div className="mt-4 rounded-lg border border-destructive/50 bg-destructive/5 p-3">
+                    <p className="text-sm font-medium text-destructive">Destructive restore</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      <span className="font-medium">{pending.name}</span> — {pending.total} rows. All existing data will be deleted first.
+                      Type <span className="font-mono font-semibold">RESTORE</span> to confirm.
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <input value={confirmText} onChange={e => setConfirmText(e.target.value)}
+                        placeholder="RESTORE"
+                        className="h-8 w-40 rounded-md border border-border bg-background px-2 text-sm" />
+                      <button onClick={confirmRestore} disabled={confirmText !== "RESTORE" || dbBusy !== "idle"}
+                        className="px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-sm disabled:opacity-50">
+                        {dbBusy === "restore" ? "Restoring…" : "Erase & restore"}
+                      </button>
+                      <button onClick={() => { setPending(null); setConfirmText(""); }}
+                        className="px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted">Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-border">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Settings only</p>
+                <div className="mt-3 flex flex-wrap gap-2">
                 <button onClick={exportData} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted">
-                  <Download className="size-3.5" />Export backup
+                  <Download className="size-3.5" />Export settings
                 </button>
                 <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted cursor-pointer">
-                  <Upload className="size-3.5" />Restore backup
+                  <Upload className="size-3.5" />Restore settings
                   <input type="file" accept="application/json" className="hidden" onChange={e => importData(e.target.files?.[0])} />
                 </label>
+                </div>
+
               </div>
             </Panel>
           )}
