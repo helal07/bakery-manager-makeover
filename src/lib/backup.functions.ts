@@ -22,13 +22,13 @@ export const exportDatabase = createServerFn({ method: "POST" })
     await ensureAdmin(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const tables: Record<string, unknown[]> = {};
+    const tables: Record<string, any[]> = {};
     const counts: Record<string, number> = {};
     const skipped: { table: string; error: string }[] = [];
     const PAGE = 1000;
 
     for (const table of BACKUP_TABLES) {
-      const rows: unknown[] = [];
+      const rows: any[] = [];
       let from = 0;
       for (;;) {
         const { data, error } = await (supabaseAdmin as any)

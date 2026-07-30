@@ -64,6 +64,6 @@ export type BackupFile = {
   format: "bakery-manager-db-dump";
   version: 1;
   createdAt: string;
-  tables: Record<string, unknown[]>;
+  tables: Record<string, any[]>;
   counts: Record<string, number>;
 };
