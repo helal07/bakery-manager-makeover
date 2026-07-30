@@ -308,20 +308,20 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
     [expandedPerUnit],
   );
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSave = async (opts?: { navigateAfter?: boolean }): Promise<boolean> => {
+    const navigateAfter = opts?.navigateAfter !== false;
     if (!form.name.trim()) {
       toast.error("Product name is required");
-      return;
+      return false;
     }
     if (!form.category) {
       toast.error("Please select a category");
-      return;
+      return false;
     }
     const shelf = form.shelfLifeDays.trim() ? Number(form.shelfLifeDays) : undefined;
     if (shelf !== undefined && (!Number.isFinite(shelf) || shelf < 0)) {
       toast.error("Max validity must be a positive number of days");
-      return;
+      return false;
     }
     setSaving(true);
     try {
@@ -364,7 +364,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         if (clean.length === 0) {
           toast.error("Add at least one ingredient with quantity > 0, or turn off the recipe toggle");
           setSaving(false);
-          return;
+          return false;
         }
       }
 
@@ -389,13 +389,33 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         await saveRecipe(created.id, clean);
         toast.success("Product added");
       }
-      navigate({ to: "/products" });
+      setSavedClean(true);
+      if (navigateAfter) navigate({ to: "/products" });
+      return true;
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save product");
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void doSave();
+  };
+
+  const {
+    open: guardOpen,
+    busy: guardBusy,
+    guard,
+    proceed: discardChanges,
+    cancel: cancelLeave,
+    saveAndProceed,
+  } = useUnsavedChanges({
+    dirty,
+    onSave: () => doSave({ navigateAfter: false }),
+  });
 
   return (
     <AppShell
