@@ -354,7 +354,7 @@ function SubRecipesPage() {
                           <Copy className="size-4" />
                         </button>
                         <button
-                          onClick={() => remove(sr)}
+                          onClick={() => setPendingDelete(sr)}
                           title="Delete"
                           className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                         >
@@ -447,7 +447,7 @@ function SubRecipesPage() {
                 <ChefHat className="size-4" />
                 {form.id ? "Edit Sub-Recipe" : "New Sub-Recipe"}
               </div>
-              <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-accent">
+              <button onClick={closeEditor} className="p-1 rounded hover:bg-accent">
                 <X className="size-4" />
               </button>
             </div>
@@ -560,13 +560,13 @@ function SubRecipesPage() {
             </div>
             <div className="p-4 border-t border-border flex justify-end gap-2">
               <button
-                onClick={() => setOpen(false)}
+                onClick={closeEditor}
                 className="h-9 px-3 rounded-md border border-input text-sm hover:bg-accent"
               >
                 Cancel
               </button>
               <button
-                onClick={save}
+                onClick={() => void save()}
                 disabled={saving}
                 className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 hover:bg-primary/90 disabled:opacity-50"
               >
