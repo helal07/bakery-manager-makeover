@@ -16,6 +16,10 @@ import {
 } from "@/lib/profile-settings";
 import { uploadImage } from "@/lib/storage";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { exportDatabase, restoreDatabase } from "@/lib/backup.functions";
+import type { BackupFile } from "@/lib/backup-tables";
+
 
 export const Route = createFileRoute("/_authenticated/settings/")({
   head: () => ({ meta: [{ title: pageTitle("Settings") }] }),
