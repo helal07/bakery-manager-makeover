@@ -770,24 +770,34 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                             Add quantities to see the expanded breakdown.
                           </div>
                         ) : (
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             {expandedPerUnit.map((r) => (
-                              <div
-                                key={r.materialId}
-                                className="flex items-center justify-between gap-2 text-xs"
-                              >
-                                <span className="truncate">
-                                  {r.raw?.name ?? "Unknown material"}
-                                </span>
-                                <span className="tabular-nums text-muted-foreground shrink-0">
-                                  {r.qty.toFixed(4)} {r.raw?.unit ?? ""} · ৳{r.cost.toFixed(2)}
-                                </span>
+                              <div key={r.materialId} className="text-xs">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="truncate flex items-center gap-1">
+                                    {r.sources.length > 1 && (
+                                      <AlertTriangle className="size-3 text-amber-500 shrink-0" />
+                                    )}
+                                    {r.raw?.name ?? "Unknown material"}
+                                  </span>
+                                  <span className="tabular-nums text-muted-foreground shrink-0">
+                                    {r.qty.toFixed(4)} {r.raw?.unit ?? ""} · ৳{r.cost.toFixed(2)}
+                                  </span>
+                                </div>
+                                {r.sources.length > 1 && (
+                                  <div className="pl-4 text-[10px] text-muted-foreground">
+                                    {r.sources
+                                      .map((s) => `${s.label}: ${s.qty.toFixed(4)}`)
+                                      .join(" + ")}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
                     )}
+
                   </div>
                 )}
               </>
