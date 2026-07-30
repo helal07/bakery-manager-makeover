@@ -11,12 +11,6 @@ import { addProduct, updateProduct, loadProducts, type Product } from "@/lib/pro
 import { addRawMaterial, loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { IngredientPicker } from "@/components/ingredient-picker";
 import { loadRecipeFor, loadRecipes, saveRecipe, type Ingredient } from "@/lib/recipe-store";
 import {
