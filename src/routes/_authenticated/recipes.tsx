@@ -900,7 +900,16 @@ function ProduceTab({
   setOverheads,
 }: {
   productName: string;
-  rows: Array<{ it: Ingredient; raw?: RawMaterial; need: number; have: number; short: number; lineCost: number; ok: boolean }>;
+  rows: Array<{
+    it: Ingredient;
+    raw?: RawMaterial;
+    need: number;
+    have: number;
+    short: number;
+    lineCost: number;
+    ok: boolean;
+    sources?: { label: string; qty: number; kind: "material" | "sub" }[];
+  }>;
   batch: number;
   setBatch: (v: number | ((b: number) => number)) => void;
   unitCost: number;
@@ -968,6 +977,22 @@ function ProduceTab({
           <span>Material</span><span className="text-right text-foreground">৳{materialUnitCost.toFixed(2)}/unit</span>
           <span>Overhead</span><span className="text-right text-foreground">৳{overheadUnitCost.toFixed(2)}/unit</span>
         </div>
+
+        {rows.some((r) => (r.sources?.length ?? 0) > 1) && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs space-y-1">
+            <div className="flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="size-3.5" /> একই material একাধিক সোর্স থেকে
+            </div>
+            {rows
+              .filter((r) => (r.sources?.length ?? 0) > 1)
+              .map((r) => (
+                <div key={`ov-${r.it.materialId}`} className="text-muted-foreground">
+                  · <span className="text-foreground font-medium">{r.raw?.name ?? r.it.materialId}</span>{" "}
+                  — {r.sources!.map((s) => s.label).join(" + ")} (total {r.need.toFixed(4)} {r.raw?.unit ?? ""})
+                </div>
+              ))}
+          </div>
+        )}
 
         {shortRows.length > 0 && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 text-destructive p-3 text-xs space-y-1">
