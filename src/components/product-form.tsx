@@ -347,7 +347,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
             if (seenSub.has(i.subRecipeId)) {
               toast.error("Duplicate sub-recipe in the recipe");
               setSaving(false);
-              return;
+              return false;
             }
             seenSub.add(i.subRecipeId);
             clean.push({ materialId: "", subRecipeId: i.subRecipeId, qty });
@@ -355,7 +355,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
             if (seenMat.has(i.materialId)) {
               toast.error("Duplicate material in the recipe");
               setSaving(false);
-              return;
+              return false;
             }
             seenMat.add(i.materialId);
             clean.push({ materialId: i.materialId, qty });
