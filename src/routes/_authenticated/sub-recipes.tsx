@@ -170,6 +170,19 @@ function SubRecipesPage() {
     [form.items],
   );
 
+  const matName = (id: string) => rawMaterials.find((r) => r.id === id)?.name ?? "";
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return subRecipes;
+    return subRecipes.filter(
+      (sr) =>
+        sr.name.toLowerCase().includes(q) ||
+        sr.items.some((it) => matName(it.materialId).toLowerCase().includes(q)),
+    );
+  }, [subRecipes, query, rawMaterials]);
+
+
   return (
     <AppShell
       title="Sub-Recipes"
