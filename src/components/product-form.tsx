@@ -96,6 +96,24 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit || !!from);
   const [showExpanded, setShowExpanded] = useState(false);
+  const [baseline, setBaseline] = useState<string | null>(null);
+  const [savedClean, setSavedClean] = useState(false);
+
+  // Snapshot used for the unsaved-changes guard.
+  const snapshot = useMemo(
+    () => JSON.stringify({ form, recipeEnabled, ingredients, image: imageFile?.name ?? null }),
+    [form, recipeEnabled, ingredients, imageFile],
+  );
+  const dirty = !loading && !savedClean && baseline !== null && snapshot !== baseline;
+
+  // Establish the baseline once the initial data finished loading.
+  useEffect(() => {
+    if (loading) return;
+    setBaseline((b) => b ?? snapshot);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+
 
   useEffect(() => {
     (async () => {
