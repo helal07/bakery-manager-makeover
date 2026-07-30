@@ -749,7 +749,30 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   </div>
                 )}
 
+                {overlaps.length > 0 && (
+                  <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+                    <div className="flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-400">
+                      <AlertTriangle className="size-3.5" /> একই raw material একাধিক জায়গা থেকে আসছে
+                    </div>
+                    <ul className="mt-1.5 space-y-0.5 pl-5 list-disc text-muted-foreground">
+                      {overlaps.map((o) => (
+                        <li key={o.materialId}>
+                          <span className="font-medium text-foreground">
+                            {rawMap[o.materialId]?.name ?? "Unknown material"}
+                          </span>{" "}
+                          — {o.sources.map((s) => s.label).join(" + ")} (total {o.total.toFixed(4)}{" "}
+                          {rawMap[o.materialId]?.unit ?? ""})
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-1.5 text-[11px] text-muted-foreground">
+                      Production-এ এগুলো যোগ করে একবারেই stock থেকে কাটা হবে — ঠিক আছে কিনা দেখে নিন।
+                    </div>
+                  </div>
+                )}
+
                 {ingredients.length > 0 && (
+
                   <div className="mt-4 rounded-md border border-border bg-muted/20">
                     <button
                       type="button"
