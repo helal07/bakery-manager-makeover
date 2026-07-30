@@ -95,53 +95,68 @@ function SubRecipesPage() {
     return sr.yield_qty > 0 ? total / sr.yield_qty : 0;
   };
 
-  const openNew = () => {
-    setForm(empty);
-    setOpen(true);
-  };
-  const openEdit = (sr: SubRecipe) => {
-    setForm({
-      id: sr.id,
-      name: sr.name,
-      yield_qty: String(sr.yield_qty),
-      yield_unit: sr.yield_unit,
-      items:
-        sr.items.length > 0
-          ? sr.items.map((i) => ({ materialId: i.materialId, qty: String(i.qty) }))
-          : [{ materialId: "", qty: "" }],
+  const fromSubRecipe = (sr: SubRecipe, copy = false): EditorState => ({
+    id: copy ? undefined : sr.id,
+    name: copy ? `${sr.name} (Copy)` : sr.name,
+    yield_qty: String(sr.yield_qty),
+    yield_unit: sr.yield_unit,
+    autoYield: false,
+    items:
+      sr.items.length > 0
+        ? sr.items.map((i) => ({ materialId: i.materialId, qty: String(i.qty) }))
+        : [{ materialId: "", qty: "" }],
+  });
+
+  const openWith = (next: EditorState) => {
+    guard(() => {
+      setForm(next);
+      setBaseline(JSON.stringify(next));
+      setOpen(true);
     });
-    setOpen(true);
-  };
-  const openDuplicate = (sr: SubRecipe) => {
-    setForm({
-      name: `${sr.name} (Copy)`,
-      yield_qty: String(sr.yield_qty),
-      yield_unit: sr.yield_unit,
-      items:
-        sr.items.length > 0
-          ? sr.items.map((i) => ({ materialId: i.materialId, qty: String(i.qty) }))
-          : [{ materialId: "", qty: "" }],
-    });
-    setOpen(true);
   };
 
-  const addRow = () =>
-    setForm({ ...form, items: [...form.items, { materialId: "", qty: "" }] });
+  const openNew = () => openWith(empty);
+  const openEdit = (sr: SubRecipe) => openWith(fromSubRecipe(sr));
+  const openDuplicate = (sr: SubRecipe) => openWith(fromSubRecipe(sr, true));
+
+  /** Auto-calculated yield = sum of ingredient quantities. */
+  const autoYieldTotal = useMemo(
+    () => form.items.reduce((s, i) => s + (Number(i.qty) || 0), 0),
+    [form.items],
+  );
+
+  const patchForm = (patch: Partial<EditorState>) =>
+    setForm((f) => {
+      const next = { ...f, ...patch };
+      if (next.autoYield) {
+        const total = next.items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+        next.yield_qty = total > 0 ? String(Number(total.toFixed(4))) : "";
+      }
+      return next;
+    });
+
+  const addRow = () => patchForm({ items: [...form.items, { materialId: "", qty: "" }] });
   const removeRow = (idx: number) =>
-    setForm({ ...form, items: form.items.filter((_, i) => i !== idx) });
+    patchForm({ items: form.items.filter((_, i) => i !== idx) });
   const setRow = (idx: number, patch: Partial<{ materialId: string; qty: string }>) =>
-    setForm({
-      ...form,
-      items: form.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)),
-    });
+    patchForm({ items: form.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) });
 
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     const items = form.items
       .filter((i) => i.materialId && Number(i.qty) > 0)
       .map((i) => ({ materialId: i.materialId, qty: Number(i.qty) }));
-    if (!form.name.trim()) return toast.error("Name required");
-    if (!(Number(form.yield_qty) > 0)) return toast.error("Yield qty must be > 0");
-    if (items.length === 0) return toast.error("At least one ingredient with qty > 0");
+    if (!form.name.trim()) {
+      toast.error("Name required");
+      return false;
+    }
+    if (!(Number(form.yield_qty) > 0)) {
+      toast.error("Yield qty must be > 0");
+      return false;
+    }
+    if (items.length === 0) {
+      toast.error("At least one ingredient with qty > 0");
+      return false;
+    }
     setSaving(true);
     try {
       await saveSubRecipe({
@@ -152,17 +167,25 @@ function SubRecipesPage() {
         items,
       });
       toast.success("Sub-recipe saved");
+      setBaseline(JSON.stringify(form));
       setOpen(false);
       await refresh();
+      return true;
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save");
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
+  const closeEditor = () =>
+    guard(() => {
+      setOpen(false);
+      setBaseline(null);
+    });
+
   const remove = async (sr: SubRecipe) => {
-    if (!confirm(`Delete sub-recipe "${sr.name}"?`)) return;
     try {
       await deleteSubRecipe(sr.id);
       toast.success("Deleted");
@@ -181,13 +204,28 @@ function SubRecipesPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return subRecipes;
-    return subRecipes.filter(
-      (sr) =>
-        sr.name.toLowerCase().includes(q) ||
-        sr.items.some((it) => matName(it.materialId).toLowerCase().includes(q)),
-    );
-  }, [subRecipes, query, rawMaterials]);
+    const base = !q
+      ? subRecipes
+      : subRecipes.filter(
+          (sr) =>
+            sr.name.toLowerCase().includes(q) ||
+            sr.items.some((it) => matName(it.materialId).toLowerCase().includes(q)),
+        );
+    const sorted = [...base].sort((a, b) => {
+      switch (sort) {
+        case "qty":
+          return b.yield_qty - a.yield_qty;
+        case "cost":
+          return costPerYieldUnit(b) - costPerYieldUnit(a);
+        case "created":
+          return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+    return sorted;
+  }, [subRecipes, query, rawMaterials, sort]);
+
 
 
   return (
