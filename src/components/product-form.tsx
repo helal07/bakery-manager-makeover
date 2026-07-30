@@ -279,28 +279,29 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   };
 
   // Expand sub-recipes into aggregated raw-material demand per unit of product.
+  // Multiple sub-recipes are merged; each material keeps track of its sources.
   const expandedPerUnit = useMemo(() => {
-    const totals = new Map<string, number>();
-    for (const row of ingredients) {
-      const qty = Number(row.qty);
-      if (!Number.isFinite(qty) || qty <= 0) continue;
-      if (row.subRecipeId) {
-        const sub = subMap[row.subRecipeId];
-        if (!sub || sub.yield_qty <= 0) continue;
-        const ratio = qty / sub.yield_qty;
-        for (const si of sub.items) {
-          totals.set(si.materialId, (totals.get(si.materialId) ?? 0) + si.qty * ratio);
-        }
-      } else if (row.materialId) {
-        totals.set(row.materialId, (totals.get(row.materialId) ?? 0) + qty);
-      }
-    }
-    return Array.from(totals.entries()).map(([materialId, qty]) => {
-      const raw = rawMap[materialId];
-      const cost = (raw?.cost ?? 0) * qty;
-      return { materialId, raw, qty, cost };
+    const rows = expandIngredients(
+      ingredients.map((i) => ({
+        materialId: i.materialId,
+        subRecipeId: i.subRecipeId,
+        qty: Number(i.qty) || 0,
+      })),
+      subMap,
+    );
+    return rows.map((r) => {
+      const raw = rawMap[r.materialId];
+      return { materialId: r.materialId, raw, qty: r.total, cost: (raw?.cost ?? 0) * r.total, sources: r.sources };
     });
   }, [ingredients, subMap, rawMap]);
+
+  // Materials that arrive from more than one source (two sub-recipes, or a
+  // sub-recipe plus a direct material) — surfaced as a warning, not an error.
+  const overlaps = useMemo(
+    () => findOverlaps(expandedPerUnit.map((r) => ({ materialId: r.materialId, total: r.qty, sources: r.sources }))),
+    [expandedPerUnit],
+  );
+
 
   const estimatedCost = useMemo(
     () => expandedPerUnit.reduce((s, r) => s + r.cost, 0),
