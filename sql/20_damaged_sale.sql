@@ -113,6 +113,6 @@ REVOKE ALL ON FUNCTION public.commit_damaged_sale(uuid, uuid, numeric, numeric, 
 GRANT EXECUTE ON FUNCTION public.commit_damaged_sale(uuid, uuid, numeric, numeric, text, text) TO authenticated, service_role;
 
 -- 5) RBAC permission for damaged-goods selling
-INSERT INTO public.permissions (key, label, module)
+INSERT INTO public.permissions (permission_key, label, module)
 VALUES ('production.damaged.sell', 'Sell damaged goods', 'production')
-ON CONFLICT (key) DO NOTHING;
+ON CONFLICT (permission_key) DO NOTHING;
