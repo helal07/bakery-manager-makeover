@@ -464,15 +464,35 @@ function SubRecipesPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Yield qty *</label>
+                  <label className="text-xs text-muted-foreground flex items-center justify-between gap-1">
+                    <span>Yield qty *</span>
+                    <label className="inline-flex items-center gap-1 cursor-pointer text-[10px]">
+                      <input
+                        type="checkbox"
+                        checked={form.autoYield}
+                        onChange={(e) =>
+                          patchForm({ autoYield: e.target.checked })
+                        }
+                        className="size-3 accent-current"
+                      />
+                      Auto
+                    </label>
+                  </label>
                   <input
                     type="text"
                     inputMode="decimal"
                     value={form.yield_qty}
-                    onChange={(e) => setForm({ ...form, yield_qty: e.target.value })}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm tabular-nums"
+                    readOnly={form.autoYield}
+                    onChange={(e) => patchForm({ yield_qty: e.target.value })}
+                    className={`w-full h-10 px-3 rounded-md border border-input bg-background text-sm tabular-nums ${form.autoYield ? "opacity-70 cursor-not-allowed" : ""}`}
                   />
+                  {form.autoYield && (
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      = ingredient total ({autoYieldTotal.toFixed(4).replace(/\.?0+$/, "")})
+                    </div>
+                  )}
                 </div>
+
                 <div>
                   <label className="text-xs text-muted-foreground">Unit</label>
                   <select
