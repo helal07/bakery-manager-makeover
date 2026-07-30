@@ -21,3 +21,5 @@
 - [ ] `sql/07_sales_shipping.sql` — sales table-এ shipping কলাম যোগ (POS-এ SHIPPING (+) ইনপুট save করার জন্য)
 - [ ] `sql/08_employees_extended.sql` — employees table-এ role_id (app_roles FK), designation, address, national_id, joining_date, DOB, gender, emergency contact, notes, avatar_url যোগ
 - [ ] `sql/09_showroom_settings.sql` — showrooms.settings jsonb (per-showroom invoice override) + get_effective_invoice_settings(showroom_id) helper
+- [ ] `sql/20_damaged_sale.sql` — damaged_ledger.sale_amount/customer_name + log_finished_product_wastage() ও commit_damaged_sale() RPC + production.damaged.sell permission
+
