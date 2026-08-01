@@ -123,8 +123,10 @@ const navGroups: { label: string; items: NavItem[] }[] = [
 
           
           { to: "/production/wastage", label: "Wastage Management", icon: Recycle, permission: "production.wastage.manage" },
+          { to: "/production/profit-loss", label: "Profit & Loss", icon: BarChart3, permission: "production.reports.view" },
           { to: "/production/cost-report", label: "Cost Report", icon: BarChart3, permission: "production.reports.view" },
           { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: "production.reports.view" },
+
         ],
       },
       { to: "/transfers", label: "Transfers", icon: ArrowRightLeft, permission: "inventory.transfer" },

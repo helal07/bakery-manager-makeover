@@ -155,8 +155,11 @@
 @media print {
   @page { size: A4 portrait; margin: 10mm; }
   html, body { background: #fff !important; }
-  body * { visibility: hidden !important; }
-  .print-area, .print-area * { visibility: visible !important; }
+  /* Only isolate a report area when the page actually has one. Without the
+     :has() guard this blanked every other printable page (e.g. invoices). */
+  body:has(.print-area) * { visibility: hidden !important; }
+  body:has(.print-area) .print-area, body:has(.print-area) .print-area * { visibility: visible !important; }
+
   .print-area {
     position: absolute !important;
     inset: 0 !important;
@@ -170,7 +173,15 @@
     font-size: 10px !important;
     font-family: Arial, "Helvetica Neue", sans-serif !important;
   }
+  .print-area *, .print-area *::before, .print-area *::after {
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  .print-area, .print-area * { color: #000 !important; }
   .no-print, .print-area .no-print { display: none !important; }
+
   .print-only { display: block !important; }
   .print-area table { width: 100% !important; min-width: 0 !important; border-collapse: collapse !important; font-size: 10px !important; }
   .print-area .overflow-x-auto { overflow: visible !important; }
