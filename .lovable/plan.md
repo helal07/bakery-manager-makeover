@@ -55,3 +55,18 @@ cost. Both "produced" and "transferred" valuations are shown so the number match
 - The report is a client-side route that queries the backend directly, scoped to the factory showroom
   the same way the other production reports are.
 - No database migration is needed; all required tables and columns already exist.
+
+## 4. Invoice prints as a blank page
+
+Confirmed cause: `src/styles.css` has a global print rule `body * { visibility: hidden }` that only
+un-hides elements inside `.print-area`. The invoice page (`src/routes/invoice.$id.tsx` +
+`src/components/invoice-preview.tsx`) never uses that class, so on-screen it looks right but the print
+output is completely empty.
+
+Fix:
+- Scope the global hide-everything print rule so it only applies on report pages that actually use
+  `.print-area` (e.g. gate it behind a wrapper class on those pages instead of bare `body *`).
+- Mark the invoice print root as a printable area so the invoice (A4 and thermal) stays visible, keeping
+  the existing paper-size/margin behaviour for 58mm/80mm/A4.
+- Verify by rendering the print stylesheet for both an A4 invoice and an 80mm receipt, plus one existing
+  report page, so neither regresses.
