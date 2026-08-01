@@ -525,10 +525,20 @@ function SubRecipesPage() {
                     className={`w-full h-10 px-3 rounded-md border border-input bg-background text-sm tabular-nums ${form.autoYield ? "opacity-70 cursor-not-allowed" : ""}`}
                   />
                   {form.autoYield && (
-                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                      = ingredient total ({autoYieldTotal.toFixed(4).replace(/\.?0+$/, "")})
+                    <div className="text-[10px] mt-0.5">
+                      <span className="text-muted-foreground">
+                        = converted total ({autoYield.total.toFixed(4).replace(/\.?0+$/, "")} {form.yield_unit})
+                      </span>
+                      {autoYield.skipped.length > 0 && (
+                        <span className="block text-destructive">
+                          {autoYield.skipped.length} item(s) in a different measure (
+                          {autoYield.skipped.map((s) => s.unit).join(", ")}) excluded — set a
+                          conversion in Units.
+                        </span>
+                      )}
                     </div>
                   )}
+
                 </div>
 
                 <div>
