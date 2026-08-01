@@ -7,7 +7,7 @@ import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { pageTitle } from "@/lib/company-settings";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy, Search, ChevronDown, ArrowUpDown } from "lucide-react";
+import { ChefHat, Plus, Pencil, Trash2, X, Save, Copy, Search, ChevronDown, ArrowUpDown, Printer } from "lucide-react";
 import {
   loadSubRecipes,
   saveSubRecipe,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/sub-recipe-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { loadUnits, type Unit } from "@/lib/unit-store";
+import { printSubRecipes } from "@/lib/print-sub-recipes";
 
 export const Route = createFileRoute("/_authenticated/sub-recipes")({
   head: () => ({ meta: [{ title: pageTitle("Sub-Recipes") }] }),
@@ -248,12 +249,23 @@ function SubRecipesPage() {
       title="Sub-Recipes"
       subtitle="মাস্টার mix (যেমন 'বেসিক খামির') তৈরি করুন — final product-এ ingredient হিসেবে ব্যবহার করা যাবে"
       actions={
+        <div className="flex gap-2">
+        <button
+          onClick={() => {
+            if (filtered.length === 0) { toast.error("No sub-recipe to print"); return; }
+            printSubRecipes(filtered, rawMaterials);
+          }}
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-input text-sm font-medium hover:bg-accent"
+        >
+          <Printer className="size-4" /> Print all
+        </button>
         <button
           onClick={openNew}
           className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
         >
           <Plus className="size-4" /> New Sub-Recipe
         </button>
+        </div>
       }
     >
       {loading ? (
@@ -339,6 +351,13 @@ function SubRecipesPage() {
                         <div className="text-sm font-semibold tabular-nums">৳{cost.toFixed(2)}</div>
                       </div>
                       <div className="flex gap-0.5 shrink-0">
+                        <button
+                          onClick={() => printSubRecipes([sr], rawMaterials)}
+                          title="Print"
+                          className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+                        >
+                          <Printer className="size-4" />
+                        </button>
                         <button
                           onClick={() => openEdit(sr)}
                           title="Edit"
