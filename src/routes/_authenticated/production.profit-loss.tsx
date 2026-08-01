@@ -296,7 +296,7 @@ function ProfitLossPage() {
               <tr className="font-semibold">
                 <td className="px-4 py-2.5">{totals.profit >= 0 ? "Net Profit" : "Net Loss"}</td>
                 <td className={`px-4 py-2.5 text-right tabular-nums ${totals.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  {money(totals.profit)}
+                  {totals.profit < 0 ? `-${money(Math.abs(totals.profit))}` : money(totals.profit)}
                 </td>
               </tr>
             </tbody>
