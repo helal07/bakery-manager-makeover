@@ -17,6 +17,7 @@ import {
 } from "@/lib/sub-recipe-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { loadUnits, type Unit } from "@/lib/unit-store";
+import { sumInUnit } from "@/lib/unit-convert";
 import { printSubRecipes } from "@/lib/print-sub-recipes";
 
 export const Route = createFileRoute("/_authenticated/sub-recipes")({
@@ -545,7 +546,7 @@ function SubRecipesPage() {
                   <label className="text-xs text-muted-foreground">Unit</label>
                   <select
                     value={form.yield_unit}
-                    onChange={(e) => setForm({ ...form, yield_unit: e.target.value })}
+                    onChange={(e) => patchForm({ yield_unit: e.target.value })}
                     className="w-full h-10 px-2 rounded-md border border-input bg-background text-sm"
                   >
                     {units.length === 0 && (
