@@ -17,6 +17,7 @@ import {
 } from "@/lib/sub-recipe-store";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { loadUnits, type Unit } from "@/lib/unit-store";
+import { sumInUnit } from "@/lib/unit-convert";
 import { printSubRecipes } from "@/lib/print-sub-recipes";
 
 export const Route = createFileRoute("/_authenticated/sub-recipes")({
@@ -125,21 +126,40 @@ function SubRecipesPage() {
   const openEdit = (sr: SubRecipe) => openWith(fromSubRecipe(sr));
   const openDuplicate = (sr: SubRecipe) => openWith(fromSubRecipe(sr, true));
 
-  /** Auto-calculated yield = sum of ingredient quantities. */
-  const autoYieldTotal = useMemo(
-    () => form.items.reduce((s, i) => s + (Number(i.qty) || 0), 0),
-    [form.items],
+  /**
+   * Auto-calculated yield = unit-aware sum of ingredient quantities.
+   * Each ingredient is converted from its own unit into the yield unit
+   * (1 kg = 1000 g etc.), so mixed units no longer add up wrongly.
+   */
+  const computeAutoYield = (
+    items: { materialId: string; qty: string }[],
+    yieldUnit: string,
+  ) =>
+    sumInUnit(
+      items.map((i) => ({
+        qty: Number(i.qty) || 0,
+        unit: rawMaterials.find((r) => r.id === i.materialId)?.unit ?? yieldUnit,
+      })),
+      yieldUnit,
+      units,
+    );
+
+  const autoYield = useMemo(
+    () => computeAutoYield(form.items, form.yield_unit),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.items, form.yield_unit, rawMaterials, units],
   );
 
   const patchForm = (patch: Partial<EditorState>) =>
     setForm((f) => {
       const next = { ...f, ...patch };
       if (next.autoYield) {
-        const total = next.items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+        const { total } = computeAutoYield(next.items, next.yield_unit);
         next.yield_qty = total > 0 ? String(Number(total.toFixed(4))) : "";
       }
       return next;
     });
+
 
   const addRow = () => patchForm({ items: [...form.items, { materialId: "", qty: "" }] });
   const removeRow = (idx: number) =>
@@ -506,17 +526,27 @@ function SubRecipesPage() {
                     className={`w-full h-10 px-3 rounded-md border border-input bg-background text-sm tabular-nums ${form.autoYield ? "opacity-70 cursor-not-allowed" : ""}`}
                   />
                   {form.autoYield && (
-                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                      = ingredient total ({autoYieldTotal.toFixed(4).replace(/\.?0+$/, "")})
+                    <div className="text-[10px] mt-0.5">
+                      <span className="text-muted-foreground">
+                        = converted total ({autoYield.total.toFixed(4).replace(/\.?0+$/, "")} {form.yield_unit})
+                      </span>
+                      {autoYield.skipped.length > 0 && (
+                        <span className="block text-destructive">
+                          {autoYield.skipped.length} item(s) in a different measure (
+                          {autoYield.skipped.map((s) => s.unit).join(", ")}) excluded — set a
+                          conversion in Units.
+                        </span>
+                      )}
                     </div>
                   )}
+
                 </div>
 
                 <div>
                   <label className="text-xs text-muted-foreground">Unit</label>
                   <select
                     value={form.yield_unit}
-                    onChange={(e) => setForm({ ...form, yield_unit: e.target.value })}
+                    onChange={(e) => patchForm({ yield_unit: e.target.value })}
                     className="w-full h-10 px-2 rounded-md border border-input bg-background text-sm"
                   >
                     {units.length === 0 && (
