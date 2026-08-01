@@ -125,21 +125,40 @@ function SubRecipesPage() {
   const openEdit = (sr: SubRecipe) => openWith(fromSubRecipe(sr));
   const openDuplicate = (sr: SubRecipe) => openWith(fromSubRecipe(sr, true));
 
-  /** Auto-calculated yield = sum of ingredient quantities. */
-  const autoYieldTotal = useMemo(
-    () => form.items.reduce((s, i) => s + (Number(i.qty) || 0), 0),
-    [form.items],
+  /**
+   * Auto-calculated yield = unit-aware sum of ingredient quantities.
+   * Each ingredient is converted from its own unit into the yield unit
+   * (1 kg = 1000 g etc.), so mixed units no longer add up wrongly.
+   */
+  const computeAutoYield = (
+    items: { materialId: string; qty: string }[],
+    yieldUnit: string,
+  ) =>
+    sumInUnit(
+      items.map((i) => ({
+        qty: Number(i.qty) || 0,
+        unit: rawMaterials.find((r) => r.id === i.materialId)?.unit ?? yieldUnit,
+      })),
+      yieldUnit,
+      units,
+    );
+
+  const autoYield = useMemo(
+    () => computeAutoYield(form.items, form.yield_unit),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.items, form.yield_unit, rawMaterials, units],
   );
 
   const patchForm = (patch: Partial<EditorState>) =>
     setForm((f) => {
       const next = { ...f, ...patch };
       if (next.autoYield) {
-        const total = next.items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+        const { total } = computeAutoYield(next.items, next.yield_unit);
         next.yield_qty = total > 0 ? String(Number(total.toFixed(4))) : "";
       }
       return next;
     });
+
 
   const addRow = () => patchForm({ items: [...form.items, { materialId: "", qty: "" }] });
   const removeRow = (idx: number) =>
