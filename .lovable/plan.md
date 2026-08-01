@@ -1,107 +1,42 @@
-# Ultimate POS ধাঁচের ইউনিট সিস্টেম — লাইভ ডাটা সুরক্ষিত রেখে
+# সাব-রেসিপি প্রিন্ট / আর্কাইভ (ইউনিট পরিবর্তনের আগে সেফটি নেট)
 
-## যাচাই (আসল DB + কোড পড়ে)
+আপনার আশঙ্কা যুক্তিসঙ্গত — তাই ইউনিট ফিচারে হাত দেওয়ার **আগে** সংরক্ষিত অনুপাতগুলোর একটা মানুষ-পাঠযোগ্য স্ন্যাপশট বের করে রাখা হবে। এতে JSON ব্যাকআপের পাশাপাশি কাগজ/PDF কপিও থাকবে, যা দিয়ে পরে যেকোনো সময় মিলিয়ে দেখা যাবে।
 
-- `public.units` কলাম: `id, name, short_name, code, is_active` — conversion তথ্য নেই।
-- বর্তমান ইউনিট: `box, dz, g, kg, L, ml, pc, pkt`।
-- `raw_materials.unit` টেক্সট হিসেবে **কোড** রাখে; ব্যবহৃত মান `pc(1), g(4), ml(1), kg(1)` — সবই `units.code`-এর সাথে মিলে যায়, কোনো এতিম মান নেই।
-- `products.unit`-ও টেক্সট কোড; `units` টেবিলে কোনো foreign key নেই।
-- `src/lib/unit-store.ts`-এ `renameUnit()` **code পরিবর্তন করতে দেয়** এবং `removeUnit()` শুধু `is_active=false` করে — দুটোতেই ব্যবহৃত হচ্ছে কিনা কোনো চেক নেই।
-- `sub_recipes` টেবিলে এখনো কোনো row নেই।
+## যা তৈরি হবে
 
-## আপনার আশঙ্কা — কোনটা সত্যি, কোনটা নয়
+সাব-রেসিপি পেজে (`Sub-Recipes`) দুটি নতুন বাটন:
 
-| অ্যাকশন | সংরক্ষিত ডাটার উপর প্রভাব |
-|---|---|
-| নতুন সাব-ইউনিট যোগ (g → base kg, ১০০০) | **কোনো প্রভাব নেই** — শুধু নতুন row |
-| conversion factor বদলানো | সংরক্ষিত qty/দাম **বদলায় না**; শুধু ভবিষ্যতের auto-yield ও mixed-unit যোগফলের হিসাব বদলায় |
-| base unit বাঁধা/খোলা | ঐ একই — শুধু গণনা |
-| **unit code rename (kg → KG)** | **আসল ঝুঁকি** — `raw_materials.unit`/`products.unit`-এর পুরনো টেক্সট আর মিলবে না, ইউনিট "unknown" হয়ে যাবে |
-| **unit delete (soft)** | **ঝুঁকি** — ব্যবহৃত ইউনিট লিস্ট থেকে হারাবে, ফর্মে খালি দেখাবে |
+1. **Print all** (হেডারে) — সব অ্যাক্টিভ সাব-রেসিপির সম্পূর্ণ ডকুমেন্ট, A4 প্রিন্ট-রেডি।
+2. **Print** (প্রতিটি accordion আইটেমে) — শুধু ওই একটা সাব-রেসিপি।
 
-তাই নতুন ফিচারটা নিরাপদ; বিপদ আসলে **rename/delete**-এ, যা এখন সম্পূর্ণ অরক্ষিত। প্ল্যানে দুটোই ঠিক করা হবে।
+## প্রিন্ট শিটে কী কী থাকবে
 
-## বিদ্যমান সাব-রেসিপি ও raw material deduction — কি ভাঙবে?
+প্রতিটি সাব-রেসিপির জন্য:
 
-**না, ভাঙবে না** — শর্ত হলো পুরনো ইউনিটগুলো delete/rename না করা (উপরের গার্ড ঠিক সেটাই বাধ্য করবে)।
+- সিরিয়াল নম্বর ও নাম
+- Yield: `yield_qty` + `yield_unit` (যেমন `5 kg`)
+- র ম্যাটেরিয়াল টেবিল, প্রতি সারিতে:
+  - ম্যাটেরিয়ালের নাম
+  - **সেভ করা qty** (হুবহু ৪ ডেসিমাল, যেভাবে DB-তে আছে)
+  - ম্যাটেরিয়ালের নিজস্ব ইউনিট
+  - **শতকরা অনুপাত** (qty ÷ মোট qty × ১০০) — এটাই আসল "রেসিপি রেশিও", ইউনিট বদলালেও যা মিলিয়ে দেখা যাবে
+  - **Per 1 unit yield** (qty ÷ yield_qty) — সবচেয়ে গুরুত্বপূর্ণ কলাম, কারণ প্রোডাকশন RPC ঠিক এই অনুপাতেই স্টক কাটে
+  - ইউনিট কস্ট ও লাইন কস্ট
+- ফুটার: মোট ইনগ্রেডিয়েন্ট qty, ব্যাচের মোট কস্ট, per-unit কস্ট
 
-কারণ (`sql/19_sub_recipes.sql` লাইন ১২৪-১৩০ পড়ে যাচাই করা):
+ডকুমেন্ট হেডারে কোম্পানির নাম/লোগো (settings থেকে), প্রিন্টের তারিখ-সময়, এবং "Snapshot taken before unit-conversion change" লেখা একটি লাইন — যাতে ভবিষ্যতে কোন অবস্থার স্ন্যাপশট তা বোঝা যায়।
 
-```sql
-_ratio := (_qty_per_unit * _batch) / _yield_qty;
--- প্রতিটি sub_recipe_item: qty * _ratio  →  raw stock থেকে বিয়োগ
-```
+## কেন এই কলামগুলোই দরকার
 
-- এই RPC **কোনো ইউনিট দেখে না** — শুধু সংখ্যার অনুপাত। তাই units টেবিলে কলাম যোগ করলে বা factor বদলালে deduction-এর মান বিন্দুমাত্র বদলায় না।
-- ম্যাটেরিয়াল বিয়োগ হয় ম্যাটেরিয়ালের **নিজের** ইউনিটে, যেভাবে `sub_recipe_items.qty` সেভ করা আছে — সেটাও অপরিবর্তিত থাকছে।
-- এই প্ল্যানে RPC-তে **কোনো পরিবর্তন নেই**। SQL শুধু `units` টেবিলে ৩টি নতুন কলাম যোগ করে।
+`sql/19_sub_recipes.sql`-এ প্রোডাকশন লজিক পড়ে যাচাই করা: RPC `_ratio := (qty_per_unit * batch) / yield_qty` হিসাব করে, তারপর প্রতিটি আইটেমের `qty * _ratio` স্টক থেকে কাটে। অর্থাৎ deduction পুরোপুরি নির্ভর করে **`qty / yield_qty`** অনুপাতের ওপর — কোনো ইউনিট নাম RPC দেখে না। তাই এই কলামটি প্রিন্টে থাকলে ইউনিট পরিবর্তনের পরে ২ মিনিটেই যাচাই করা যাবে হিসাব একই আছে কি না।
 
-সতর্কতা হিসেবে ফ্রন্টএন্ডেও **backward-compatible নিয়ম** থাকবে:
+## টেকনিক্যাল বিবরণ
 
-- `expandIngredients()`-এ কনভার্শন তখনই প্রয়োগ হবে যখন রেসিপি লাইনের ইউনিট আর সাব-রেসিপির yield unit **আলাদা** এবং দুটোর মধ্যে conversion সেট করা আছে। একই ইউনিট হলে ratio হুবহু আগের মতো (`qty / yield_qty`) — আপনার সব বর্তমান ডাটা এই ক্ষেত্রেই পড়ে, তাই হিসাব অপরিবর্তিত।
-- conversion না জানা থাকলে **কোনো অনুমান নয়** — আগের আচরণ + স্ক্রিনে ওয়ার্নিং।
-- Auto-yield শুধু **নতুন করে টগল করলে/এডিট করলে** চলবে; সংরক্ষিত `yield_qty` নিজে থেকে rewrite হবে না। এডিট করার সময় auto মান আলাদা দেখালে "পুরনো: X → নতুন: Y" দেখিয়ে সেভের আগে নিশ্চিত করা হবে।
+- নতুন হেল্পার `src/lib/print-sub-recipes.ts` — বিদ্যমান `src/lib/print-labels.ts`-এর মতো একই প্যাটার্ন (নতুন উইন্ডোতে self-contained HTML + `window.print()`), তাই কোনো নতুন লাইব্রেরি লাগবে না।
+- `src/routes/_authenticated/sub-recipes.tsx`-এ ইতিমধ্যেই লোড করা `subRecipes`, `rawMaterials`, `units` স্টেট ব্যবহার করা হবে — কোনো নতুন query নেই।
+- কম্প্যাক্ট A4 CSS: ১১px বেস ফন্ট, `page-break-inside: avoid` প্রতি সাব-রেসিপি ব্লকে, বাংলা টেক্সটের জন্য যথাযথ ফন্ট-স্ট্যাক।
+- **কোনো SQL মাইগ্রেশন নেই**, কোনো ডাটা লেখা নেই — সম্পূর্ণ read-only ফিচার। VPS-এ কিছু চালাতে হবে না।
 
-**একটাই সতর্কতা:** ভবিষ্যতে কোনো ইউনিটের factor বদলালে (যেমন ১ kg = ১০০০ g → ৫০০ g), মিশ্র-ইউনিট সাব-রেসিপির auto-yield **ভবিষ্যতে** ভিন্ন আসবে। পুরনো সেভ করা yield বা স্টক বদলাবে না।
+## এরপরের ধাপ
 
-## ১. SQL — সম্পূর্ণ additive (`sql/21_unit_conversions.sql`, idempotent)
-
-```sql
-ALTER TABLE public.units
-  ADD COLUMN IF NOT EXISTS base_unit_id uuid REFERENCES public.units(id),
-  ADD COLUMN IF NOT EXISTS conversion_factor numeric NOT NULL DEFAULT 1,
-  ADD COLUMN IF NOT EXISTS allow_decimal boolean NOT NULL DEFAULT true;
-```
-
-- কোনো কলাম drop/rename নেই, কোনো row আপডেট নেই।
-- সব বিদ্যমান ইউনিট `base_unit_id = NULL, factor = 1` → base unit, আচরণ হুবহু আগের মতো।
-- Guard: self-reference নিষেধ, `factor > 0`, এবং nesting এক লেভেল (base unit-এর নিজের base থাকবে না — চেইন লুপ ঠেকাতে)।
-- Lovable Cloud-এ migration tool দিয়ে, VPS-এ একই ফাইল কপি-পেস্ট।
-
-## ২. Rename / Delete গার্ড (ডাটা লস ঠেকানোর মূল অংশ)
-
-- **Code rename ব্লক** যদি ঐ code কোনো `raw_materials` বা `products`-এ ব্যবহৃত হয়: "এই ইউনিট ৪টি raw material-এ ব্যবহৃত — code বদলানো যাবে না, শুধু নাম বদলান।" (নাম/short name/decimal অবাধে বদলাবে)
-- **Delete ব্লক** যদি ব্যবহৃত হয়, অথবা অন্য ইউনিট একে base হিসেবে ধরে থাকে: কোথায় ব্যবহৃত তার গণনা দেখানো হবে।
-- **Base/factor বদলালে confirm**: "এতে সংরক্ষিত স্টক বা দাম বদলাবে না — শুধু ভবিষ্যতের রূপান্তর হিসাব বদলাবে।" সাথে আগে/পরে উদাহরণ (১ kg = ১০০০ g → ৫০০)।
-- কোনো ধাপেই সংরক্ষিত quantity re-scale করা হবে **না** — এটাই ডাটা-নিরাপত্তার মূল নিয়ম।
-
-## ৩. Units পেজ (`products.units.tsx`) — Ultimate POS ফর্ম
-
-```text
-Name*               [Kilogram]
-Short name / code*  [kg]           (ব্যবহৃত হলে লক + ব্যাখ্যা)
-Allow decimal*      [Yes / No]
-[x] Add as multiple of other unit
-    1 Kilogram = [1000] [Gram v]
-```
-
-লিস্টে নতুন কলাম: **Base unit**, **Conversion** ("1 kg = 1000 g"), **ব্যবহৃত** (কয়টি material/product)।
-
-## ৪. রূপান্তর ইঞ্জিন (`src/lib/unit-convert.ts`)
-
-- DB-র units থেকে গ্রাফ: qty → base (`* factor`) → target (`/ factor`)।
-- `convert(qty, fromCode, toCode, units)` → `number | null` (ভিন্ন base হলে null, কখনো ভুল যোগ নয়)।
-- কোনো hardcoded kg/g ম্যাপিং থাকবে না — সবই ইউজারের সেট করা মান।
-
-## ৫. Auto Yield ঠিক করা (`sub-recipes.tsx`)
-
-- এখন: ১ kg + ৫০০ g = ৫০১ (ভুল)। নতুন: yield unit-এ কনভার্ট করে যোগ → **১.৫ kg** (yield unit `g` হলে ১৫০০)।
-- অ-রূপান্তরযোগ্য আইটেম (৫ pc ডিম) যোগফলে ধরা হবে না, নিচে স্পষ্ট নোট + "Units পেজে conversion সেট করুন" লিংক।
-- Manual মোড আগের মতোই থাকবে।
-
-## ৬. সাব-রেসিপি expansion
-
-`expandIngredients()`-এ রেসিপির qty ইউনিট আর সাব-রেসিপির yield unit ভিন্ন হলে কনভার্ট করে ratio হবে (৫০০ g ÷ ১ kg = ০.৫), এখন যা ৫০০ ধরছে। Product form ও Production workbench-এর cost preview/overlap warning একই হেল্পার ব্যবহার করবে।
-
-## যা স্পর্শ করা হবে না
-
-`raw_materials.unit`, `products.unit`, `raw_material_stock.quantity`, `product_stock.quantity`, `recipes.qty`, `sub_recipe_items.qty`, `raw_materials.cost`, এবং `commit_production_batch` RPC — কোনোটিই migrate বা re-scale হবে না। raw material deduction আগের মতোই material-এর নিজের ইউনিটে হবে।
-
-## Files to touch
-
-- `sql/21_unit_conversions.sql` (new) + `sql/applied.md` এন্ট্রি
-- `src/lib/unit-store.ts` — নতুন ফিল্ড + usage-count চেক, rename/delete গার্ড
-- `src/lib/unit-convert.ts` (new)
-- `src/routes/_authenticated/products.units.tsx` — নতুন ফর্ম, লিস্ট কলাম, confirm dialog
-- `src/routes/_authenticated/sub-recipes.tsx` — unit-aware auto yield + নোট
-- `src/lib/sub-recipe-store.ts` — `expandIngredients`-এ unit-aware ratio
+প্রিন্ট নিয়ে সন্তুষ্ট হলে (এবং একবার JSON ব্যাকআপ + প্রিন্ট কপি হাতে রাখলে) আমরা ইউনিট কনভার্শন (base unit / sub unit, multiplier) ফিচারে যাব — সেটা আলাদা প্ল্যান হিসেবে দেওয়া হবে।
