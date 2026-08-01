@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { type ProductCategory, loadCategories, addCategory } from "@/lib/product-types";
 import { ArrowLeft, ChevronDown, Plus, X, AlertTriangle, ChefHat } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -92,6 +92,10 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   const [showExpanded, setShowExpanded] = useState(false);
   const [baseline, setBaseline] = useState<string | null>(null);
   const [savedClean, setSavedClean] = useState(false);
+  // Synchronous flags: a save in flight (or already finished) must never trigger
+  // the unsaved-changes prompt, because state updates land after navigation.
+  const suppressGuardRef = useRef(false);
+  const savedRef = useRef(false);
 
   // Snapshot used for the unsaved-changes guard.
   const snapshot = useMemo(
@@ -99,6 +103,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
     [form, recipeEnabled, ingredients, imageFile],
   );
   const dirty = !loading && !savedClean && baseline !== null && snapshot !== baseline;
+
 
   // Establish the baseline once the initial data finished loading.
   useEffect(() => {
@@ -322,6 +327,14 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
 
   const doSave = async (opts?: { navigateAfter?: boolean }): Promise<boolean> => {
     const navigateAfter = opts?.navigateAfter !== false;
+    // Already persisted once (e.g. guard dialog after a successful save) —
+    // never write a second time, that is what produced duplicate-SKU errors.
+    if (savedRef.current) {
+      if (navigateAfter) navigate({ to: "/products" });
+      return true;
+    }
+    if (saving) return false;
+
     if (!form.name.trim()) {
       toast.error("Product name is required");
       return false;
@@ -336,6 +349,8 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
       return false;
     }
     setSaving(true);
+    suppressGuardRef.current = true;
+
     try {
       const sku = form.sku.trim() || genSku(form.category, form.name);
       const payload = {
@@ -401,10 +416,12 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         await saveRecipe(created.id, clean);
         toast.success("Product added");
       }
+      savedRef.current = true;
       setSavedClean(true);
       if (navigateAfter) navigate({ to: "/products" });
       return true;
     } catch (e: any) {
+      suppressGuardRef.current = false;
       toast.error(e?.message ?? "Failed to save product");
       return false;
     } finally {
@@ -427,7 +444,9 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   } = useUnsavedChanges({
     dirty,
     onSave: () => doSave({ navigateAfter: false }),
+    suppressRef: suppressGuardRef,
   });
+
 
   return (
     <AppShell
