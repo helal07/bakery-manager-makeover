@@ -1,9 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { useEffect, useMemo, useState } from "react";
-import { Search, Filter, Plus, X, Trash2, ExternalLink } from "lucide-react";
+import { Search, Filter, Plus, X, Trash2, ExternalLink, MoreHorizontal, Wallet, BookOpen, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ReceivePaymentDialog } from "@/components/receive-payment-dialog";
 
 export const Route = createFileRoute("/_authenticated/sales/payments")({
   head: () => ({ meta: [{ title: "Customer Payments · Muzahid Food" }] }),
