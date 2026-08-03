@@ -22,6 +22,7 @@ const METHODS = ["cash", "bank", "mobile", "card", "cheque", "other"] as const;
 
 type Row = {
   id: string; paid_on: string;
+  customer_id: string | null;
   customer_name: string | null; customer_phone: string | null;
   sale_id: string | null; invoice_ref: string | null;
   sale_total: number | null; sale_due: number | null;
