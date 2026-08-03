@@ -64,13 +64,27 @@ function CustomerPayments() {
     if (method !== "All" && r.method !== method) return false;
     if (from && r.paid_on < from) return false;
     if (to && r.paid_on > to) return false;
-    if (q) {
-      const s = q.toLowerCase();
-      const hay = `${r.customer_name ?? ""} ${r.customer_phone ?? ""} ${r.invoice_ref ?? ""} ${r.reference ?? ""}`.toLowerCase();
-      if (!hay.includes(s)) return false;
+    const s = q.trim().toLowerCase();
+    if (s) {
+      const terms = s.split(/\s+/);
+      const hay = [
+        r.customer_name,
+        r.customer_phone,
+        r.invoice_ref,
+        r.sale_id,
+        r.sale_id ? String(r.sale_id).slice(0, 8) : "",
+        r.reference,
+        r.note,
+        r.method,
+        showroomName(r.showroom_id),
+        r.paid_on,
+        r.amount.toFixed(2),
+      ].filter(Boolean).join(" ").toLowerCase();
+      if (!terms.every((t) => hay.includes(t))) return false;
     }
     return true;
-  }), [rows, q, method, from, to]);
+  }), [rows, q, method, from, to, showroomName]);
+
 
   const total = filtered.reduce((s, r) => s + r.amount, 0);
 
