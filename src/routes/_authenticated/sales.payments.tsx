@@ -34,6 +34,7 @@ const sb = supabase as any;
 
 function CustomerPayments() {
   const { currentShowroomId, showrooms } = useShowroomScope();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -42,6 +43,7 @@ function CustomerPayments() {
   const [to, setTo] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [invoice, setInvoice] = useState<any | null>(null);
+  const [receiveFor, setReceiveFor] = useState<Row | null>(null);
 
   const showroomName = useMemo(() => {
     const m = new Map(showrooms.map((s) => [s.id, s.name] as const));
@@ -51,13 +53,14 @@ function CustomerPayments() {
   const refresh = async () => {
     setLoading(true);
     let query = sb.from("customer_payments")
-      .select("id,paid_on,amount,method,reference,note,showroom_id,sale_id,invoice_ref,customer_name,customer_phone,sales(total,due)")
+      .select("id,paid_on,amount,method,reference,note,showroom_id,sale_id,invoice_ref,customer_id,customer_name,customer_phone,sales(total,due)")
       .order("paid_on", { ascending: false }).order("created_at", { ascending: false });
     if (currentShowroomId) query = query.eq("showroom_id", currentShowroomId);
     const { data, error } = await query;
     if (error) { console.error(error); setRows([]); }
     else setRows((data ?? []).map((r: any) => ({
-      id: r.id, paid_on: r.paid_on, customer_name: r.customer_name, customer_phone: r.customer_phone,
+      id: r.id, paid_on: r.paid_on, customer_id: r.customer_id ?? null,
+      customer_name: r.customer_name, customer_phone: r.customer_phone,
       sale_id: r.sale_id, invoice_ref: r.invoice_ref,
       sale_total: r.sales?.total ? Number(r.sales.total) : null,
       sale_due: r.sales?.due != null ? Number(r.sales.due) : null,
