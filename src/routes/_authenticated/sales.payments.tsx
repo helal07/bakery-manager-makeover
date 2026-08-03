@@ -179,8 +179,32 @@ function CustomerPayments() {
                   <td className="px-4 py-2.5 capitalize">{r.method}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{r.reference ?? "—"}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600">৳{r.amount.toFixed(2)}</td>
-                  <td className="px-4 py-2.5">
-                    <button onClick={() => remove(r.id)} className="size-7 grid place-items-center rounded hover:bg-accent text-muted-foreground"><Trash2 className="size-3.5" /></button>
+                  <td className="px-4 py-2.5 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button aria-label="Actions" className="size-7 grid place-items-center rounded hover:bg-accent text-muted-foreground">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem disabled={!r.customer_id} onClick={() => setReceiveFor(r)}>
+                          <Wallet className="size-4 mr-2" /> Receive payment
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!r.customer_id}
+                          onClick={() => r.customer_id && navigate({ to: "/crm/$id/ledger", params: { id: r.customer_id } })}
+                        >
+                          <BookOpen className="size-4 mr-2" /> Customer ledger
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled={!r.sale_id} onClick={() => openInvoice(r)}>
+                          <FileText className="size-4 mr-2" /> View invoice
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => remove(r.id)}>
+                          <Trash2 className="size-4 mr-2" /> Delete payment
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
