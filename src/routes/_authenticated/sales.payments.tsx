@@ -53,14 +53,15 @@ function CustomerPayments() {
   const refresh = async () => {
     setLoading(true);
     let query = sb.from("customer_payments")
-      .select("id,paid_on,amount,method,reference,note,showroom_id,sale_id,invoice_ref,customer_id,customer_name,customer_phone,sales(total,due)")
+      .select("id,paid_on,amount,method,reference,note,showroom_id,sale_id,invoice_ref,customer_id,customer_name,customer_phone,sales(total,due,customer_name,customer_phone),customers(name,phone)")
       .order("paid_on", { ascending: false }).order("created_at", { ascending: false });
     if (currentShowroomId) query = query.eq("showroom_id", currentShowroomId);
     const { data, error } = await query;
     if (error) { console.error(error); setRows([]); }
     else setRows((data ?? []).map((r: any) => ({
       id: r.id, paid_on: r.paid_on, customer_id: r.customer_id ?? null,
-      customer_name: r.customer_name, customer_phone: r.customer_phone,
+      customer_name: r.customer_name ?? r.customers?.name ?? r.sales?.customer_name ?? null,
+      customer_phone: r.customer_phone ?? r.customers?.phone ?? r.sales?.customer_phone ?? null,
       sale_id: r.sale_id, invoice_ref: r.invoice_ref,
       sale_total: r.sales?.total ? Number(r.sales.total) : null,
       sale_due: r.sales?.due != null ? Number(r.sales.due) : null,
@@ -72,14 +73,18 @@ function CustomerPayments() {
 
   useEffect(() => { refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [currentShowroomId]);
 
+  const norm = (v: unknown) =>
+    String(v ?? "").toLowerCase().replace(/[#,\u09E6-\u09EF]/g, (c) =>
+      c === "#" || c === "," ? "" : String(c.charCodeAt(0) - 0x09e6));
+
   const filtered = useMemo(() => rows.filter((r) => {
-    if (method !== "All" && r.method !== method) return false;
+    if (method !== "All" && norm(r.method) !== norm(method)) return false;
     if (from && r.paid_on < from) return false;
     if (to && r.paid_on > to) return false;
-    const s = q.trim().toLowerCase();
+    const s = norm(q).trim();
     if (s) {
-      const terms = s.split(/\s+/);
-      const hay = [
+      const terms = s.split(/\s+/).filter(Boolean);
+      const hay = norm([
         r.customer_name,
         r.customer_phone,
         r.invoice_ref,
@@ -91,11 +96,13 @@ function CustomerPayments() {
         showroomName(r.showroom_id),
         r.paid_on,
         r.amount.toFixed(2),
-      ].filter(Boolean).join(" ").toLowerCase();
+        String(Math.round(r.amount)),
+      ].filter(Boolean).join(" "));
       if (!terms.every((t) => hay.includes(t))) return false;
     }
     return true;
   }), [rows, q, method, from, to, showroomName]);
+
 
 
   const total = filtered.reduce((s, r) => s + r.amount, 0);
