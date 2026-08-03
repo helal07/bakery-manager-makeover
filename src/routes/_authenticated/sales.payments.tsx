@@ -221,6 +221,16 @@ function CustomerPayments() {
 
       {showNew && <NewPayment onClose={() => setShowNew(false)} onSaved={() => { setShowNew(false); refresh(); }} />}
       {invoice && <InvoiceModal data={invoice} onClose={() => setInvoice(null)} />}
+      {receiveFor?.customer_id && (
+        <ReceivePaymentDialog
+          open
+          onOpenChange={(o) => { if (!o) setReceiveFor(null); }}
+          customerId={receiveFor.customer_id}
+          customerName={receiveFor.customer_name ?? undefined}
+          customerPhone={receiveFor.customer_phone ?? undefined}
+          onSaved={() => { setReceiveFor(null); refresh(); }}
+        />
+      )}
     </AppShell>
   );
 }
