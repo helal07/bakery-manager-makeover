@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { usePermissions } from "@/hooks/use-permissions";
+import { clearRbacSnapshots } from "@/lib/rbac-cache";
+
 import { getCompany, defaultCompany, getCachedCompany, type CompanySettings } from "@/lib/company-settings";
 import { getProfile, getCachedProfile, type UserProfile, getSoftware, getCachedSoftware, applyThemePref, defaultSoftware, type SoftwarePrefs } from "@/lib/profile-settings";
 import {
@@ -521,11 +523,13 @@ function TopBarUser() {
   const signOut = async () => {
     await queryClient.cancelQueries();
     queryClient.clear();
+    clearRbacSnapshots();
     try {
       localStorage.removeItem("user-profile-cache-v1");
       localStorage.removeItem("user-email-cache-v1");
       localStorage.removeItem("user-role-cache-v1");
     } catch { /* ignore */ }
+
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
@@ -802,11 +806,13 @@ function UserMenu() {
   const signOut = async () => {
     await queryClient.cancelQueries();
     queryClient.clear();
+    clearRbacSnapshots();
     try {
       localStorage.removeItem("user-profile-cache-v1");
       localStorage.removeItem("user-email-cache-v1");
       localStorage.removeItem("user-role-cache-v1");
     } catch { /* ignore */ }
+
     userMenuLoadedOnce = false;
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });

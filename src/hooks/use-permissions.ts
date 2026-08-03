@@ -1,90 +1,84 @@
-import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-
-type State = {
-  loading: boolean;
-  isSuperadmin: boolean;
-  permissions: Set<string>;
-  scopedPermissions: Map<string, Set<string>>; // showroom_id -> perm keys
-};
+import { useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  emptyRbac,
+  getCurrentUserId,
+  rbacQueryKey,
+  rbacQueryOptions,
+  type RbacData,
+} from "@/lib/rbac-cache";
 
 /**
- * Loads the signed-in user's effective permissions (from user_role_assignments
- * -> app_roles -> role_permissions). Superadmin bypasses all checks.
+ * The signed-in user id, cached so mounting many gated pages does not hit
+ * Supabase auth repeatedly. `getSession()` is local-storage backed, so this is
+ * cheap even on a cold cache.
  */
-export function usePermissions() {
-  const [state, setState] = useState<State>({
-    loading: true,
-    isSuperadmin: false,
-    permissions: new Set(),
-    scopedPermissions: new Map(),
+export function useCurrentUserId() {
+  const { data, isPending } = useQuery({
+    queryKey: ["auth-user-id"],
+    queryFn: getCurrentUserId,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
   });
+  return { userId: data ?? null, loading: isPending };
+}
+
+/**
+ * Shared RBAC data for the signed-in user. Every consumer subscribes to the
+ * same TanStack Query entry, so navigating between pages reuses the cached
+ * result instead of re-querying roles and permissions.
+ */
+export function useRbac() {
+  const queryClient = useQueryClient();
+  const { userId, loading: userLoading } = useCurrentUserId();
+  const query = useQuery(rbacQueryOptions(userId ?? ""));
+
+  const data: RbacData = query.data ?? emptyRbac(userId ?? "");
+  const loading = userLoading || (!!userId && !query.data && query.isPending);
 
   const reload = useCallback(async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData.user;
-    if (!user) {
-      setState({ loading: false, isSuperadmin: false, permissions: new Set(), scopedPermissions: new Map() });
-      return;
+    await queryClient.invalidateQueries({ queryKey: ["auth-user-id"] });
+    if (userId) await queryClient.invalidateQueries({ queryKey: rbacQueryKey(userId) });
+  }, [queryClient, userId]);
+
+  return { data, loading, reload };
+}
+
+/**
+ * Effective permissions for the signed-in user (from user_role_assignments ->
+ * app_roles -> role_permissions). Superadmin bypasses all checks.
+ *
+ * API is unchanged from the previous per-mount implementation; only the data
+ * source is now cached and shared.
+ */
+export function usePermissions() {
+  const { data, loading, reload } = useRbac();
+
+  const permissions = useMemo(() => new Set(data.global), [data.global]);
+  const scopedPermissions = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const [showroomId, keys] of Object.entries(data.scoped)) {
+      map.set(showroomId, new Set(keys));
     }
+    return map;
+  }, [data.scoped]);
 
-    // Superadmin check via legacy user_roles bridge
-    const { data: legacy } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
-    const roles = (legacy ?? []).map((r) => String(r.role).toLowerCase());
-    const isSuper = roles.includes("superadmin") || roles.includes("owner");
+  const isSuperadmin = data.isSuperadmin;
 
-    // Load assignments + role permissions
-    const { data: rows } = await (supabase as any)
-      .from("user_role_assignments")
-      .select("showroom_id, app_roles!inner(id, is_active, role_permissions(permission_key))")
-      .eq("user_id", user.id);
-
-    const global = new Set<string>();
-    const scoped = new Map<string, Set<string>>();
-    for (const r of (rows ?? []) as any[]) {
-      const role = r.app_roles;
-      if (!role?.is_active) continue;
-      const keys: string[] = (role.role_permissions ?? []).map((p: any) => p.permission_key);
-      if (r.showroom_id == null) {
-        keys.forEach((k) => global.add(k));
-      } else {
-        const s = scoped.get(r.showroom_id) ?? new Set<string>();
-        keys.forEach((k) => s.add(k));
-        scoped.set(r.showroom_id, s);
-      }
-    }
-
-    setState({ loading: false, isSuperadmin: isSuper, permissions: global, scopedPermissions: scoped });
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      await reload();
-      if (!mounted) return;
-    })();
-    return () => { mounted = false; };
-  }, [reload]);
-
-  const can = (key: string) => state.isSuperadmin || state.permissions.has(key);
+  const can = (key: string) => isSuperadmin || permissions.has(key);
   const hasAny = (key: string) => {
-    if (state.isSuperadmin) return true;
-    if (state.permissions.has(key)) return true;
-    for (const set of state.scopedPermissions.values()) {
-      if (set.has(key)) return true;
-    }
+    if (isSuperadmin) return true;
+    if (permissions.has(key)) return true;
+    for (const set of scopedPermissions.values()) if (set.has(key)) return true;
     return false;
   };
   const canIn = (showroomId: string | null, key: string) => {
-    if (state.isSuperadmin) return true;
-    if (state.permissions.has(key)) return true;
+    if (isSuperadmin) return true;
+    if (permissions.has(key)) return true;
     if (!showroomId) return false;
-    return state.scopedPermissions.get(showroomId)?.has(key) ?? false;
+    return scopedPermissions.get(showroomId)?.has(key) ?? false;
   };
 
-  return { ...state, can, canIn, hasAny, reload };
+  return { loading, isSuperadmin, permissions, scopedPermissions, can, canIn, hasAny, reload };
 }
-

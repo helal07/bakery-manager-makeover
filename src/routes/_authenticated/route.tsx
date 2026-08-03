@@ -2,35 +2,30 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { ShowroomScopeProvider } from "@/hooks/use-showroom-scope";
 import { AppShellFrame } from "@/components/app-shell";
+import { clearRbacSnapshots, rbacQueryOptions } from "@/lib/rbac-cache";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+  beforeLoad: async ({ context }) => {
+    // getSession() reads the locally persisted session — no network round-trip
+    // on every navigation.
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user;
+    if (!user) throw redirect({ to: "/auth" });
 
-    const { data: legacyRoles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user.id);
+    // Roles/permissions come from the shared cached RBAC fetch, so navigating
+    // between pages does not re-query the role tables.
+    const rbac = await context.queryClient.ensureQueryData(rbacQueryOptions(user.id));
 
-    let hasRole = !!(legacyRoles && legacyRoles.length > 0);
-
-    if (!hasRole) {
-      const { data: assignments } = await (supabase as any)
-        .from("user_role_assignments")
-        .select("role_id, app_roles!inner(is_active)")
-        .eq("user_id", data.user.id);
-      hasRole = !!(assignments ?? []).some((a: any) => a?.app_roles?.is_active);
-    }
-
-    if (!hasRole) {
+    if (!rbac.hasAnyRole) {
+      clearRbacSnapshots();
       await supabase.auth.signOut();
       throw redirect({ to: "/auth", search: { denied: 1 } });
     }
 
-    return { user: data.user, roles: (legacyRoles ?? []).map((r) => r.role) };
+    return { user, roles: rbac.legacyRoles };
   },
+
   component: () => (
     <ShowroomScopeProvider>
       <AppShellFrame />
