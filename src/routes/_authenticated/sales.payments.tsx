@@ -1,9 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { useEffect, useMemo, useState } from "react";
-import { Search, Filter, Plus, X, Trash2, ExternalLink } from "lucide-react";
+import { Search, Filter, Plus, X, Trash2, ExternalLink, MoreHorizontal, Wallet, BookOpen, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ReceivePaymentDialog } from "@/components/receive-payment-dialog";
 
 export const Route = createFileRoute("/_authenticated/sales/payments")({
   head: () => ({ meta: [{ title: "Customer Payments · Muzahid Food" }] }),
@@ -14,6 +22,7 @@ const METHODS = ["cash", "bank", "mobile", "card", "cheque", "other"] as const;
 
 type Row = {
   id: string; paid_on: string;
+  customer_id: string | null;
   customer_name: string | null; customer_phone: string | null;
   sale_id: string | null; invoice_ref: string | null;
   sale_total: number | null; sale_due: number | null;
@@ -25,6 +34,7 @@ const sb = supabase as any;
 
 function CustomerPayments() {
   const { currentShowroomId, showrooms } = useShowroomScope();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -33,6 +43,7 @@ function CustomerPayments() {
   const [to, setTo] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [invoice, setInvoice] = useState<any | null>(null);
+  const [receiveFor, setReceiveFor] = useState<Row | null>(null);
 
   const showroomName = useMemo(() => {
     const m = new Map(showrooms.map((s) => [s.id, s.name] as const));
@@ -42,13 +53,14 @@ function CustomerPayments() {
   const refresh = async () => {
     setLoading(true);
     let query = sb.from("customer_payments")
-      .select("id,paid_on,amount,method,reference,note,showroom_id,sale_id,invoice_ref,customer_name,customer_phone,sales(total,due)")
+      .select("id,paid_on,amount,method,reference,note,showroom_id,sale_id,invoice_ref,customer_id,customer_name,customer_phone,sales(total,due)")
       .order("paid_on", { ascending: false }).order("created_at", { ascending: false });
     if (currentShowroomId) query = query.eq("showroom_id", currentShowroomId);
     const { data, error } = await query;
     if (error) { console.error(error); setRows([]); }
     else setRows((data ?? []).map((r: any) => ({
-      id: r.id, paid_on: r.paid_on, customer_name: r.customer_name, customer_phone: r.customer_phone,
+      id: r.id, paid_on: r.paid_on, customer_id: r.customer_id ?? null,
+      customer_name: r.customer_name, customer_phone: r.customer_phone,
       sale_id: r.sale_id, invoice_ref: r.invoice_ref,
       sale_total: r.sales?.total ? Number(r.sales.total) : null,
       sale_due: r.sales?.due != null ? Number(r.sales.due) : null,
@@ -167,8 +179,32 @@ function CustomerPayments() {
                   <td className="px-4 py-2.5 capitalize">{r.method}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{r.reference ?? "—"}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600">৳{r.amount.toFixed(2)}</td>
-                  <td className="px-4 py-2.5">
-                    <button onClick={() => remove(r.id)} className="size-7 grid place-items-center rounded hover:bg-accent text-muted-foreground"><Trash2 className="size-3.5" /></button>
+                  <td className="px-4 py-2.5 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button aria-label="Actions" className="size-7 grid place-items-center rounded hover:bg-accent text-muted-foreground">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem disabled={!r.customer_id} onClick={() => setReceiveFor(r)}>
+                          <Wallet className="size-4 mr-2" /> Receive payment
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!r.customer_id}
+                          onClick={() => r.customer_id && navigate({ to: "/crm/$id/ledger", params: { id: r.customer_id } })}
+                        >
+                          <BookOpen className="size-4 mr-2" /> Customer ledger
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled={!r.sale_id} onClick={() => openInvoice(r)}>
+                          <FileText className="size-4 mr-2" /> View invoice
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => remove(r.id)}>
+                          <Trash2 className="size-4 mr-2" /> Delete payment
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
@@ -185,6 +221,16 @@ function CustomerPayments() {
 
       {showNew && <NewPayment onClose={() => setShowNew(false)} onSaved={() => { setShowNew(false); refresh(); }} />}
       {invoice && <InvoiceModal data={invoice} onClose={() => setInvoice(null)} />}
+      {receiveFor?.customer_id && (
+        <ReceivePaymentDialog
+          open
+          onOpenChange={(o) => { if (!o) setReceiveFor(null); }}
+          customerId={receiveFor.customer_id}
+          customerName={receiveFor.customer_name ?? undefined}
+          customerPhone={receiveFor.customer_phone ?? undefined}
+          onSaved={() => { setReceiveFor(null); refresh(); }}
+        />
+      )}
     </AppShell>
   );
 }
