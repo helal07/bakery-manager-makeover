@@ -613,10 +613,37 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                     >
                       <Plus className="size-3.5" /> Raw material
                     </button>
+
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-muted/30 pl-3 pr-1.5 py-1">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                        Copy from existing recipe
+                      </span>
+                      <select
+                        value={copySource}
+                        onChange={(e) => setCopySource(e.target.value)}
+                        className="h-7 rounded-full border border-input bg-background px-2 text-xs min-w-[140px]"
+                      >
+                        <option value="">Select product…</option>
+                        {allProducts
+                          .filter((p) => (recipeIndex[p.id] ?? 0) > 0 && p.id !== editId)
+                          .map((p) => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={!copySource || copyBusy}
+                        onClick={() => copyFromSource(copySource)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+                      >
+                        <Copy className="size-3.5" /> {copyBusy ? "Copying…" : "Copy"}
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
             </div>
+
 
 
             {recipeEnabled && (
