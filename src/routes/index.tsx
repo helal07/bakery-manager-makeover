@@ -9,6 +9,7 @@ import {
 } from "@/lib/landing-content";
 import { listCarousels, type CarouselSlide } from "@/lib/landing-carousels";
 import { listLandingProducts, type LandingProduct } from "@/lib/landing-products";
+import { DevFooter } from "@/components/dev-footer";
 import {
   Carousel,
   CarouselContent,
