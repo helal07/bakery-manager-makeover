@@ -402,7 +402,13 @@ function Landing() {
           <div>© {new Date().getFullYear()} {brandName}. All rights reserved.</div>
           <div>Baked with care in Bangladesh.</div>
         </div>
+        <div className="border-t border-amber-900/10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
+            <DevFooter className="text-amber-950/70" />
+          </div>
+        </div>
       </footer>
+
     </div>
   );
 }
