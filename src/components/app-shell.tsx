@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate, Outlet } from "@tanstack/react-router";
+import { DevFooter } from "@/components/dev-footer";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { LogOut, Menu, X, Store, Factory, Calendar, ShoppingCart } from "lucide-react";
 import { countIncomingTransfers } from "@/lib/inbox-store";
@@ -411,6 +412,11 @@ export function AppShellFrame() {
             <main className="flex-1 px-4 md:px-8 py-6">
               <Outlet />
             </main>
+
+            <footer className="border-t px-4 md:px-8 py-4 print:hidden">
+              <DevFooter />
+            </footer>
+
           </div>
         </div>
       </div>
