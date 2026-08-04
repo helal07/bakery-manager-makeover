@@ -648,29 +648,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-2 mb-2">
-                  <button
-                    type="button"
-                    onClick={addMaterialRow}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
-                  >
-                    <Plus className="size-3" /> Add ingredient
-                  </button>
-                  <button
-                    type="button"
-                    onClick={addSubRecipeRow}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
-                  >
-                    <ChefHat className="size-3" /> Add sub-recipe
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRmOpen(true)}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    <Plus className="size-3" /> Add raw material
-                  </button>
-                </div>
+
 
 
                 {rawMaterials.length === 0 && ingredients.length === 0 ? (
