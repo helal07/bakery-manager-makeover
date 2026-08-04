@@ -292,7 +292,7 @@ function LabelCell({ info, company }: { info: BatchInfo; company: string }) {
       </div>
       <div className="label-price">MRP: ৳{info.price.toFixed(2)}</div>
       <svg ref={ref} className="label-barcode" />
-      <div className="label-company">{company}</div>
+      <div className="label-company">www.muzahidfood.com</div>
     </div>
   );
 }
