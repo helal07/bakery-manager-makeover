@@ -185,11 +185,15 @@ function Landing() {
               </div>
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-7 text-sm" style={{ color: theme.text }}>
-            <a href="#products" className="hover:opacity-70 transition-opacity">{nav.productsLabel}</a>
-            <a href="#story" className="hover:opacity-70 transition-opacity">{nav.storyLabel}</a>
-            <a href="#contact" className="hover:opacity-70 transition-opacity">{nav.contactLabel}</a>
+          <nav
+            className="hidden md:flex items-center gap-9 text-base font-bold tracking-wide uppercase"
+            style={{ color: theme.text }}
+          >
+            <a href="#products" className="py-1 border-b-2 border-transparent hover:opacity-70 hover:border-current transition-all">{nav.productsLabel}</a>
+            <a href="#story" className="py-1 border-b-2 border-transparent hover:opacity-70 hover:border-current transition-all">{nav.storyLabel}</a>
+            <a href="#contact" className="py-1 border-b-2 border-transparent hover:opacity-70 hover:border-current transition-all">{nav.contactLabel}</a>
           </nav>
+
           {signedIn ? (
             <Link
               to="/dashboard"
