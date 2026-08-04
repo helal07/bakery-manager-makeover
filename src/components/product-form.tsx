@@ -573,16 +573,51 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   Turn on to attach a bill-of-materials. Rows can be raw materials or sub-recipes.
                 </p>
               </div>
-              <label className="inline-flex items-center gap-2 text-xs cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={recipeEnabled}
-                  onChange={(e) => setRecipeEnabled(e.target.checked)}
-                  className="size-4"
-                />
-                <span>Enable recipe</span>
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label
+                  className={`inline-flex items-center gap-2 text-xs font-semibold cursor-pointer select-none rounded-full border px-3 py-1.5 transition-colors ${
+                    recipeEnabled
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-muted/40 hover:bg-accent"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={recipeEnabled}
+                    onChange={(e) => setRecipeEnabled(e.target.checked)}
+                    className="size-4 accent-current"
+                  />
+                  <span className="uppercase tracking-wide">Enable recipe</span>
+                </label>
+
+                {recipeEnabled && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={addMaterialRow}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-border bg-background hover:bg-accent transition-colors"
+                    >
+                      <Plus className="size-3.5" /> Ingredient
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addSubRecipeRow}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                    >
+                      <ChefHat className="size-3.5" /> Sub-recipe
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRmOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-colors"
+                    >
+                      <Plus className="size-3.5" /> Raw material
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
+
 
             {recipeEnabled && (
               <>
@@ -613,29 +648,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-2 mb-2">
-                  <button
-                    type="button"
-                    onClick={addMaterialRow}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent"
-                  >
-                    <Plus className="size-3" /> Add ingredient
-                  </button>
-                  <button
-                    type="button"
-                    onClick={addSubRecipeRow}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
-                  >
-                    <ChefHat className="size-3" /> Add sub-recipe
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRmOpen(true)}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    <Plus className="size-3" /> Add raw material
-                  </button>
-                </div>
+
 
 
                 {rawMaterials.length === 0 && ingredients.length === 0 ? (
