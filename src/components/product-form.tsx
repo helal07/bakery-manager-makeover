@@ -648,32 +648,10 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
 
             {recipeEnabled && (
               <>
-                <div className="flex flex-wrap items-center gap-2 mb-3 rounded-md border border-dashed border-border bg-muted/20 p-2">
-                  <span className="text-xs text-muted-foreground">Copy from existing recipe:</span>
-                  <select
-                    value={copySource}
-                    onChange={(e) => setCopySource(e.target.value)}
-                    className="h-8 rounded-md border border-input bg-background px-2 text-xs min-w-[180px]"
-                  >
-                    <option value="">Select product…</option>
-                    {allProducts
-                      .filter((p) => (recipeIndex[p.id] ?? 0) > 0 && p.id !== editId)
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                  </select>
-                  <button
-                    type="button"
-                    disabled={!copySource || copyBusy}
-                    onClick={() => copyFromSource(copySource)}
-                    className="text-xs px-2 py-1 rounded border border-border hover:bg-accent disabled:opacity-50"
-                  >
-                    {copyBusy ? "Copying…" : "Copy ingredients"}
-                  </button>
-                  <span className="text-[11px] text-muted-foreground">
-                    Edits here override this product's recipe only.
-                  </span>
-                </div>
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Edits here override this product's recipe only.
+                </p>
+
 
 
 
