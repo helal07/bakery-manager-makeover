@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { type ProductCategory, loadCategories, addCategory } from "@/lib/product-types";
-import { ArrowLeft, ChevronDown, Plus, X, AlertTriangle, ChefHat } from "lucide-react";
+import { ArrowLeft, ChevronDown, Plus, X, AlertTriangle, ChefHat, Copy } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
