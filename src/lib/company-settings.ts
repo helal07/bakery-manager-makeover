@@ -240,13 +240,25 @@ let inflight: Promise<CompanySettings> | null = null;
 export async function getCompany(): Promise<CompanySettings> {
   if (inflight) return inflight;
   inflight = (async () => {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("company_settings")
       .select("name, tagline, address, phone, email, vat_reg, logo_url, footer_note")
       .eq("is_current", true)
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (error) {
+      // Anonymous visitors may only read public branding columns.
+      const fallback = await supabase
+        .from("company_settings")
+        .select("name, tagline, address, logo_url, footer_note")
+        .eq("is_current", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      data = fallback.data as typeof data;
+      error = fallback.error;
+    }
     if (error || !data) return defaultCompany;
     const merged: CompanySettings = { ...defaultCompany, ...fromRow(data) };
     if (merged.logoPath && !merged.logoDataUrl) {
