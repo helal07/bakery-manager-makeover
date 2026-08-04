@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate, Outlet } from "@tanstack/react-router";
+import { DevFooter } from "@/components/dev-footer";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { LogOut, Menu, X, Store, Factory, Calendar, ShoppingCart } from "lucide-react";
 import { countIncomingTransfers } from "@/lib/inbox-store";
