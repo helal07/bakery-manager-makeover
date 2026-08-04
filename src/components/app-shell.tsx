@@ -411,6 +411,11 @@ export function AppShellFrame() {
             <main className="flex-1 px-4 md:px-8 py-6">
               <Outlet />
             </main>
+
+            <footer className="border-t px-4 md:px-8 py-4 print:hidden">
+              <DevFooter />
+            </footer>
+
           </div>
         </div>
       </div>
