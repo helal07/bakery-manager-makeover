@@ -2784,17 +2784,7 @@ export type Database = {
       }
     }
     Views: {
-      company_branding_public: {
-        Row: {
-          address: string | null
-          currency: string | null
-          footer_note: string | null
-          logo_url: string | null
-          name: string | null
-          tagline: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       assert_app_staff: { Args: never; Returns: undefined }
