@@ -32,12 +32,13 @@ function AuthPage() {
   // First-run lock: signup only visible when no users exist yet.
   useEffect(() => {
     (async () => {
-      const { data, error } = await (supabase as any).rpc("has_any_user");
-      if (!error) {
-        const allow = !data;
+      try {
+        const { hasAnyUser } = await import("@/lib/bootstrap.functions");
+        const res = await hasAnyUser();
+        const allow = !res.hasUsers;
         setSignupAllowed(allow);
         setMode(allow ? "signup" : "signin");
-      }
+      } catch { /* fail closed: keep signup hidden */ }
       setCheckingSignup(false);
     })();
   }, []);
