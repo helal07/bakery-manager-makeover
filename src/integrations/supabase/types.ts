@@ -2784,9 +2784,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      company_branding_public: {
+        Row: {
+          address: string | null
+          currency: string | null
+          footer_note: string | null
+          logo_url: string | null
+          name: string | null
+          tagline: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      assert_app_staff: { Args: never; Returns: undefined }
       commit_damaged_movement: {
         Args: {
           _kind: string
@@ -2814,26 +2825,16 @@ export type Database = {
         Args: { _transfer_id: string }
         Returns: undefined
       }
-      commit_production_batch:
-        | {
-            Args: {
-              _batch: number
-              _ingredients: Json
-              _product_id: string
-              _showroom_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              _batch: number
-              _ingredients: Json
-              _overheads?: Json
-              _product_id: string
-              _showroom_id: string
-            }
-            Returns: string
-          }
+      commit_production_batch: {
+        Args: {
+          _batch: number
+          _ingredients: Json
+          _overheads?: Json
+          _product_id: string
+          _showroom_id: string
+        }
+        Returns: string
+      }
       commit_raw_stock_movement: {
         Args: {
           _kind: string
@@ -2882,6 +2883,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_app_staff: { Args: { _user: string }; Returns: boolean }
       is_bootstrap_superadmin: { Args: { _user: string }; Returns: boolean }
       log_finished_product_wastage: {
         Args: {
