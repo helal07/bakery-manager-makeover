@@ -566,16 +566,16 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
           </Card>
 
           <Card className="p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-              <div>
+            <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 mb-3">
+              <div className="min-w-0 lg:max-w-[220px]">
                 <h3 className="text-sm font-semibold">Recipe & Ingredients</h3>
-                <p className="text-[11px] text-muted-foreground">
-                  Turn on to attach a bill-of-materials. Rows can be raw materials or sub-recipes.
+                <p className="text-[11px] text-muted-foreground truncate">
+                  Attach a bill-of-materials.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 lg:justify-end">
                 <label
-                  className={`inline-flex items-center gap-2 text-xs font-semibold cursor-pointer select-none rounded-full border px-3 py-1.5 transition-colors ${
+                  className={`inline-flex items-center gap-2 text-xs font-bold cursor-pointer select-none rounded-full border px-3 py-1.5 whitespace-nowrap transition-colors ${
                     recipeEnabled
                       ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border bg-muted/40 hover:bg-accent"
@@ -587,7 +587,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                     onChange={(e) => setRecipeEnabled(e.target.checked)}
                     className="size-4 accent-current"
                   />
-                  <span className="uppercase tracking-wide">Enable recipe</span>
+                  <span className="uppercase tracking-wide">Recipe</span>
                 </label>
 
                 {recipeEnabled && (
@@ -595,54 +595,58 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                     <button
                       type="button"
                       onClick={addMaterialRow}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-border bg-background hover:bg-accent transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-border bg-background hover:bg-accent whitespace-nowrap transition-colors"
                     >
                       <Plus className="size-3.5" /> Ingredient
                     </button>
                     <button
                       type="button"
                       onClick={addSubRecipeRow}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 whitespace-nowrap transition-colors"
                     >
                       <ChefHat className="size-3.5" /> Sub-recipe
                     </button>
                     <button
                       type="button"
                       onClick={() => setRmOpen(true)}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm whitespace-nowrap transition-colors"
                     >
                       <Plus className="size-3.5" /> Raw material
                     </button>
 
-                    <div className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-muted/30 pl-3 pr-1.5 py-1">
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
-                        Copy from existing recipe
-                      </span>
-                      <select
-                        value={copySource}
-                        onChange={(e) => setCopySource(e.target.value)}
-                        className="h-7 rounded-full border border-input bg-background px-2 text-xs min-w-[140px]"
-                      >
-                        <option value="">Select product…</option>
-                        {allProducts
-                          .filter((p) => (recipeIndex[p.id] ?? 0) > 0 && p.id !== editId)
-                          .map((p) => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                      </select>
-                      <button
-                        type="button"
-                        disabled={!copySource || copyBusy}
-                        onClick={() => copyFromSource(copySource)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
-                      >
-                        <Copy className="size-3.5" /> {copyBusy ? "Copying…" : "Copy"}
-                      </button>
-                    </div>
+                    <span className="hidden lg:block h-6 w-px bg-border" />
+
+                    <span
+                      className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap"
+                      title="Copy from existing recipe"
+                    >
+                      Copy from
+                    </span>
+                    <select
+                      value={copySource}
+                      onChange={(e) => setCopySource(e.target.value)}
+                      className="h-8 rounded-full border border-input bg-background px-2 text-xs w-[130px] shrink-0"
+                    >
+                      <option value="">Select product…</option>
+                      {allProducts
+                        .filter((p) => (recipeIndex[p.id] ?? 0) > 0 && p.id !== editId)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!copySource || copyBusy}
+                      onClick={() => copyFromSource(copySource)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 whitespace-nowrap transition-colors"
+                    >
+                      <Copy className="size-3.5" /> {copyBusy ? "Copying…" : "Copy"}
+                    </button>
                   </>
                 )}
               </div>
             </div>
+
 
 
 
