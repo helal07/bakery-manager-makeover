@@ -12,7 +12,7 @@ export type RawMaterial = {
 
 const sb = supabase as any;
 
-export async function loadRawMaterials(showroomId?: string | null): Promise<RawMaterial[]> {
+export async function loadRawMaterials(_showroomId?: string | null): Promise<RawMaterial[]> {
   const { data: mats, error } = await sb
     .from("raw_materials")
     .select("id,name,unit,min_stock,cost,is_active")
@@ -20,11 +20,13 @@ export async function loadRawMaterials(showroomId?: string | null): Promise<RawM
     .order("name");
   if (error) throw error;
 
-  let stockQ = sb.from("raw_material_stock").select("material_id,showroom_id,quantity");
-  if (showroomId) stockQ = stockQ.eq("showroom_id", showroomId);
-  else stockQ = stockQ.is("showroom_id", null);
-  const { data: stocks, error: e2 } = await stockQ;
+  // Raw material stock is factory-only (showroom_id IS NULL) by design.
+  const { data: stocks, error: e2 } = await sb
+    .from("raw_material_stock")
+    .select("material_id,showroom_id,quantity")
+    .is("showroom_id", null);
   if (e2) throw e2;
+
 
   const stockMap = new Map<string, number>();
   for (const s of (stocks ?? []) as any[]) {
