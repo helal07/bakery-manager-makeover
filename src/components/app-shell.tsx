@@ -118,24 +118,20 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         icon: Factory,
         permission: "production.access",
         children: [
-          { to: "/production", label: "Dashboard", icon: LayoutDashboard, permission: "production.access" },
-          { to: "/production/factory-stock", label: "Factory Stock", icon: Boxes, permission: "production.access" },
+          { to: "/production", label: "Dashboard", icon: LayoutDashboard, permission: ["production.reports.daily_register", "production.reports.view"] },
+          { to: "/production/factory-stock", label: "Factory Stock", icon: Boxes, permission: ["production.factory_stock.view", "inventory.view"] },
           { to: "/raw-materials", label: "Raw Materials", icon: Wheat, permission: "production.raw_materials.view" },
           { to: "/recipes", label: "Recipes & Production", icon: ChefHat, permission: "production.recipes.view" },
-          { to: "/sub-recipes", label: "Sub-Recipes", icon: ChefHat, permission: "production.recipes.view" },
-          
-
-          
-          { to: "/production/wastage", label: "Wastage Management", icon: Recycle, permission: "production.wastage.manage" },
-          { to: "/production/profit-loss", label: "Profit & Loss", icon: BarChart3, permission: "production.reports.view" },
-          { to: "/production/cost-report", label: "Cost Report", icon: BarChart3, permission: "production.reports.view" },
-          { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: "production.reports.view" },
-          { to: "/production/overhead-report", label: "Overhead Report", icon: BarChart3, permission: "production.reports.view" },
-
-
+          { to: "/sub-recipes", label: "Sub-Recipes", icon: ChefHat, permission: ["production.sub_recipes.manage", "production.recipes.view"] },
+          { to: "/production/wastage", label: "Wastage Management", icon: Recycle, permission: ["production.wastage.manage", "production.repurpose"] },
+          { to: "/production/profit-loss", label: "Profit & Loss", icon: BarChart3, permission: ["production.reports.profit_loss", "production.reports.view"] },
+          { to: "/production/cost-report", label: "Cost Report", icon: BarChart3, permission: ["production.reports.cost", "production.reports.view"] },
+          { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: ["production.reports.consumption", "production.reports.view"] },
+          { to: "/production/overhead-report", label: "Overhead Report", icon: BarChart3, permission: ["production.reports.overhead", "production.reports.view"] },
         ],
       },
-      { to: "/transfers", label: "Transfers", icon: ArrowRightLeft, permission: "inventory.transfer" },
+      { to: "/transfers", label: "Transfers", icon: ArrowRightLeft, permission: ["inventory.transfer", "inventory.receive", "inventory.damaged_return"] },
+
     ],
   },
   {
