@@ -610,18 +610,18 @@ function Workbench() {
             />
           )}
 
-          <OverheadManagerDialog
-            open={ohManagerOpen}
-            onOpenChange={setOhManagerOpen}
-            cats={overheadCats}
-            onChanged={async () => {
-              try {
-                setOverheadCats(await loadOverheadCategories());
-              } catch (e: any) {
-                toast.error(e?.message ?? "Failed to reload overheads");
-              }
-            }}
-          />
+          {tab === "overheads" && (
+            <OverheadManagerPanel
+              cats={overheadCats}
+              onChanged={async () => {
+                try {
+                  setOverheadCats(await loadOverheadCategories());
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Failed to reload overheads");
+                }
+              }}
+            />
+          )}
 
           {tab === "history" && active && (
             <HistoryTab
