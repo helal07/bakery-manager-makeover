@@ -147,7 +147,7 @@ WHERE permission_key NOT IN (SELECT permission_key FROM _perm_catalog);
 -- ---------------------------------------------------------------------------
 INSERT INTO public.role_permissions (role_id, permission_key)
 SELECT r.id, c.permission_key
-FROM public.roles r
+FROM public.app_roles r
 CROSS JOIN _perm_catalog c
 WHERE r.name = 'Admin' AND c.permission_key <> 'settings.access'
 ON CONFLICT DO NOTHING;
