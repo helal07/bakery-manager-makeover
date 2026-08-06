@@ -1893,90 +1893,82 @@ function OverheadManagerPanel({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CircleDollarSign className="size-4 text-primary" /> Production overheads
-          </DialogTitle>
-        </DialogHeader>
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <CircleDollarSign className="size-4 text-primary" />
+        <h3 className="text-sm font-semibold">Production overheads</h3>
+        <span className="text-xs text-muted-foreground">
+          {cats.length} item{cats.length === 1 ? "" : "s"}
+        </span>
+      </div>
 
-        <div className="flex gap-2">
-          <Input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="New overhead name (Gas, Electricity, Labor…)"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") add();
-            }}
-          />
-          <Button onClick={add} disabled={busy}>
-            <Plus className="size-4 mr-1" /> Add
-          </Button>
-        </div>
+      <div className="flex gap-2">
+        <Input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="New overhead name (Gas, Electricity, Labor…)"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") add();
+          }}
+        />
+        <Button onClick={add} disabled={busy}>
+          <Plus className="size-4 mr-1" /> Add
+        </Button>
+      </div>
 
-        <div className="max-h-[50vh] overflow-y-auto divide-y divide-border rounded-md border border-border">
-          {cats.length === 0 && (
-            <p className="p-4 text-sm text-muted-foreground">No overheads yet.</p>
-          )}
-          {cats.map((c) => {
-            const u = usage[c.id];
-            return (
-              <div key={c.id} className="flex items-center gap-2 p-2">
-                {editId === c.id ? (
-                  <>
-                    <Input
-                      value={editName}
-                      autoFocus
-                      onChange={(e) => setEditName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") saveRename();
-                        if (e.key === "Escape") setEditId(null);
-                      }}
-                    />
-                    <Button size="sm" onClick={saveRename} disabled={busy}>
-                      <Save className="size-3.5" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setEditId(null)}>
-                      <X className="size-3.5" />
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{c.name}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {u
-                          ? `${u.recipes} recipe default(s) · ${u.batches} batch record(s)`
-                          : "…"}
-                      </div>
+      <div className="divide-y divide-border rounded-md border border-border">
+        {cats.length === 0 && (
+          <p className="p-4 text-sm text-muted-foreground">No overheads yet.</p>
+        )}
+        {cats.map((c) => {
+          const u = usage[c.id];
+          return (
+            <div key={c.id} className="flex items-center gap-2 p-2">
+              {editId === c.id ? (
+                <>
+                  <Input
+                    value={editName}
+                    autoFocus
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveRename();
+                      if (e.key === "Escape") setEditId(null);
+                    }}
+                  />
+                  <Button size="sm" onClick={saveRename} disabled={busy}>
+                    <Save className="size-3.5" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditId(null)}>
+                    <X className="size-3.5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{c.name}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {u ? `${u.recipes} recipe default(s) · ${u.batches} batch record(s)` : "…"}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditId(c.id);
-                        setEditName(c.name);
-                      }}
-                    >
-                      <Pencil className="size-3.5" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(c)} disabled={busy}>
-                      <Trash2 className="size-3.5 text-destructive" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditId(c.id);
+                      setEditName(c.name);
+                    }}
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => remove(c)} disabled={busy}>
+                    <Trash2 className="size-3.5 text-destructive" />
+                  </Button>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
