@@ -53,7 +53,7 @@ describe("payment mode mapping", () => {
 describe("outstanding due", () => {
   const sales = [
     { due: 500, customer_id: "c1", customer_phone: "01711-000111" },
-    { due: 300, customer_id: null, customer_phone: "+880 1711 000111" },
+    { due: 300, customer_id: null, customer_phone: "01711 000111" },
     { due: 900, customer_id: "c2", customer_phone: "01999-000222" },
   ];
 
