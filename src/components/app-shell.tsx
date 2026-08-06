@@ -52,14 +52,15 @@ import {
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string };
+type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string | string[] };
 type NavItem = {
   to: string;
   label: string;
   icon: any;
-  permission?: string;
+  permission?: string | string[];
   children?: NavChild[];
 };
+
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
