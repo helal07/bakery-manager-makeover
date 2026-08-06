@@ -42,7 +42,7 @@ export function exportStockXlsx(opts: {
 const esc = (v: unknown) =>
   String(v ?? "").replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m] as string));
 
-export function printStockReport(opts: {
+export type StockReportOptions = {
   title: string;
   company: CompanySettings;
   columns: StockExportColumn[];
@@ -50,7 +50,11 @@ export function printStockReport(opts: {
   totalsLabel?: string;
   totals?: StockExportRow;
   note?: string;
-}) {
+};
+
+/** Pure A4 report renderer — no DOM access, so it can be unit-tested. */
+export function renderStockReportHtml(opts: StockReportOptions) {
+
   const { company, columns, rows, title } = opts;
   const head = columns
     .map((c) => `<th style="text-align:${c.align === "right" ? "right" : "left"}">${esc(c.label)}</th>`)
@@ -104,9 +108,15 @@ export function printStockReport(opts: {
 <script>window.onload=function(){setTimeout(function(){window.print()},150)}</script>
 </body></html>`;
 
+  return html;
+}
+
+export function printStockReport(opts: StockReportOptions) {
+  const html = renderStockReportHtml(opts);
   const w = window.open("", "_blank", "width=900,height=1000");
   if (!w) return false;
   w.document.write(html);
   w.document.close();
   return true;
 }
+
