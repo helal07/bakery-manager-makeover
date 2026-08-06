@@ -60,14 +60,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-type Search = { product?: string; tab?: "produce" | "recipe" | "history" | "list" };
+type Search = {
+  product?: string;
+  tab?: "produce" | "recipe" | "history" | "list" | "overheads";
+};
 
 export const Route = createFileRoute("/_authenticated/recipes")({
   head: () => ({ meta: [{ title: pageTitle("Production Workbench") }] }),
   validateSearch: (s: Record<string, unknown>): Search => ({
     product: typeof s.product === "string" ? s.product : undefined,
     tab:
-      s.tab === "recipe" || s.tab === "history" || s.tab === "produce" || s.tab === "list"
+      s.tab === "recipe" ||
+      s.tab === "history" ||
+      s.tab === "produce" ||
+      s.tab === "list" ||
+      s.tab === "overheads"
         ? s.tab
         : undefined,
   }),
@@ -81,7 +88,7 @@ export const Route = createFileRoute("/_authenticated/recipes")({
   ),
 });
 
-type TabKey = "produce" | "recipe" | "history" | "list";
+type TabKey = "produce" | "recipe" | "history" | "list" | "overheads";
 type BatchRow = {
   id: string;
   qty: number;
@@ -125,8 +132,7 @@ function Workbench() {
   // Per-produce overrides (starts from recipe defaults, user can add/edit/remove)
   const [produceOverheads, setProduceOverheads] = useState<BatchOverhead[]>([]);
 
-  // Overhead master-list manager
-  const [ohManagerOpen, setOhManagerOpen] = useState(false);
+  // Overhead master-list manager lives in the "Overheads" tab
 
   // Batch history
   const [batches, setBatches] = useState<BatchRow[]>([]);
@@ -536,14 +542,7 @@ function Workbench() {
             <TabButton active={tab === "recipe"} onClick={() => setTab("recipe")} icon={<Pencil className="size-3.5" />} label="Edit Recipe" />
             <TabButton active={tab === "list"} onClick={() => setTab("list")} icon={<BookOpen className="size-3.5" />} label="Recipe list" />
             <TabButton active={tab === "history"} onClick={() => setTab("history")} icon={<History className="size-3.5" />} label="Batch history" />
-            <button
-              type="button"
-              onClick={() => setOhManagerOpen(true)}
-              className="ml-auto inline-flex items-center gap-1.5 shrink-0 h-8 px-3 mb-1 rounded-md border border-border bg-background text-xs font-semibold hover:bg-muted transition-colors"
-              title="Manage overhead names"
-            >
-              <CircleDollarSign className="size-3.5 text-primary" /> Overheads
-            </button>
+            <TabButton active={tab === "overheads"} onClick={() => setTab("overheads")} icon={<CircleDollarSign className="size-3.5" />} label="Overheads" />
           </div>
 
           {tab === "list" && (
@@ -610,18 +609,18 @@ function Workbench() {
             />
           )}
 
-          <OverheadManagerDialog
-            open={ohManagerOpen}
-            onOpenChange={setOhManagerOpen}
-            cats={overheadCats}
-            onChanged={async () => {
-              try {
-                setOverheadCats(await loadOverheadCategories());
-              } catch (e: any) {
-                toast.error(e?.message ?? "Failed to reload overheads");
-              }
-            }}
-          />
+          {tab === "overheads" && (
+            <OverheadManagerPanel
+              cats={overheadCats}
+              onChanged={async () => {
+                try {
+                  setOverheadCats(await loadOverheadCategories());
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Failed to reload overheads");
+                }
+              }}
+            />
+          )}
 
           {tab === "history" && active && (
             <HistoryTab
@@ -1817,14 +1816,10 @@ function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string
 
 
 /* ── Overhead master-list manager ───────────────────────────────── */
-function OverheadManagerDialog({
-  open,
-  onOpenChange,
+function OverheadManagerPanel({
   cats,
   onChanged,
 }: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
   cats: OverheadCategory[];
   onChanged: () => Promise<void> | void;
 }) {
@@ -1835,9 +1830,6 @@ function OverheadManagerDialog({
   const [usage, setUsage] = useState<Record<string, { recipes: number; batches: number }>>({});
 
   useEffect(() => {
-    if (!open) return;
-    setNewName("");
-    setEditId(null);
     (async () => {
       try {
         const entries = await Promise.all(
@@ -1849,7 +1841,7 @@ function OverheadManagerDialog({
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, cats.length]);
+  }, [cats.length]);
 
   const add = async () => {
     const name = newName.trim();
@@ -1900,90 +1892,82 @@ function OverheadManagerDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CircleDollarSign className="size-4 text-primary" /> Production overheads
-          </DialogTitle>
-        </DialogHeader>
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <CircleDollarSign className="size-4 text-primary" />
+        <h3 className="text-sm font-semibold">Production overheads</h3>
+        <span className="text-xs text-muted-foreground">
+          {cats.length} item{cats.length === 1 ? "" : "s"}
+        </span>
+      </div>
 
-        <div className="flex gap-2">
-          <Input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="New overhead name (Gas, Electricity, Labor…)"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") add();
-            }}
-          />
-          <Button onClick={add} disabled={busy}>
-            <Plus className="size-4 mr-1" /> Add
-          </Button>
-        </div>
+      <div className="flex gap-2">
+        <Input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="New overhead name (Gas, Electricity, Labor…)"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") add();
+          }}
+        />
+        <Button onClick={add} disabled={busy}>
+          <Plus className="size-4 mr-1" /> Add
+        </Button>
+      </div>
 
-        <div className="max-h-[50vh] overflow-y-auto divide-y divide-border rounded-md border border-border">
-          {cats.length === 0 && (
-            <p className="p-4 text-sm text-muted-foreground">No overheads yet.</p>
-          )}
-          {cats.map((c) => {
-            const u = usage[c.id];
-            return (
-              <div key={c.id} className="flex items-center gap-2 p-2">
-                {editId === c.id ? (
-                  <>
-                    <Input
-                      value={editName}
-                      autoFocus
-                      onChange={(e) => setEditName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") saveRename();
-                        if (e.key === "Escape") setEditId(null);
-                      }}
-                    />
-                    <Button size="sm" onClick={saveRename} disabled={busy}>
-                      <Save className="size-3.5" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setEditId(null)}>
-                      <X className="size-3.5" />
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{c.name}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {u
-                          ? `${u.recipes} recipe default(s) · ${u.batches} batch record(s)`
-                          : "…"}
-                      </div>
+      <div className="divide-y divide-border rounded-md border border-border">
+        {cats.length === 0 && (
+          <p className="p-4 text-sm text-muted-foreground">No overheads yet.</p>
+        )}
+        {cats.map((c) => {
+          const u = usage[c.id];
+          return (
+            <div key={c.id} className="flex items-center gap-2 p-2">
+              {editId === c.id ? (
+                <>
+                  <Input
+                    value={editName}
+                    autoFocus
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveRename();
+                      if (e.key === "Escape") setEditId(null);
+                    }}
+                  />
+                  <Button size="sm" onClick={saveRename} disabled={busy}>
+                    <Save className="size-3.5" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditId(null)}>
+                    <X className="size-3.5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{c.name}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {u ? `${u.recipes} recipe default(s) · ${u.batches} batch record(s)` : "…"}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditId(c.id);
-                        setEditName(c.name);
-                      }}
-                    >
-                      <Pencil className="size-3.5" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(c)} disabled={busy}>
-                      <Trash2 className="size-3.5 text-destructive" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditId(c.id);
+                      setEditName(c.name);
+                    }}
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => remove(c)} disabled={busy}>
+                    <Trash2 className="size-3.5 text-destructive" />
+                  </Button>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
