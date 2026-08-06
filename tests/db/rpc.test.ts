@@ -93,6 +93,7 @@ suite("database functions", () => {
       "damaged_ledger",
       "damaged_stock",
       "wastage_log",
+      "repurpose_queue",
       "stock_ledger",
       "raw_stock_ledger",
       "production_overheads",
@@ -180,8 +181,8 @@ suite("database functions", () => {
       _showroom_id: factoryId,
       _batch: 20,
       _ingredients: [
-        { material_id: flourId, qty: 10 },
-        { material_id: sugarId, qty: 4 },
+        { materialId: flourId, qty: 10 },
+        { materialId: sugarId, qty: 4 },
       ],
       _overheads: [],
     });
@@ -206,7 +207,7 @@ suite("database functions", () => {
       _product_id: productId,
       _showroom_id: factoryId,
       _batch: 5,
-      _ingredients: [{ material_id: flourId, qty: 2 }],
+      _ingredients: [{ materialId: flourId, qty: 2 }],
       _overheads: [],
     });
     expect(error).toBeNull();
@@ -241,12 +242,14 @@ suite("database functions", () => {
     expect(data).toBeTruthy();
     expect(await productOnHand(showroomId)).toBeCloseTo(before - 2, 4);
 
-    const { data: log } = await db
-      .from("wastage_log")
-      .select("qty")
+    // Wastage parks the goods in the damaged pool and the repurpose queue.
+    const { data: queue } = await db
+      .from("repurpose_queue")
+      .select("qty,status")
       .eq("product_id", productId)
-      .eq("showroom_id", showroomId);
-    expect((log ?? []).length).toBeGreaterThan(0);
+      .eq("source_showroom_id", showroomId);
+    expect((queue ?? []).length).toBeGreaterThan(0);
+    expect(num(queue![0].qty)).toBeCloseTo(2, 4);
   });
 
   it("commit_damaged_movement tracks a damaged pool", async () => {
