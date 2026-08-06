@@ -1,3 +1,4 @@
+import { PermissionGate } from "@/components/permission-gate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppShell, Card } from "@/components/app-shell";
@@ -23,7 +24,6 @@ import {
   type CarouselSlide,
 } from "@/lib/landing-carousels";
 import {
-import { PermissionGate } from "@/components/permission-gate";
   listAllProductsForLanding,
   setProductShowOnLanding,
   type LandingProduct,

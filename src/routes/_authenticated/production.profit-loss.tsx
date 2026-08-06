@@ -1,3 +1,4 @@
+import { PermissionGate } from "@/components/permission-gate";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { Printer, FileDown } from "lucide-react";
@@ -6,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
 import {
-import { PermissionGate } from "@/components/permission-gate";
   pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings,
 } from "@/lib/company-settings";
 
