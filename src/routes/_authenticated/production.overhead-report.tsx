@@ -14,7 +14,7 @@ const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/production/overhead-report")({
   head: () => ({ meta: [{ title: pageTitle("Production Overhead Report") }] }),
-  component: OverheadReportPage;
+  component: OverheadReportPage,
 });
 
 const money = (n: number) => `৳${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
