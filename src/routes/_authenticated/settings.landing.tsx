@@ -1,3 +1,4 @@
+import { PermissionGate } from "@/components/permission-gate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppShell, Card } from "@/components/app-shell";
@@ -31,7 +32,12 @@ import {
 
 export const Route = createFileRoute("/_authenticated/settings/landing")({
   head: () => ({ meta: [{ title: "Landing Page · Settings" }] }),
-  component: LandingEditor,
+  component: () => (
+    <PermissionGate anyOf={["settings.landing"]} title={"Landing Page"}>
+      <LandingEditor />
+    </PermissionGate>
+  ),
+
 });
 
 function LandingEditor() {

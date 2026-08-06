@@ -16,10 +16,16 @@ import { Plus, Pencil, Trash2, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/settings/showrooms")({
   head: () => ({ meta: [{ title: "Showrooms · Settings" }] }),
-  component: ShowroomsAdmin,
+  component: () => (
+    <PermissionGate anyOf={["showrooms.view", "showrooms.manage"]} title={"Showrooms"}>
+      <ShowroomsAdmin />
+    </PermissionGate>
+  ),
+
 });
 
 type Showroom = Database["public"]["Tables"]["showrooms"]["Row"];

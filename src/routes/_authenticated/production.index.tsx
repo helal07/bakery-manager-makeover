@@ -5,13 +5,19 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
 import { Button } from "@/components/ui/button";
+import { PermissionGate } from "@/components/permission-gate";
 
 const sb = supabase as any;
 
 
 export const Route = createFileRoute("/_authenticated/production/")({
   head: () => ({ meta: [{ title: pageTitle("Daily Register Report") }] }),
-  component: ProductionRegister,
+  component: () => (
+    <PermissionGate anyOf={["production.reports.daily_register", "production.reports.view"]} title={"Production Register"}>
+      <ProductionRegister />
+    </PermissionGate>
+  ),
+
 });
 
 type Preset = "today" | "month" | "year" | "custom";

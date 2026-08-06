@@ -10,10 +10,16 @@ import { toast } from "sonner";
 import { Plus, Send, PackageCheck, X, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/transfers/")({
   head: () => ({ meta: [{ title: "Transfers · Muzahid Food" }] }),
-  component: TransfersPage,
+  component: () => (
+    <PermissionGate anyOf={["inventory.transfer", "inventory.receive", "inventory.damaged_return"]} title={"Transfers"}>
+      <TransfersPage />
+    </PermissionGate>
+  ),
+
 });
 
 const sb = supabase as any;

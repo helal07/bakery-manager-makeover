@@ -4,10 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { ReportFilters, exportCsv, type ReportFilter } from "@/components/report-filters";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/reports/sales")({
   head: () => ({ meta: [{ title: "Sales Reports · Muzahid Food" }] }),
-  component: SalesReport,
+  component: () => (
+    <PermissionGate anyOf={["reports.sales"]} title={"Sales Reports"}>
+      <SalesReport />
+    </PermissionGate>
+  ),
+
 });
 
 const sb = supabase as any;

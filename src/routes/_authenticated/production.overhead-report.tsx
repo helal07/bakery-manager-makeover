@@ -9,12 +9,18 @@ import {
   pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings,
 } from "@/lib/company-settings";
 import { toast } from "sonner";
+import { PermissionGate } from "@/components/permission-gate";
 
 const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/production/overhead-report")({
   head: () => ({ meta: [{ title: pageTitle("Production Overhead Report") }] }),
-  component: OverheadReportPage,
+  component: () => (
+    <PermissionGate anyOf={["production.reports.overhead", "production.reports.view"]} title={"Overhead Report"}>
+      <OverheadReportPage />
+    </PermissionGate>
+  ),
+
 });
 
 const money = (n: number) => `৳${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;

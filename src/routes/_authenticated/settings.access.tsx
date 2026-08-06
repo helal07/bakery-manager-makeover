@@ -18,10 +18,16 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, ShieldCheck, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/use-permissions";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/settings/access")({
   head: () => ({ meta: [{ title: "Access Control · Settings" }] }),
-  component: AccessControlPage,
+  component: () => (
+    <PermissionGate anyOf={["settings.access"]} title={"Access Control"}>
+      <AccessControlPage />
+    </PermissionGate>
+  ),
+
 });
 
 type Permission = { permission_key: string; module: string; label: string; description: string | null };

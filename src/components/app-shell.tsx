@@ -52,14 +52,15 @@ import {
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string };
+type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string | string[] };
 type NavItem = {
   to: string;
   label: string;
   icon: any;
-  permission?: string;
+  permission?: string | string[];
   children?: NavChild[];
 };
+
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
@@ -117,24 +118,20 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         icon: Factory,
         permission: "production.access",
         children: [
-          { to: "/production", label: "Dashboard", icon: LayoutDashboard, permission: "production.access" },
-          { to: "/production/factory-stock", label: "Factory Stock", icon: Boxes, permission: "production.access" },
+          { to: "/production", label: "Dashboard", icon: LayoutDashboard, permission: ["production.reports.daily_register", "production.reports.view"] },
+          { to: "/production/factory-stock", label: "Factory Stock", icon: Boxes, permission: ["production.factory_stock.view", "inventory.view"] },
           { to: "/raw-materials", label: "Raw Materials", icon: Wheat, permission: "production.raw_materials.view" },
           { to: "/recipes", label: "Recipes & Production", icon: ChefHat, permission: "production.recipes.view" },
-          { to: "/sub-recipes", label: "Sub-Recipes", icon: ChefHat, permission: "production.recipes.view" },
-          
-
-          
-          { to: "/production/wastage", label: "Wastage Management", icon: Recycle, permission: "production.wastage.manage" },
-          { to: "/production/profit-loss", label: "Profit & Loss", icon: BarChart3, permission: "production.reports.view" },
-          { to: "/production/cost-report", label: "Cost Report", icon: BarChart3, permission: "production.reports.view" },
-          { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: "production.reports.view" },
-          { to: "/production/overhead-report", label: "Overhead Report", icon: BarChart3, permission: "production.reports.view" },
-
-
+          { to: "/sub-recipes", label: "Sub-Recipes", icon: ChefHat, permission: ["production.sub_recipes.manage", "production.recipes.view"] },
+          { to: "/production/wastage", label: "Wastage Management", icon: Recycle, permission: ["production.wastage.manage", "production.repurpose"] },
+          { to: "/production/profit-loss", label: "Profit & Loss", icon: BarChart3, permission: ["production.reports.profit_loss", "production.reports.view"] },
+          { to: "/production/cost-report", label: "Cost Report", icon: BarChart3, permission: ["production.reports.cost", "production.reports.view"] },
+          { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: ["production.reports.consumption", "production.reports.view"] },
+          { to: "/production/overhead-report", label: "Overhead Report", icon: BarChart3, permission: ["production.reports.overhead", "production.reports.view"] },
         ],
       },
-      { to: "/transfers", label: "Transfers", icon: ArrowRightLeft, permission: "inventory.transfer" },
+      { to: "/transfers", label: "Transfers", icon: ArrowRightLeft, permission: ["inventory.transfer", "inventory.receive", "inventory.damaged_return"] },
+
     ],
   },
   {
@@ -256,13 +253,17 @@ export function AppShellFrame() {
   const setMeta = useCallback((m: PageMeta) => setMetaState(m), []);
   const metaCtx = useMemo<PageMetaCtx>(() => ({ meta, setMeta }), [meta, setMeta]);
 
-  const can = (key?: string) => {
+  const can = (key?: string | string[]) => {
     if (!key) return true;
     if (isSuperadmin) return true;
-    if (permissions.has(key)) return true;
-    for (const set of scopedPermissions.values()) if (set.has(key)) return true;
+    const keys = Array.isArray(key) ? key : [key];
+    for (const k of keys) {
+      if (permissions.has(k)) return true;
+      for (const set of scopedPermissions.values()) if (set.has(k)) return true;
+    }
     return false;
   };
+
   const visibleGroups = useMemo(() => (permLoading
     ? []
     : navGroups

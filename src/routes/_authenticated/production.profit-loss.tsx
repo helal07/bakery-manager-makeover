@@ -1,3 +1,4 @@
+import { PermissionGate } from "@/components/permission-gate";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { Printer, FileDown } from "lucide-react";
@@ -13,7 +14,12 @@ const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/production/profit-loss")({
   head: () => ({ meta: [{ title: pageTitle("Factory Profit & Loss") }] }),
-  component: ProfitLossPage,
+  component: () => (
+    <PermissionGate anyOf={["production.reports.profit_loss", "production.reports.view"]} title={"Profit & Loss"}>
+      <ProfitLossPage />
+    </PermissionGate>
+  ),
+
 });
 
 type MaterialRow = { id: string; name: string; unit: string; qty: number; cost: number };
