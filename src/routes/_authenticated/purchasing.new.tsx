@@ -168,8 +168,21 @@ function AddPurchase() {
 
   return (
     <AppShell title="Add Purchase" subtitle="Record a new supplier purchase order">
+      {currentShowroomId ? (
+        <div
+          role="alert"
+          className="mb-4 max-w-4xl flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+        >
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>
+            <strong>Only factory can purchase raw materials.</strong> Switch your location to
+            Factory from the top bar to record this purchase.
+          </span>
+        </div>
+      ) : null}
       <Card className="p-6 max-w-4xl">
         <form onSubmit={submit} className="space-y-5">
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="pu-sup">Supplier</Label>
