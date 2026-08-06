@@ -108,9 +108,15 @@ export function renderStockReportHtml(opts: StockReportOptions) {
 <script>window.onload=function(){setTimeout(function(){window.print()},150)}</script>
 </body></html>`;
 
+  return html;
+}
+
+export function printStockReport(opts: StockReportOptions) {
+  const html = renderStockReportHtml(opts);
   const w = window.open("", "_blank", "width=900,height=1000");
   if (!w) return false;
   w.document.write(html);
   w.document.close();
   return true;
 }
+
