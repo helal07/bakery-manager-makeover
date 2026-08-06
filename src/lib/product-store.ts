@@ -24,6 +24,7 @@ export type ProductInput = {
   sku: string;
   name: string;
   category: ProductCategory;
+  unit?: string;
   price: number;
   cost?: number;
   threshold?: number;
@@ -105,6 +106,7 @@ export async function addProduct(
       sku: p.sku,
       name: p.name,
       category: p.category,
+      unit: p.unit ?? null,
       price: p.price,
       cost: p.cost ?? 0,
       mfg_date: mfg,
@@ -112,7 +114,7 @@ export async function addProduct(
       shelf_life_days: p.shelfLifeDays ?? null,
       image_url: p.imageUrl ?? null,
     })
-    .select("id,sku,name,category,price,cost,mfg_date,expiry_date,shelf_life_days,image_url")
+    .select("id,sku,name,category,unit,price,cost,mfg_date,expiry_date,shelf_life_days,image_url")
     .single();
   if (error) throw error;
 
@@ -138,6 +140,7 @@ export async function addProduct(
     sku: data.sku ?? "",
     name: data.name,
     category: data.category,
+    unit: data.unit ?? undefined,
     price: Number(data.price) || 0,
     cost: Number(data.cost) || 0,
     stock: opening,
@@ -158,6 +161,7 @@ export async function updateProduct(
   if (patch.sku !== undefined) row.sku = patch.sku;
   if (patch.name !== undefined) row.name = patch.name;
   if (patch.category !== undefined) row.category = patch.category;
+  if (patch.unit !== undefined) row.unit = patch.unit || null;
   if (patch.price !== undefined) row.price = patch.price;
   if (patch.cost !== undefined) row.cost = patch.cost;
   if (patch.mfgDate !== undefined) row.mfg_date = patch.mfgDate || null;

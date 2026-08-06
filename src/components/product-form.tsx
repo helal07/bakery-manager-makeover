@@ -33,6 +33,7 @@ type FormState = {
   sku: string;
   name: string;
   category: ProductCategory;
+  unit: string;
   price: string;
   stock: string;
   threshold: string;
@@ -44,6 +45,7 @@ const emptyForm: FormState = {
   sku: "",
   name: "",
   category: "",
+  unit: "",
   price: "",
   stock: "",
   threshold: "",
@@ -146,6 +148,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
             sku: p.sku,
             name: p.name,
             category: p.category,
+            unit: p.unit ?? "",
             price: String(p.price),
             stock: String(p.stock),
             threshold: String(p.threshold),
@@ -175,6 +178,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
               sku: "",
               name: `${src.name} (Copy)`,
               category: src.category,
+              unit: src.unit ?? "",
               price: String(src.price),
               stock: "0",
               threshold: String(src.threshold),
@@ -357,6 +361,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         sku,
         name: form.name.trim(),
         category: form.category,
+        unit: form.unit || undefined,
         price: Number(form.price) || 0,
         threshold: Number(form.threshold) || 0,
         shelfLifeDays: shelf,
@@ -523,6 +528,22 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
           <Card className="p-6">
             <h3 className="text-sm font-semibold mb-4">Pricing & stock</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="p-unit">Unit</Label>
+                <select
+                  id="p-unit"
+                  value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select a unit…</option>
+                  {units.map((u) => (
+                    <option key={u.id} value={u.code}>
+                      {u.code} — {u.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <Label htmlFor="p-price">Price (৳)</Label>
                 <Input id="p-price" type="number" min={0} step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
