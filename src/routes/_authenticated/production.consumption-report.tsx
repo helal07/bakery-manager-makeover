@@ -134,6 +134,45 @@ function ConsumptionReportPage() {
           </tbody>
         </table></div>
       </Card>
+
+      <Card className="overflow-hidden mt-5">
+        <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+          <Receipt className="size-4 text-muted-foreground" />
+          <div className="font-semibold text-sm">Overheads in this period</div>
+          <div className="ml-auto text-sm font-semibold">{money(overheadSummary.total)}</div>
+        </div>
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[480px]">
+          <thead className="text-xs text-muted-foreground bg-muted/40">
+            <tr>
+              <th className="text-left font-medium px-5 py-3">Overhead category</th>
+              <th className="text-right font-medium px-5 py-3">Batches</th>
+              <th className="text-right font-medium px-5 py-3">Amount</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {overheadSummary.list.map((o) => (
+              <tr key={o.name} className="hover:bg-muted/30">
+                <td className="px-5 py-3 font-medium">{o.name}</td>
+                <td className="px-5 py-3 text-right text-muted-foreground">{o.batches}</td>
+                <td className="px-5 py-3 text-right">{money(o.amount)}</td>
+              </tr>
+            ))}
+            {overheadSummary.list.length === 0 && (
+              <tr><td colSpan={3} className="text-center py-8 text-sm text-muted-foreground">{loading ? "Loading…" : "No overheads recorded in this range."}</td></tr>
+            )}
+          </tbody>
+          {overheadSummary.list.length > 0 && (
+            <tfoot>
+              <tr className="font-semibold bg-muted/30">
+                <td className="px-5 py-3">Total</td>
+                <td className="px-5 py-3" />
+                <td className="px-5 py-3 text-right">{money(overheadSummary.total)}</td>
+              </tr>
+            </tfoot>
+          )}
+        </table></div>
+      </Card>
     </AppShell>
+
   );
 }
