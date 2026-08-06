@@ -64,7 +64,10 @@ describe("outstanding due", () => {
 
   it("matches by customer id or phone", () => {
     expect(outstandingDue(sales, [], { customerId: "c1" })).toBe(500);
-    expect(outstandingDue(sales, [], { customerId: "c1", phone: "01711000111" })).toBe(800);
+    // c1's own sale plus a walk-in sale recorded against the same digits
+    expect(outstandingDue(sales, [], { customerId: "c1", phone: "01711-000111" })).toBe(800);
+    expect(outstandingDue(sales, [], { phone: "+880 1711 000111" })).toBe(0);
+
     expect(outstandingDue(sales, [], { customerId: "c2" })).toBe(900);
   });
 
