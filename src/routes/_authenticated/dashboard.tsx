@@ -21,7 +21,7 @@ import { pageTitle } from "@/lib/company-settings";
 const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  validateSearch: (s: Record<string, unknown>) => ({ sale: s.sale ? 1 : undefined }),
+  validateSearch: (s: Record<string, unknown>): { sale?: 1 } => (s.sale ? { sale: 1 } : {}),
   head: () => ({
     meta: [
       { title: pageTitle("Dashboard") },

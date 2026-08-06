@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Boxes, Factory, PackagePlus, Search, Sliders } from "lucide-react";
+import { Boxes, Factory, FileSpreadsheet, PackagePlus, Printer, Search, Sliders } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { PermissionGate } from "@/components/permission-gate";
-import { pageTitle } from "@/lib/company-settings";
+import { pageTitle, getCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
+import { exportStockXlsx, printStockReport, type StockExportColumn } from "@/lib/stock-report-export";
 
 export const Route = createFileRoute("/_authenticated/production/factory-stock")({
   head: () => ({ meta: [{ title: pageTitle("Factory Stock") }] }),
@@ -37,6 +38,9 @@ function FactoryStockPage() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [company, setCompany] = useState<CompanySettings>(defaultCompany);
+
+  useEffect(() => { getCompany().then(setCompany).catch(() => {}); }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,6 +98,84 @@ function FactoryStockPage() {
     return s ? products.filter((p) => p.name.toLowerCase().includes(s) || (p.sku ?? "").toLowerCase().includes(s)) : products;
   }, [products, q]);
 
+  const prodReport = useCallback(() => {
+    const columns: StockExportColumn[] = [
+      { key: "name", label: "Product" },
+      { key: "sku", label: "SKU" },
+      { key: "unit", label: "Unit" },
+      { key: "qty", label: "Qty", align: "right" },
+      { key: "cost", label: "Cost", align: "right" },
+      { key: "price", label: "Price", align: "right" },
+      { key: "value", label: "Value (retail)", align: "right" },
+    ];
+    const rows = filteredProducts.map((p) => ({
+      name: p.name,
+      sku: p.sku ?? "—",
+      unit: p.unit ?? "",
+      qty: p.quantity,
+      cost: Number((p.cost ?? 0).toFixed(2)),
+      price: Number((p.price ?? 0).toFixed(2)),
+      value: Number((p.quantity * (p.price ?? 0)).toFixed(2)),
+    }));
+    const totals = {
+      qty: rows.reduce((a, r) => a + r.qty, 0),
+      value: Number(rows.reduce((a, r) => a + r.value, 0).toFixed(2)),
+    };
+    return { title: "Finished Products Stock", columns, rows, totals };
+  }, [filteredProducts]);
+
+  const rawReport = useCallback(() => {
+    const columns: StockExportColumn[] = [
+      { key: "name", label: "Material" },
+      { key: "unit", label: "Unit" },
+      { key: "qty", label: "Qty", align: "right" },
+      { key: "cost", label: "Cost", align: "right" },
+      { key: "value", label: "Value", align: "right" },
+    ];
+    const rows = filteredRaw.map((r) => ({
+      name: r.name,
+      unit: r.unit,
+      qty: r.stock,
+      cost: Number(r.cost.toFixed(2)),
+      value: Number((r.stock * r.cost).toFixed(2)),
+    }));
+    const totals = {
+      qty: rows.reduce((a, r) => a + r.qty, 0),
+      value: Number(rows.reduce((a, r) => a + r.value, 0).toFixed(2)),
+    };
+    return { title: "Raw Materials Stock", columns, rows, totals };
+  }, [filteredRaw]);
+
+  const doPrint = (r: ReturnType<typeof rawReport>) => {
+    if (r.rows.length === 0) return toast.error("Nothing to print");
+    const ok = printStockReport({ title: r.title, company, columns: r.columns, rows: r.rows, totals: r.totals, totalsLabel: "Total" });
+    if (!ok) toast.error("Popup blocked — allow popups to print");
+  };
+  const doXlsx = (r: ReturnType<typeof rawReport>) => {
+    if (r.rows.length === 0) return toast.error("Nothing to export");
+    exportStockXlsx({
+      fileName: `${r.title.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: r.title,
+      title: r.title,
+      company,
+      columns: r.columns,
+      rows: r.rows,
+      totals: r.totals,
+      totalsLabel: "Total",
+    });
+  };
+
+  const Toolbar = ({ build }: { build: () => ReturnType<typeof rawReport> }) => (
+    <div className="flex flex-wrap gap-2 justify-end">
+      <Button variant="outline" size="sm" onClick={() => doPrint(build())}>
+        <Printer className="w-4 h-4 mr-2" /> Print / PDF (A4)
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => doXlsx(build())}>
+        <FileSpreadsheet className="w-4 h-4 mr-2" /> Export XLSX
+      </Button>
+    </div>
+  );
+
   return (
     <AppShell
       title="Factory Stock"
@@ -118,6 +200,7 @@ function FactoryStockPage() {
         </TabsList>
 
         <TabsContent value="raw" className="mt-4 space-y-4">
+          <Toolbar build={rawReport} />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat icon={<Boxes className="w-4 h-4" />} label="Ingredients" value={rawTotals.items.toString()} />
             <Stat icon={<PackagePlus className="w-4 h-4" />} label="Stock value" value={`৳${rawTotals.value.toFixed(0)}`} />
@@ -171,6 +254,7 @@ function FactoryStockPage() {
         </TabsContent>
 
         <TabsContent value="products" className="mt-4 space-y-4">
+          <Toolbar build={prodReport} />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat icon={<Boxes className="w-4 h-4" />} label="Products" value={prodTotals.items.toString()} />
             <Stat icon={<PackagePlus className="w-4 h-4" />} label="With stock" value={prodTotals.inStock.toString()} />

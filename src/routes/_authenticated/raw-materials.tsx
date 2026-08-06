@@ -311,7 +311,7 @@ function RawMaterials() {
         </table></div>
       </Card>
       <p className="text-xs text-muted-foreground mt-3">
-        See <Link to="/suppliers" className="text-primary hover:underline">suppliers</Link> and <Link to="/purchasing" className="text-primary hover:underline">purchase orders</Link>.
+        See <Link to="/suppliers" className="text-primary hover:underline">suppliers</Link> and <Link to="/purchasing/list" className="text-primary hover:underline">purchase orders</Link>.
       </p>
 
       <Dialog open={!!move} onOpenChange={(o) => !o && setMove(null)}>
