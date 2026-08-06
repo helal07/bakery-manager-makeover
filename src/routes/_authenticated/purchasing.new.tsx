@@ -369,7 +369,10 @@ function AddPurchase() {
             <Button type="button" variant="outline" onClick={() => nav({ to: "/purchasing/list" })}>
               Cancel
             </Button>
-            <Button type="submit">Save Purchase</Button>
+            <Button type="submit" disabled={!!currentShowroomId}>
+              {currentShowroomId ? "Factory only" : "Save Purchase"}
+            </Button>
+
           </div>
         </form>
       </Card>
