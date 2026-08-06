@@ -38,6 +38,9 @@ function FactoryStockPage() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [company, setCompany] = useState<CompanySettings>(defaultCompany);
+
+  useEffect(() => { getCompany().then(setCompany).catch(() => {}); }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
