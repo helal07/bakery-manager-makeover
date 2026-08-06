@@ -122,3 +122,50 @@ export async function loadOverheadsInRange(
     created_at: r.created_at,
   }));
 }
+
+export async function renameOverheadCategory(id: string, name: string): Promise<void> {
+  const clean = name.trim();
+  if (!clean) throw new Error("Name is required");
+  const { error } = await sb
+    .from("production_overhead_categories")
+    .update({ name: clean })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** How many recipe defaults / batch records reference this overhead category. */
+export async function overheadCategoryUsage(
+  id: string,
+): Promise<{ recipes: number; batches: number }> {
+  const [r1, r2] = await Promise.all([
+    sb.from("recipe_overheads").select("id", { count: "exact", head: true }).eq("category_id", id),
+    sb
+      .from("production_overheads")
+      .select("id", { count: "exact", head: true })
+      .eq("category_id", id),
+  ]);
+  return { recipes: r1?.count ?? 0, batches: r2?.count ?? 0 };
+}
+
+/**
+ * Deactivate a category. Historical batch rows keep their reference, so we
+ * never hard-delete when the category is already used.
+ */
+export async function removeOverheadCategory(id: string): Promise<void> {
+  const usage = await overheadCategoryUsage(id);
+  if (usage.recipes > 0) {
+    throw new Error(
+      `This overhead is used as a default in ${usage.recipes} recipe(s). Remove it there first.`,
+    );
+  }
+  if (usage.batches > 0) {
+    const { error } = await sb
+      .from("production_overhead_categories")
+      .update({ is_active: false })
+      .eq("id", id);
+    if (error) throw error;
+    return;
+  }
+  const { error } = await sb.from("production_overhead_categories").delete().eq("id", id);
+  if (error) throw error;
+}
