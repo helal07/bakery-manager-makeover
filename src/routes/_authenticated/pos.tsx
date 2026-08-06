@@ -24,7 +24,7 @@ const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({ meta: [{ title: "POS · Muzahid Food" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { edit?: string } => ({
     edit: typeof s.edit === "string" ? s.edit : undefined,
   }),
   component: PosPage,
