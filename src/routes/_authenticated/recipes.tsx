@@ -88,7 +88,7 @@ export const Route = createFileRoute("/_authenticated/recipes")({
   ),
 });
 
-type TabKey = "produce" | "recipe" | "history" | "list";
+type TabKey = "produce" | "recipe" | "history" | "list" | "overheads";
 type BatchRow = {
   id: string;
   qty: number;
