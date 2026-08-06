@@ -543,14 +543,7 @@ function Workbench() {
             <TabButton active={tab === "recipe"} onClick={() => setTab("recipe")} icon={<Pencil className="size-3.5" />} label="Edit Recipe" />
             <TabButton active={tab === "list"} onClick={() => setTab("list")} icon={<BookOpen className="size-3.5" />} label="Recipe list" />
             <TabButton active={tab === "history"} onClick={() => setTab("history")} icon={<History className="size-3.5" />} label="Batch history" />
-            <button
-              type="button"
-              onClick={() => setOhManagerOpen(true)}
-              className="ml-auto inline-flex items-center gap-1.5 shrink-0 h-8 px-3 mb-1 rounded-md border border-border bg-background text-xs font-semibold hover:bg-muted transition-colors"
-              title="Manage overhead names"
-            >
-              <CircleDollarSign className="size-3.5 text-primary" /> Overheads
-            </button>
+            <TabButton active={tab === "overheads"} onClick={() => setTab("overheads")} icon={<CircleDollarSign className="size-3.5" />} label="Overheads" />
           </div>
 
           {tab === "list" && (
