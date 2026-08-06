@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
-import { Wheat } from "lucide-react";
+import { Wheat, Receipt } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { loadOverheadsInRange, type BatchOverheadRow } from "@/lib/production-overhead-store";
 import { toast } from "sonner";
 
 const sb = supabase as any;
@@ -15,6 +16,8 @@ export const Route = createFileRoute("/_authenticated/production/consumption-rep
 
 type Row = { material_id: string; material_name: string; unit: string; consumed: number; wasted: number };
 
+const money = (n: number) => `৳${(Number(n) || 0).toFixed(2)}`;
+
 function ConsumptionReportPage() {
   const { currentShowroomId } = useShowroomScope();
   const today = new Date().toISOString().slice(0, 10);
@@ -22,6 +25,8 @@ function ConsumptionReportPage() {
   const [from, setFrom] = useState(monthAgo);
   const [to, setTo] = useState(today);
   const [rows, setRows] = useState<Row[]>([]);
+  const [overheads, setOverheads] = useState<BatchOverheadRow[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
