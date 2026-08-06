@@ -132,8 +132,7 @@ function Workbench() {
   // Per-produce overrides (starts from recipe defaults, user can add/edit/remove)
   const [produceOverheads, setProduceOverheads] = useState<BatchOverhead[]>([]);
 
-  // Overhead master-list manager
-  const [ohManagerOpen, setOhManagerOpen] = useState(false);
+  // Overhead master-list manager lives in the "Overheads" tab
 
   // Batch history
   const [batches, setBatches] = useState<BatchRow[]>([]);
