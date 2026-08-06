@@ -60,14 +60,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-type Search = { product?: string; tab?: "produce" | "recipe" | "history" | "list" };
+type Search = {
+  product?: string;
+  tab?: "produce" | "recipe" | "history" | "list" | "overheads";
+};
 
 export const Route = createFileRoute("/_authenticated/recipes")({
   head: () => ({ meta: [{ title: pageTitle("Production Workbench") }] }),
   validateSearch: (s: Record<string, unknown>): Search => ({
     product: typeof s.product === "string" ? s.product : undefined,
     tab:
-      s.tab === "recipe" || s.tab === "history" || s.tab === "produce" || s.tab === "list"
+      s.tab === "recipe" ||
+      s.tab === "history" ||
+      s.tab === "produce" ||
+      s.tab === "list" ||
+      s.tab === "overheads"
         ? s.tab
         : undefined,
   }),
