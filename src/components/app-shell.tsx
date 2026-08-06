@@ -256,13 +256,17 @@ export function AppShellFrame() {
   const setMeta = useCallback((m: PageMeta) => setMetaState(m), []);
   const metaCtx = useMemo<PageMetaCtx>(() => ({ meta, setMeta }), [meta, setMeta]);
 
-  const can = (key?: string) => {
+  const can = (key?: string | string[]) => {
     if (!key) return true;
     if (isSuperadmin) return true;
-    if (permissions.has(key)) return true;
-    for (const set of scopedPermissions.values()) if (set.has(key)) return true;
+    const keys = Array.isArray(key) ? key : [key];
+    for (const k of keys) {
+      if (permissions.has(k)) return true;
+      for (const set of scopedPermissions.values()) if (set.has(k)) return true;
+    }
     return false;
   };
+
   const visibleGroups = useMemo(() => (permLoading
     ? []
     : navGroups
