@@ -129,6 +129,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
           { to: "/production/profit-loss", label: "Profit & Loss", icon: BarChart3, permission: "production.reports.view" },
           { to: "/production/cost-report", label: "Cost Report", icon: BarChart3, permission: "production.reports.view" },
           { to: "/production/consumption-report", label: "Consumption Report", icon: Wheat, permission: "production.reports.view" },
+          { to: "/production/overhead-report", label: "Overhead Report", icon: BarChart3, permission: "production.reports.view" },
+
 
         ],
       },

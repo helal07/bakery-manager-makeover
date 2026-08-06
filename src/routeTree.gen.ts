@@ -73,6 +73,7 @@ import { Route as AuthenticatedProductionRecipeCategoriesRouteImport } from './r
 import { Route as AuthenticatedProductionQcRouteImport } from './routes/_authenticated/production.qc'
 import { Route as AuthenticatedProductionProfitLossRouteImport } from './routes/_authenticated/production.profit-loss'
 import { Route as AuthenticatedProductionProduceRouteImport } from './routes/_authenticated/production.produce'
+import { Route as AuthenticatedProductionOverheadReportRouteImport } from './routes/_authenticated/production.overhead-report'
 import { Route as AuthenticatedProductionFactoryStockRouteImport } from './routes/_authenticated/production.factory-stock'
 import { Route as AuthenticatedProductionCostReportRouteImport } from './routes/_authenticated/production.cost-report'
 import { Route as AuthenticatedProductionConsumptionReportRouteImport } from './routes/_authenticated/production.consumption-report'
@@ -446,6 +447,12 @@ const AuthenticatedProductionProduceRoute =
     path: '/produce',
     getParentRoute: () => AuthenticatedProductionRoute,
   } as any)
+const AuthenticatedProductionOverheadReportRoute =
+  AuthenticatedProductionOverheadReportRouteImport.update({
+    id: '/overhead-report',
+    path: '/overhead-report',
+    getParentRoute: () => AuthenticatedProductionRoute,
+  } as any)
 const AuthenticatedProductionFactoryStockRoute =
   AuthenticatedProductionFactoryStockRouteImport.update({
     id: '/factory-stock',
@@ -570,6 +577,7 @@ export interface FileRoutesByFullPath {
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
+  '/production/overhead-report': typeof AuthenticatedProductionOverheadReportRoute
   '/production/produce': typeof AuthenticatedProductionProduceRoute
   '/production/profit-loss': typeof AuthenticatedProductionProfitLossRoute
   '/production/qc': typeof AuthenticatedProductionQcRoute
@@ -647,6 +655,7 @@ export interface FileRoutesByTo {
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
+  '/production/overhead-report': typeof AuthenticatedProductionOverheadReportRoute
   '/production/produce': typeof AuthenticatedProductionProduceRoute
   '/production/profit-loss': typeof AuthenticatedProductionProfitLossRoute
   '/production/qc': typeof AuthenticatedProductionQcRoute
@@ -729,6 +738,7 @@ export interface FileRoutesById {
   '/_authenticated/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/_authenticated/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/_authenticated/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
+  '/_authenticated/production/overhead-report': typeof AuthenticatedProductionOverheadReportRoute
   '/_authenticated/production/produce': typeof AuthenticatedProductionProduceRoute
   '/_authenticated/production/profit-loss': typeof AuthenticatedProductionProfitLossRoute
   '/_authenticated/production/qc': typeof AuthenticatedProductionQcRoute
@@ -811,6 +821,7 @@ export interface FileRouteTypes {
     | '/production/consumption-report'
     | '/production/cost-report'
     | '/production/factory-stock'
+    | '/production/overhead-report'
     | '/production/produce'
     | '/production/profit-loss'
     | '/production/qc'
@@ -888,6 +899,7 @@ export interface FileRouteTypes {
     | '/production/consumption-report'
     | '/production/cost-report'
     | '/production/factory-stock'
+    | '/production/overhead-report'
     | '/production/produce'
     | '/production/profit-loss'
     | '/production/qc'
@@ -969,6 +981,7 @@ export interface FileRouteTypes {
     | '/_authenticated/production/consumption-report'
     | '/_authenticated/production/cost-report'
     | '/_authenticated/production/factory-stock'
+    | '/_authenticated/production/overhead-report'
     | '/_authenticated/production/produce'
     | '/_authenticated/production/profit-loss'
     | '/_authenticated/production/qc'
@@ -1477,6 +1490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionProduceRouteImport
       parentRoute: typeof AuthenticatedProductionRoute
     }
+    '/_authenticated/production/overhead-report': {
+      id: '/_authenticated/production/overhead-report'
+      path: '/overhead-report'
+      fullPath: '/production/overhead-report'
+      preLoaderRoute: typeof AuthenticatedProductionOverheadReportRouteImport
+      parentRoute: typeof AuthenticatedProductionRoute
+    }
     '/_authenticated/production/factory-stock': {
       id: '/_authenticated/production/factory-stock'
       path: '/factory-stock'
@@ -1626,6 +1646,7 @@ interface AuthenticatedProductionRouteChildren {
   AuthenticatedProductionConsumptionReportRoute: typeof AuthenticatedProductionConsumptionReportRoute
   AuthenticatedProductionCostReportRoute: typeof AuthenticatedProductionCostReportRoute
   AuthenticatedProductionFactoryStockRoute: typeof AuthenticatedProductionFactoryStockRoute
+  AuthenticatedProductionOverheadReportRoute: typeof AuthenticatedProductionOverheadReportRoute
   AuthenticatedProductionProduceRoute: typeof AuthenticatedProductionProduceRoute
   AuthenticatedProductionProfitLossRoute: typeof AuthenticatedProductionProfitLossRoute
   AuthenticatedProductionQcRoute: typeof AuthenticatedProductionQcRoute
@@ -1645,6 +1666,8 @@ const AuthenticatedProductionRouteChildren: AuthenticatedProductionRouteChildren
       AuthenticatedProductionCostReportRoute,
     AuthenticatedProductionFactoryStockRoute:
       AuthenticatedProductionFactoryStockRoute,
+    AuthenticatedProductionOverheadReportRoute:
+      AuthenticatedProductionOverheadReportRoute,
     AuthenticatedProductionProduceRoute: AuthenticatedProductionProduceRoute,
     AuthenticatedProductionProfitLossRoute:
       AuthenticatedProductionProfitLossRoute,
@@ -1803,13 +1826,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

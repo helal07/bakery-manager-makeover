@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
-import { Wheat } from "lucide-react";
+import { Wheat, Receipt } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { loadOverheadsInRange, type BatchOverheadRow } from "@/lib/production-overhead-store";
 import { toast } from "sonner";
 
 const sb = supabase as any;
@@ -15,6 +16,8 @@ export const Route = createFileRoute("/_authenticated/production/consumption-rep
 
 type Row = { material_id: string; material_name: string; unit: string; consumed: number; wasted: number };
 
+const money = (n: number) => `৳${(Number(n) || 0).toFixed(2)}`;
+
 function ConsumptionReportPage() {
   const { currentShowroomId } = useShowroomScope();
   const today = new Date().toISOString().slice(0, 10);
@@ -22,6 +25,8 @@ function ConsumptionReportPage() {
   const [from, setFrom] = useState(monthAgo);
   const [to, setTo] = useState(today);
   const [rows, setRows] = useState<Row[]>([]);
+  const [overheads, setOverheads] = useState<BatchOverheadRow[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -54,6 +59,9 @@ function ConsumptionReportPage() {
         else if (r.kind === "wastage") map[id].wasted += abs;
       }
       setRows(Object.values(map).sort((a, b) => (b.consumed + b.wasted) - (a.consumed + a.wasted)));
+
+      const oh = await loadOverheadsInRange(`${from}T00:00:00Z`, `${to}T23:59:59Z`);
+      setOverheads(oh);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to load");
     } finally {
@@ -70,6 +78,21 @@ function ConsumptionReportPage() {
     consumed: rows.reduce((s, r) => s + r.consumed, 0),
     wasted: rows.reduce((s, r) => s + r.wasted, 0),
   }), [rows]);
+
+  const overheadSummary = useMemo(() => {
+    const map: Record<string, { name: string; batches: Set<string>; amount: number }> = {};
+    for (const o of overheads) {
+      const key = o.category_id || o.category_name;
+      map[key] ??= { name: o.category_name, batches: new Set(), amount: 0 };
+      map[key].batches.add(o.batch_id);
+      map[key].amount += o.amount;
+    }
+    const list = Object.values(map)
+      .map((v) => ({ name: v.name, batches: v.batches.size, amount: v.amount }))
+      .sort((a, b) => b.amount - a.amount);
+    return { list, total: list.reduce((s, r) => s + r.amount, 0) };
+  }, [overheads]);
+
 
   return (
     <AppShell title="Raw Material Consumption" subtitle="Production usage and wastage over the selected period">
@@ -111,6 +134,45 @@ function ConsumptionReportPage() {
           </tbody>
         </table></div>
       </Card>
+
+      <Card className="overflow-hidden mt-5">
+        <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+          <Receipt className="size-4 text-muted-foreground" />
+          <div className="font-semibold text-sm">Overheads in this period</div>
+          <div className="ml-auto text-sm font-semibold">{money(overheadSummary.total)}</div>
+        </div>
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[480px]">
+          <thead className="text-xs text-muted-foreground bg-muted/40">
+            <tr>
+              <th className="text-left font-medium px-5 py-3">Overhead category</th>
+              <th className="text-right font-medium px-5 py-3">Batches</th>
+              <th className="text-right font-medium px-5 py-3">Amount</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {overheadSummary.list.map((o) => (
+              <tr key={o.name} className="hover:bg-muted/30">
+                <td className="px-5 py-3 font-medium">{o.name}</td>
+                <td className="px-5 py-3 text-right text-muted-foreground">{o.batches}</td>
+                <td className="px-5 py-3 text-right">{money(o.amount)}</td>
+              </tr>
+            ))}
+            {overheadSummary.list.length === 0 && (
+              <tr><td colSpan={3} className="text-center py-8 text-sm text-muted-foreground">{loading ? "Loading…" : "No overheads recorded in this range."}</td></tr>
+            )}
+          </tbody>
+          {overheadSummary.list.length > 0 && (
+            <tfoot>
+              <tr className="font-semibold bg-muted/30">
+                <td className="px-5 py-3">Total</td>
+                <td className="px-5 py-3" />
+                <td className="px-5 py-3 text-right">{money(overheadSummary.total)}</td>
+              </tr>
+            </tfoot>
+          )}
+        </table></div>
+      </Card>
     </AppShell>
+
   );
 }
