@@ -2,16 +2,15 @@ import { describe, it, expect } from "vitest";
 import { convertQty, isCompatible, resolveUnit, sumInUnit, conversionLabel } from "@/lib/unit-convert";
 import type { Unit } from "@/lib/unit-store";
 
-const u = (over: Partial<Unit>): Unit =>
-  ({
-    id: over.id ?? crypto.randomUUID(),
-    name: over.name ?? "unit",
-    code: over.code ?? "x",
-    short_name: over.short_name ?? null,
-    is_active: true,
-    base_unit_id: over.base_unit_id ?? null,
-    conversion_factor: over.conversion_factor ?? null,
-  }) as unknown as Unit;
+const u = (over: Partial<Unit>): Unit => ({
+  id: over.id ?? crypto.randomUUID(),
+  name: over.name ?? "unit",
+  code: over.code ?? "x",
+  base_unit_id: over.base_unit_id ?? null,
+  conversion_factor: over.conversion_factor ?? null,
+  allow_decimal: true,
+});
+
 
 describe("unit-convert built-ins", () => {
   it("converts within mass", () => {
