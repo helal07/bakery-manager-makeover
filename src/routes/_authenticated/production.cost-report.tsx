@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { BarChart3, ChevronDown, ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { loadRecipes } from "@/lib/recipe-store";
@@ -146,9 +146,8 @@ function CostReportPage() {
               const expanded = !!open[r.id];
               const canExpand = r.overheads.length > 0;
               return (
-                <>
+                <Fragment key={r.id}>
                   <tr
-                    key={r.id}
                     className={`hover:bg-muted/30 ${canExpand ? "cursor-pointer" : ""}`}
                     onClick={() => canExpand && setOpen((o) => ({ ...o, [r.id]: !o[r.id] }))}
                   >
@@ -166,7 +165,7 @@ function CostReportPage() {
                     <td className="px-5 py-3 text-right">{money(r.unitCost)}</td>
                   </tr>
                   {expanded && (
-                    <tr key={`${r.id}-oh`} className="bg-muted/20">
+                    <tr className="bg-muted/20">
                       <td colSpan={7} className="px-5 py-3">
                         <div className="text-xs font-semibold text-muted-foreground mb-2">Overheads for this batch</div>
                         <div className="space-y-1">
@@ -180,7 +179,7 @@ function CostReportPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
             {rows.length === 0 && (
