@@ -1817,14 +1817,10 @@ function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string
 
 
 /* ── Overhead master-list manager ───────────────────────────────── */
-function OverheadManagerDialog({
-  open,
-  onOpenChange,
+function OverheadManagerPanel({
   cats,
   onChanged,
 }: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
   cats: OverheadCategory[];
   onChanged: () => Promise<void> | void;
 }) {
@@ -1835,9 +1831,6 @@ function OverheadManagerDialog({
   const [usage, setUsage] = useState<Record<string, { recipes: number; batches: number }>>({});
 
   useEffect(() => {
-    if (!open) return;
-    setNewName("");
-    setEditId(null);
     (async () => {
       try {
         const entries = await Promise.all(
@@ -1849,7 +1842,7 @@ function OverheadManagerDialog({
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, cats.length]);
+  }, [cats.length]);
 
   const add = async () => {
     const name = newName.trim();
