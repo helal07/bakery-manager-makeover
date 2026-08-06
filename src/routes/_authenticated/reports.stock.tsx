@@ -5,10 +5,16 @@ import { ReportFilters, exportCsv, type ReportFilter } from "@/components/report
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { loadRawMaterials } from "@/lib/raw-material-store";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/reports/stock")({
   head: () => ({ meta: [{ title: "Stock Reports · Muzahid Food" }] }),
-  component: StockReport,
+  component: () => (
+    <PermissionGate anyOf={["reports.stock"]} title={"Stock Reports"}>
+      <StockReport />
+    </PermissionGate>
+  ),
+
 });
 
 const sb = supabase as any;

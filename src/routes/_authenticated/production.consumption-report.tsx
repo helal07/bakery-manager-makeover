@@ -6,12 +6,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { loadOverheadsInRange, type BatchOverheadRow } from "@/lib/production-overhead-store";
 import { toast } from "sonner";
+import { PermissionGate } from "@/components/permission-gate";
 
 const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/production/consumption-report")({
   head: () => ({ meta: [{ title: "Raw Material Consumption · Muzahid Food" }] }),
-  component: ConsumptionReportPage,
+  component: () => (
+    <PermissionGate anyOf={["production.reports.consumption", "production.reports.view"]} title={"Consumption Report"}>
+      <ConsumptionReportPage />
+    </PermissionGate>
+  ),
+
 });
 
 type Row = { material_id: string; material_name: string; unit: string; consumed: number; wasted: number };

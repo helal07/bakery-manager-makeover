@@ -23,6 +23,7 @@ import {
   type CarouselSlide,
 } from "@/lib/landing-carousels";
 import {
+import { PermissionGate } from "@/components/permission-gate";
   listAllProductsForLanding,
   setProductShowOnLanding,
   type LandingProduct,
@@ -31,7 +32,12 @@ import {
 
 export const Route = createFileRoute("/_authenticated/settings/landing")({
   head: () => ({ meta: [{ title: "Landing Page · Settings" }] }),
-  component: LandingEditor,
+  component: () => (
+    <PermissionGate anyOf={["settings.landing"]} title={"Landing Page"}>
+      <LandingEditor />
+    </PermissionGate>
+  ),
+
 });
 
 function LandingEditor() {

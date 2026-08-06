@@ -4,10 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { loadExpenses, EXPENSE_CATEGORIES, type Expense } from "@/lib/expense-store";
 import { ReportFilters, exportCsv, type ReportFilter } from "@/components/report-filters";
 import { pageTitle } from "@/lib/company-settings";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/reports/expenses")({
   head: () => ({ meta: [{ title: pageTitle("Expense Reports") }] }),
-  component: ExpenseReport,
+  component: () => (
+    <PermissionGate anyOf={["reports.expenses"]} title={"Expense Reports"}>
+      <ExpenseReport />
+    </PermissionGate>
+  ),
+
 });
 
 const initial = (): ReportFilter => ({ from: "", to: "", category: "All" });

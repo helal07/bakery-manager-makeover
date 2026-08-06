@@ -19,11 +19,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { exportDatabase, restoreDatabase } from "@/lib/backup.functions";
 import type { BackupFile } from "@/lib/backup-tables";
+import { PermissionGate } from "@/components/permission-gate";
 
 
 export const Route = createFileRoute("/_authenticated/settings/")({
   head: () => ({ meta: [{ title: pageTitle("Settings") }] }),
-  component: SettingsPage,
+  component: () => (
+    <PermissionGate anyOf={["settings.general"]} title={"Settings"}>
+      <SettingsPage />
+    </PermissionGate>
+  ),
+
 });
 
 type Tab = "software";

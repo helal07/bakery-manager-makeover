@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
 import {
+import { PermissionGate } from "@/components/permission-gate";
   pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings,
 } from "@/lib/company-settings";
 
@@ -13,7 +14,12 @@ const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/production/profit-loss")({
   head: () => ({ meta: [{ title: pageTitle("Factory Profit & Loss") }] }),
-  component: ProfitLossPage,
+  component: () => (
+    <PermissionGate anyOf={["production.reports.profit_loss", "production.reports.view"]} title={"Profit & Loss"}>
+      <ProfitLossPage />
+    </PermissionGate>
+  ),
+
 });
 
 type MaterialRow = { id: string; name: string; unit: string; qty: number; cost: number };

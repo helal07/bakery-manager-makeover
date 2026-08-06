@@ -13,10 +13,16 @@ import {
   type IncomingTransferItem,
 } from "@/lib/inbox-store";
 import { getCompany, getCachedCompany, defaultCompany, pageTitle, type CompanySettings } from "@/lib/company-settings";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/transfers/receive/$id")({
   head: () => ({ meta: [{ title: pageTitle("Receive Transfer") }] }),
-  component: ReceiveTransferPage,
+  component: () => (
+    <PermissionGate anyOf={["inventory.receive", "inventory.transfer"]} title={"Receive Transfer"}>
+      <ReceiveTransferPage />
+    </PermissionGate>
+  ),
+
 });
 
 const sb = supabase as any;

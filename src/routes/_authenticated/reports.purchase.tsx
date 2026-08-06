@@ -5,10 +5,16 @@ import { loadPurchases, loadCategories, type Purchase, type PurchaseCategory } f
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { ReportFilters, exportCsv, type ReportFilter } from "@/components/report-filters";
 import { pageTitle } from "@/lib/company-settings";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/reports/purchase")({
   head: () => ({ meta: [{ title: pageTitle("Purchase Reports") }] }),
-  component: PurchaseReport,
+  component: () => (
+    <PermissionGate anyOf={["reports.purchase"]} title={"Purchase Reports"}>
+      <PurchaseReport />
+    </PermissionGate>
+  ),
+
 });
 
 const initial = (): ReportFilter => ({ from: "", to: "", category: "All" });

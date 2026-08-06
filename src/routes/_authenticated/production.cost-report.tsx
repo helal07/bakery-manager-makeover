@@ -8,12 +8,18 @@ import { loadRecipes } from "@/lib/recipe-store";
 import { loadRawMaterials } from "@/lib/raw-material-store";
 import { loadOverheadsForBatches, type BatchOverheadRow } from "@/lib/production-overhead-store";
 import { toast } from "sonner";
+import { PermissionGate } from "@/components/permission-gate";
 
 const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/production/cost-report")({
   head: () => ({ meta: [{ title: "Production Cost Report · Muzahid Food" }] }),
-  component: CostReportPage,
+  component: () => (
+    <PermissionGate anyOf={["production.reports.cost", "production.reports.view"]} title={"Cost Report"}>
+      <CostReportPage />
+    </PermissionGate>
+  ),
+
 });
 
 type BatchRow = {

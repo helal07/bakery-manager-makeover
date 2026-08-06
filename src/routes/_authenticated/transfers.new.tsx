@@ -17,10 +17,16 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { PermissionGate } from "@/components/permission-gate";
 
 export const Route = createFileRoute("/_authenticated/transfers/new")({
   head: () => ({ meta: [{ title: "New Transfer · Muzahid Food" }] }),
-  component: NewTransferPage,
+  component: () => (
+    <PermissionGate anyOf={["inventory.transfer"]} title={"New Transfer"}>
+      <NewTransferPage />
+    </PermissionGate>
+  ),
+
 });
 
 const sb = supabase as any;

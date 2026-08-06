@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ReceivePaymentDialog } from "@/components/receive-payment-dialog";
+import { PermissionGate } from "@/components/permission-gate";
 
 const sb = supabase as any;
 
@@ -28,7 +29,12 @@ type LedgerRow = {
 
 export const Route = createFileRoute("/_authenticated/crm/$id/ledger")({
   head: () => ({ meta: [{ title: "Customer Ledger" }] }),
-  component: CustomerLedger,
+  component: () => (
+    <PermissionGate anyOf={["contacts.customers.ledger", "contacts.customers.view"]} title={"Customer Ledger"}>
+      <CustomerLedger />
+    </PermissionGate>
+  ),
+
   errorComponent: ({ error }) => (
     <AppShell title="Ledger"><Card className="p-5 text-sm text-destructive">{error.message}</Card></AppShell>
   ),

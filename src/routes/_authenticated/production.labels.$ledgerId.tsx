@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { getCompanyName, pageTitle } from "@/lib/company-settings";
 import { Printer, ArrowLeft, Eye, X } from "lucide-react";
 import { toast } from "sonner";
+import { PermissionGate } from "@/components/permission-gate";
 
 type Layout = "a4" | "roll";
 
@@ -17,7 +18,12 @@ export const Route = createFileRoute("/_authenticated/production/labels/$ledgerI
     layout: s.layout === "roll" ? "roll" : "a4",
     qty: s.qty ? Math.max(1, Math.min(500, Number(s.qty))) : undefined,
   }),
-  component: LabelsPage,
+  component: () => (
+    <PermissionGate anyOf={["production.labels.print", "production.access"]} title={"Batch Labels"}>
+      <LabelsPage />
+    </PermissionGate>
+  ),
+
 });
 
 type BatchInfo = {
