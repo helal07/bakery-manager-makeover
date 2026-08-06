@@ -181,8 +181,8 @@ suite("database functions", () => {
       _showroom_id: factoryId,
       _batch: 20,
       _ingredients: [
-        { materialId: flourId, qty: 10 },
-        { materialId: sugarId, qty: 4 },
+        { materialId: flourId, qty: 0.5 },
+        { materialId: sugarId, qty: 0.2 },
       ],
       _overheads: [],
     });
@@ -207,7 +207,7 @@ suite("database functions", () => {
       _product_id: productId,
       _showroom_id: factoryId,
       _batch: 5,
-      _ingredients: [{ materialId: flourId, qty: 2 }],
+      _ingredients: [{ materialId: flourId, qty: 0.4 }],
       _overheads: [],
     });
     expect(error).toBeNull();
