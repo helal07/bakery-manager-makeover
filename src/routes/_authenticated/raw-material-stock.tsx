@@ -40,9 +40,11 @@ type LedgerRow = {
 };
 
 function RawMaterialStockPage() {
-  const { currentShowroomId, showrooms } = useShowroomScope();
-  const loc = currentShowroomId;
-  const isFactory = loc === null;
+  const { showrooms } = useShowroomScope();
+  // Raw material stock is factory-only, regardless of the selected showroom.
+  const loc = null;
+  const isFactory = true;
+
 
   const [rows, setRows] = useState<RawMaterial[]>([]);
   const [loading, setLoading] = useState(true);

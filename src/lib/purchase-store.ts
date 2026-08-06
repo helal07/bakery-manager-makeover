@@ -141,7 +141,9 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
     for (const it of input.items) {
       const { error: e3 } = await sb.rpc("commit_raw_stock_movement", {
         _material_id: it.materialId,
-        _showroom_id: input.showroom_id,
+        // Raw material stock lives at the factory only (showroom_id IS NULL).
+        _showroom_id: null,
+
         _qty: it.qty,
         _kind: "purchase",
         _ref_type: "purchase",
