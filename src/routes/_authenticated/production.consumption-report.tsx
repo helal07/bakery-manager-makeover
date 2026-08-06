@@ -59,6 +59,9 @@ function ConsumptionReportPage() {
         else if (r.kind === "wastage") map[id].wasted += abs;
       }
       setRows(Object.values(map).sort((a, b) => (b.consumed + b.wasted) - (a.consumed + a.wasted)));
+
+      const oh = await loadOverheadsInRange(`${from}T00:00:00Z`, `${to}T23:59:59Z`);
+      setOverheads(oh);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to load");
     } finally {
@@ -75,6 +78,21 @@ function ConsumptionReportPage() {
     consumed: rows.reduce((s, r) => s + r.consumed, 0),
     wasted: rows.reduce((s, r) => s + r.wasted, 0),
   }), [rows]);
+
+  const overheadSummary = useMemo(() => {
+    const map: Record<string, { name: string; batches: Set<string>; amount: number }> = {};
+    for (const o of overheads) {
+      const key = o.category_id || o.category_name;
+      map[key] ??= { name: o.category_name, batches: new Set(), amount: 0 };
+      map[key].batches.add(o.batch_id);
+      map[key].amount += o.amount;
+    }
+    const list = Object.values(map)
+      .map((v) => ({ name: v.name, batches: v.batches.size, amount: v.amount }))
+      .sort((a, b) => b.amount - a.amount);
+    return { list, total: list.reduce((s, r) => s + r.amount, 0) };
+  }, [overheads]);
+
 
   return (
     <AppShell title="Raw Material Consumption" subtitle="Production usage and wastage over the selected period">
