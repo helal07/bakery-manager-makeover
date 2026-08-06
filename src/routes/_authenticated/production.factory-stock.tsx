@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Boxes, Factory, PackagePlus, Search, Sliders } from "lucide-react";
+import { Boxes, Factory, FileSpreadsheet, PackagePlus, Printer, Search, Sliders } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { PermissionGate } from "@/components/permission-gate";
-import { pageTitle } from "@/lib/company-settings";
+import { pageTitle, getCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
+import { exportStockXlsx, printStockReport, type StockExportColumn } from "@/lib/stock-report-export";
 
 export const Route = createFileRoute("/_authenticated/production/factory-stock")({
   head: () => ({ meta: [{ title: pageTitle("Factory Stock") }] }),
