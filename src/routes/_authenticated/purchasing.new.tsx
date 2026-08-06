@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, UserPlus, PackagePlus, Search } from "lucide-react";
+import { Plus, Trash2, UserPlus, PackagePlus, Search, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { savePurchase, type PurchaseItem } from "@/lib/purchase-store";
 import { loadSuppliers, addSupplier, type Supplier } from "@/lib/supplier-store";
