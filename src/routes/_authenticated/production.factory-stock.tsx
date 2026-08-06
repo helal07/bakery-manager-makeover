@@ -200,6 +200,7 @@ function FactoryStockPage() {
         </TabsList>
 
         <TabsContent value="raw" className="mt-4 space-y-4">
+          <Toolbar build={rawReport} />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat icon={<Boxes className="w-4 h-4" />} label="Ingredients" value={rawTotals.items.toString()} />
             <Stat icon={<PackagePlus className="w-4 h-4" />} label="Stock value" value={`৳${rawTotals.value.toFixed(0)}`} />
@@ -253,6 +254,7 @@ function FactoryStockPage() {
         </TabsContent>
 
         <TabsContent value="products" className="mt-4 space-y-4">
+          <Toolbar build={prodReport} />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat icon={<Boxes className="w-4 h-4" />} label="Products" value={prodTotals.items.toString()} />
             <Stat icon={<PackagePlus className="w-4 h-4" />} label="With stock" value={prodTotals.inStock.toString()} />
