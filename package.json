@@ -12,7 +12,11 @@
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:db": "vitest run tests/db",
+    "load:check": "node scripts/load-check.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
