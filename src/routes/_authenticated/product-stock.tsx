@@ -149,6 +149,9 @@ function ProductStockPage() {
             <PackagePlus className="w-4 h-4 mr-2" /> New Production
           </Link>
         )}
+      </div>
+
+
 
 
       <Card>
