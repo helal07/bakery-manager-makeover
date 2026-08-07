@@ -142,11 +142,14 @@ function ProductStockPage() {
           />
         </div>
         {isFactory && hasGlobalAccess && (
-          <Button onClick={() => setProdOpen(true)}>
-            <PackagePlus className="w-4 h-4 mr-2" /> Add Production
-          </Button>
+          <Link
+            to="/production/produce"
+            className="inline-flex items-center justify-center h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+          >
+            <PackagePlus className="w-4 h-4 mr-2" /> New Production
+          </Link>
         )}
-      </div>
+
 
       <Card>
         {loading ? (
@@ -216,13 +219,8 @@ function ProductStockPage() {
         />
       )}
 
-      {prodOpen && (
-        <ProductionDialog
-          products={rows.map((r) => r.product)}
-          onClose={() => setProdOpen(false)}
-          onSaved={() => { setProdOpen(false); load(); }}
-        />
-      )}
+
+
 
       {historyFor && (
         <HistorySheet
