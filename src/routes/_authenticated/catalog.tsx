@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell, Card } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -16,8 +18,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/catalog")({
   head: () => ({ meta: [{ title: "Products · Muzahid Food" }] }),
-  component: CatalogPage,
+  component: () => (
+    <PermissionGate anyOf={["products.view"]} title="Catalog">
+      <CatalogPage />
+    </PermissionGate>
+  ),
 });
+
 
 const sb = supabase as any;
 

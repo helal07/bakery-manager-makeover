@@ -1,11 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { AppShell, Card } from "@/components/app-shell";
 import { Boxes, ScanBarcode, ShoppingBag, Wallet, ArrowRight, ReceiptText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/reports/")({
   head: () => ({ meta: [{ title: "Reports · Muzahid Food" }] }),
-  component: ReportsIndex,
+  component: () => (
+    <PermissionGate
+      anyOf={["reports.stock", "reports.sales", "reports.purchase", "reports.ledgers", "reports.expenses"]}
+      title="Reports"
+    >
+      <ReportsIndex />
+    </PermissionGate>
+  ),
 });
+
 
 const tiles = [
   { to: "/reports/stock", label: "Stock Reports", desc: "Product & raw material stock value", icon: Boxes },

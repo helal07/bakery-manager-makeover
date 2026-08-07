@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart, Camera,
@@ -28,8 +30,13 @@ export const Route = createFileRoute("/_authenticated/pos")({
   validateSearch: (s: Record<string, unknown>): { edit?: string } => ({
     edit: typeof s.edit === "string" ? s.edit : undefined,
   }),
-  component: PosPage,
+  component: () => (
+    <PermissionGate anyOf={["pos.access"]} title="POS">
+      <PosPage />
+    </PermissionGate>
+  ),
 });
+
 
 type Mode = "cash" | "card" | "credit" | "multi";
 type PayMethod = "cash" | "card" | "mobile" | "bank" | "cheque" | "other";

@@ -43,7 +43,7 @@ type Row = { product_id: string; qty: string };
 
 function NewTransferPage() {
   const navigate = useNavigate();
-  const { showrooms, hasGlobalAccess, currentShowroomId } = useShowroomScope();
+  const { showrooms, hasGlobalAccess, currentShowroomId, assignedShowroomIds } = useShowroomScope();
 
   const defaultSource = hasGlobalAccess ? "factory" : (currentShowroomId ?? "factory");
   const [source, setSource] = useState<string>(defaultSource);
@@ -57,16 +57,43 @@ function NewTransferPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Locations this user may send FROM. Global admins may send from the factory
+   * or any outlet they can see; an outlet user may only send from their own
+   * assigned outlets. Never offer a location the user cannot access.
+   */
+  const sourceOptions = useMemo(() => {
+    if (hasGlobalAccess) {
+      return [{ id: "factory", name: "Factory" }, ...showrooms.map((s) => ({ id: s.id, name: s.name }))];
+    }
+    return showrooms
+      .filter((s) => assignedShowroomIds.includes(s.id))
+      .map((s) => ({ id: s.id, name: s.name }));
+  }, [hasGlobalAccess, showrooms, assignedShowroomIds]);
+
+  // Keep the selection inside the allowed set.
+  useEffect(() => {
+    if (sourceOptions.length === 0) return;
+    if (!sourceOptions.some((o) => o.id === source)) setSource(sourceOptions[0].id);
+  }, [sourceOptions, source]);
+
+  const sourceLocId: string | null = source === "factory" ? null : source;
+
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: p }, { data: s }] = await Promise.all([
+    // Stock is read for the two locations involved only — never "all locations".
+    const stockQ = sb.from("product_stock").select("product_id,showroom_id,quantity");
+    const [{ data: p }, { data: sSrc }, { data: sDest }] = await Promise.all([
       sb.from("products").select("id,name,sku,unit,category").eq("is_active", true).order("name"),
-      sb.from("product_stock").select("product_id,showroom_id,quantity"),
+      sourceLocId ? stockQ.eq("showroom_id", sourceLocId) : stockQ.is("showroom_id", null),
+      dest
+        ? sb.from("product_stock").select("product_id,showroom_id,quantity").eq("showroom_id", dest)
+        : Promise.resolve({ data: [] as StockRow[] }),
     ]);
     setProducts((p ?? []) as Product[]);
-    setStock((s ?? []) as StockRow[]);
+    setStock([...((sSrc ?? []) as StockRow[]), ...((sDest ?? []) as StockRow[])]);
     setLoading(false);
-  }, []);
+  }, [sourceLocId, dest]);
   useEffect(() => { load(); }, [load]);
 
   const stockAt = useCallback((productId: string, locId: string | null) => {
@@ -76,7 +103,6 @@ function NewTransferPage() {
     return row ? Number(row.quantity) : 0;
   }, [stock]);
 
-  const sourceLocId: string | null = source === "factory" ? null : source;
   const sourceName = source === "factory" ? "Factory" : (showrooms.find((s) => s.id === source)?.name ?? "—");
   const destName = dest ? (showrooms.find((s) => s.id === dest)?.name ?? "—") : "Select destination";
 
@@ -84,6 +110,7 @@ function NewTransferPage() {
     () => showrooms.filter((s) => (source === "factory" ? true : s.id !== source)),
     [showrooms, source],
   );
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -113,8 +140,13 @@ function NewTransferPage() {
   const rmRow = (i: number) => setItems((v) => v.filter((_, idx) => idx !== i));
 
   const submit = async () => {
+    if (!sourceOptions.some((o) => o.id === source)) {
+      toast.error("You don't have access to this source location");
+      return;
+    }
     if (!dest) { toast.error("Pick destination"); return; }
     if (source !== "factory" && source === dest) { toast.error("Source and destination cannot be same"); return; }
+
     const clean = items
       .map((r) => ({ product_id: r.product_id, qty: Number(r.qty) }))
       .filter((r) => r.product_id && r.qty > 0);
@@ -210,15 +242,15 @@ function NewTransferPage() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>From</Label>
-                  <Select value={source} onValueChange={setSource} disabled={!hasGlobalAccess}>
+                  <Select value={source} onValueChange={setSource} disabled={sourceOptions.length <= 1}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {hasGlobalAccess && <SelectItem value="factory">Factory</SelectItem>}
-                      {showrooms.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      {sourceOptions.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+
                 </div>
                 <div className="space-y-1.5">
                   <Label>To</Label>

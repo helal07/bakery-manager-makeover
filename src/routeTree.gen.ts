@@ -17,11 +17,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedSubRecipesRouteImport } from './routes/_authenticated/sub-recipes'
+import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRecipesRouteImport } from './routes/_authenticated/recipes'
 import { Route as AuthenticatedRawMaterialsRouteImport } from './routes/_authenticated/raw-materials'
 import { Route as AuthenticatedRawMaterialStockRouteImport } from './routes/_authenticated/raw-material-stock'
+import { Route as AuthenticatedPurchasingRouteImport } from './routes/_authenticated/purchasing'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated/production'
 import { Route as AuthenticatedProductStockRouteImport } from './routes/_authenticated/product-stock'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
@@ -30,6 +33,7 @@ import { Route as AuthenticatedInventoryRouteImport } from './routes/_authentica
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedAiInsightsRouteImport } from './routes/_authenticated/ai-insights'
@@ -129,6 +133,11 @@ const AuthenticatedSubRecipesRoute = AuthenticatedSubRecipesRouteImport.update({
   path: '/sub-recipes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSalesRoute = AuthenticatedSalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -151,9 +160,19 @@ const AuthenticatedRawMaterialStockRoute =
     path: '/raw-material-stock',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPurchasingRoute = AuthenticatedPurchasingRouteImport.update({
+  id: '/purchasing',
+  path: '/purchasing',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProductionRoute = AuthenticatedProductionRouteImport.update({
@@ -197,6 +216,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCatalogRoute = AuthenticatedCatalogRouteImport.update({
   id: '/catalog',
   path: '/catalog',
@@ -237,9 +261,9 @@ const AuthenticatedReportsIndexRoute =
   } as any)
 const AuthenticatedProductsIndexRoute =
   AuthenticatedProductsIndexRouteImport.update({
-    id: '/products/',
-    path: '/products/',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
 const AuthenticatedProductionIndexRoute =
   AuthenticatedProductionIndexRouteImport.update({
@@ -254,9 +278,9 @@ const AuthenticatedEmployeesIndexRoute =
     getParentRoute: () => AuthenticatedEmployeesRoute,
   } as any)
 const AuthenticatedCrmIndexRoute = AuthenticatedCrmIndexRouteImport.update({
-  id: '/crm/',
-  path: '/crm/',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedCrmRoute,
 } as any)
 const ApiPublicSupabaseProxyRoute = ApiPublicSupabaseProxyRouteImport.update({
   id: '/api/public/supabase-proxy',
@@ -294,26 +318,26 @@ const AuthenticatedSettingsAccessRoute =
   } as any)
 const AuthenticatedSalesReturnRoute =
   AuthenticatedSalesReturnRouteImport.update({
-    id: '/sales/return',
-    path: '/sales/return',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/return',
+    path: '/return',
+    getParentRoute: () => AuthenticatedSalesRoute,
   } as any)
 const AuthenticatedSalesPaymentsRoute =
   AuthenticatedSalesPaymentsRouteImport.update({
-    id: '/sales/payments',
-    path: '/sales/payments',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/payments',
+    path: '/payments',
+    getParentRoute: () => AuthenticatedSalesRoute,
   } as any)
 const AuthenticatedSalesListRoute = AuthenticatedSalesListRouteImport.update({
-  id: '/sales/list',
-  path: '/sales/list',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  id: '/list',
+  path: '/list',
+  getParentRoute: () => AuthenticatedSalesRoute,
 } as any)
 const AuthenticatedSalesHistoryRoute =
   AuthenticatedSalesHistoryRouteImport.update({
-    id: '/sales/history',
-    path: '/sales/history',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => AuthenticatedSalesRoute,
   } as any)
 const AuthenticatedReportsStockRoute =
   AuthenticatedReportsStockRouteImport.update({
@@ -347,57 +371,57 @@ const AuthenticatedReportsExpensesRoute =
   } as any)
 const AuthenticatedPurchasingReturnsRoute =
   AuthenticatedPurchasingReturnsRouteImport.update({
-    id: '/purchasing/returns',
-    path: '/purchasing/returns',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/returns',
+    path: '/returns',
+    getParentRoute: () => AuthenticatedPurchasingRoute,
   } as any)
 const AuthenticatedPurchasingPaymentsRoute =
   AuthenticatedPurchasingPaymentsRouteImport.update({
-    id: '/purchasing/payments',
-    path: '/purchasing/payments',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/payments',
+    path: '/payments',
+    getParentRoute: () => AuthenticatedPurchasingRoute,
   } as any)
 const AuthenticatedPurchasingNewRoute =
   AuthenticatedPurchasingNewRouteImport.update({
-    id: '/purchasing/new',
-    path: '/purchasing/new',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedPurchasingRoute,
   } as any)
 const AuthenticatedPurchasingListRoute =
   AuthenticatedPurchasingListRouteImport.update({
-    id: '/purchasing/list',
-    path: '/purchasing/list',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/list',
+    path: '/list',
+    getParentRoute: () => AuthenticatedPurchasingRoute,
   } as any)
 const AuthenticatedPurchasingCategoriesRoute =
   AuthenticatedPurchasingCategoriesRouteImport.update({
-    id: '/purchasing/categories',
-    path: '/purchasing/categories',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => AuthenticatedPurchasingRoute,
   } as any)
 const AuthenticatedProductsUnitsRoute =
   AuthenticatedProductsUnitsRouteImport.update({
-    id: '/products/units',
-    path: '/products/units',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/units',
+    path: '/units',
+    getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
 const AuthenticatedProductsSellingPriceGroupsRoute =
   AuthenticatedProductsSellingPriceGroupsRouteImport.update({
-    id: '/products/selling-price-groups',
-    path: '/products/selling-price-groups',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/selling-price-groups',
+    path: '/selling-price-groups',
+    getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
 const AuthenticatedProductsNewRoute =
   AuthenticatedProductsNewRouteImport.update({
-    id: '/products/new',
-    path: '/products/new',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
 const AuthenticatedProductsCategoriesRoute =
   AuthenticatedProductsCategoriesRouteImport.update({
-    id: '/products/categories',
-    path: '/products/categories',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
 const AuthenticatedProductionWorkOrdersRoute =
   AuthenticatedProductionWorkOrdersRouteImport.update({
@@ -496,9 +520,9 @@ const AuthenticatedEmployeesNewRoute =
     getParentRoute: () => AuthenticatedEmployeesRoute,
   } as any)
 const AuthenticatedCrmIdIndexRoute = AuthenticatedCrmIdIndexRouteImport.update({
-  id: '/crm/$id/',
-  path: '/crm/$id/',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  id: '/$id/',
+  path: '/$id/',
+  getParentRoute: () => AuthenticatedCrmRoute,
 } as any)
 const AuthenticatedTransfersReceiveIdRoute =
   AuthenticatedTransfersReceiveIdRouteImport.update({
@@ -514,15 +538,15 @@ const AuthenticatedTransfersDamagedNewRoute =
   } as any)
 const AuthenticatedPurchasingEditIdRoute =
   AuthenticatedPurchasingEditIdRouteImport.update({
-    id: '/purchasing/edit/$id',
-    path: '/purchasing/edit/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/edit/$id',
+    path: '/edit/$id',
+    getParentRoute: () => AuthenticatedPurchasingRoute,
   } as any)
 const AuthenticatedProductsEditIdRoute =
   AuthenticatedProductsEditIdRouteImport.update({
-    id: '/products/edit/$id',
-    path: '/products/edit/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/edit/$id',
+    path: '/edit/$id',
+    getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
 const AuthenticatedProductionLabelsLedgerIdRoute =
   AuthenticatedProductionLabelsLedgerIdRouteImport.update({
@@ -538,9 +562,9 @@ const AuthenticatedEmployeesEditIdRoute =
   } as any)
 const AuthenticatedCrmIdLedgerRoute =
   AuthenticatedCrmIdLedgerRouteImport.update({
-    id: '/crm/$id/ledger',
-    path: '/crm/$id/ledger',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/$id/ledger',
+    path: '/$id/ledger',
+    getParentRoute: () => AuthenticatedCrmRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -552,6 +576,7 @@ export interface FileRoutesByFullPath {
   '/ai-insights': typeof AuthenticatedAiInsightsRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/catalog': typeof AuthenticatedCatalogRoute
+  '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteWithChildren
@@ -560,11 +585,14 @@ export interface FileRoutesByFullPath {
   '/pos': typeof AuthenticatedPosRoute
   '/product-stock': typeof AuthenticatedProductStockRoute
   '/production': typeof AuthenticatedProductionRouteWithChildren
+  '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
+  '/purchasing': typeof AuthenticatedPurchasingRouteWithChildren
   '/raw-material-stock': typeof AuthenticatedRawMaterialStockRoute
   '/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/recipes': typeof AuthenticatedRecipesRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
+  '/sales': typeof AuthenticatedSalesRouteWithChildren
   '/sub-recipes': typeof AuthenticatedSubRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
@@ -640,9 +668,11 @@ export interface FileRoutesByTo {
   '/pos': typeof AuthenticatedPosRoute
   '/product-stock': typeof AuthenticatedProductStockRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/purchasing': typeof AuthenticatedPurchasingRouteWithChildren
   '/raw-material-stock': typeof AuthenticatedRawMaterialStockRoute
   '/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/recipes': typeof AuthenticatedRecipesRoute
+  '/sales': typeof AuthenticatedSalesRouteWithChildren
   '/sub-recipes': typeof AuthenticatedSubRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
@@ -713,6 +743,7 @@ export interface FileRoutesById {
   '/_authenticated/ai-insights': typeof AuthenticatedAiInsightsRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/catalog': typeof AuthenticatedCatalogRoute
+  '/_authenticated/crm': typeof AuthenticatedCrmRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRouteWithChildren
@@ -721,11 +752,14 @@ export interface FileRoutesById {
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/product-stock': typeof AuthenticatedProductStockRoute
   '/_authenticated/production': typeof AuthenticatedProductionRouteWithChildren
+  '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/purchasing': typeof AuthenticatedPurchasingRouteWithChildren
   '/_authenticated/raw-material-stock': typeof AuthenticatedRawMaterialStockRoute
   '/_authenticated/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/_authenticated/recipes': typeof AuthenticatedRecipesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
+  '/_authenticated/sales': typeof AuthenticatedSalesRouteWithChildren
   '/_authenticated/sub-recipes': typeof AuthenticatedSubRecipesRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/invoice/$id': typeof InvoiceIdRoute
@@ -796,6 +830,7 @@ export interface FileRouteTypes {
     | '/ai-insights'
     | '/branches'
     | '/catalog'
+    | '/crm'
     | '/dashboard'
     | '/employees'
     | '/expenses'
@@ -804,11 +839,14 @@ export interface FileRouteTypes {
     | '/pos'
     | '/product-stock'
     | '/production'
+    | '/products'
     | '/profile'
+    | '/purchasing'
     | '/raw-material-stock'
     | '/raw-materials'
     | '/recipes'
     | '/reports'
+    | '/sales'
     | '/sub-recipes'
     | '/suppliers'
     | '/invoice/$id'
@@ -884,9 +922,11 @@ export interface FileRouteTypes {
     | '/pos'
     | '/product-stock'
     | '/profile'
+    | '/purchasing'
     | '/raw-material-stock'
     | '/raw-materials'
     | '/recipes'
+    | '/sales'
     | '/sub-recipes'
     | '/suppliers'
     | '/invoice/$id'
@@ -956,6 +996,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ai-insights'
     | '/_authenticated/branches'
     | '/_authenticated/catalog'
+    | '/_authenticated/crm'
     | '/_authenticated/dashboard'
     | '/_authenticated/employees'
     | '/_authenticated/expenses'
@@ -964,11 +1005,14 @@ export interface FileRouteTypes {
     | '/_authenticated/pos'
     | '/_authenticated/product-stock'
     | '/_authenticated/production'
+    | '/_authenticated/products'
     | '/_authenticated/profile'
+    | '/_authenticated/purchasing'
     | '/_authenticated/raw-material-stock'
     | '/_authenticated/raw-materials'
     | '/_authenticated/recipes'
     | '/_authenticated/reports'
+    | '/_authenticated/sales'
     | '/_authenticated/sub-recipes'
     | '/_authenticated/suppliers'
     | '/invoice/$id'
@@ -1098,6 +1142,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSubRecipesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/sales': {
+      id: '/_authenticated/sales'
+      path: '/sales'
+      fullPath: '/sales'
+      preLoaderRoute: typeof AuthenticatedSalesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reports': {
       id: '/_authenticated/reports'
       path: '/reports'
@@ -1126,11 +1177,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRawMaterialStockRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/purchasing': {
+      id: '/_authenticated/purchasing'
+      path: '/purchasing'
+      fullPath: '/purchasing'
+      preLoaderRoute: typeof AuthenticatedPurchasingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/products': {
+      id: '/_authenticated/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof AuthenticatedProductsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/production': {
@@ -1189,6 +1254,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/crm': {
+      id: '/_authenticated/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof AuthenticatedCrmRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/catalog': {
       id: '/_authenticated/catalog'
       path: '/catalog'
@@ -1240,10 +1312,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/products/': {
       id: '/_authenticated/products/'
-      path: '/products'
+      path: '/'
       fullPath: '/products/'
       preLoaderRoute: typeof AuthenticatedProductsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedProductsRoute
     }
     '/_authenticated/production/': {
       id: '/_authenticated/production/'
@@ -1261,10 +1333,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/crm/': {
       id: '/_authenticated/crm/'
-      path: '/crm'
+      path: '/'
       fullPath: '/crm/'
       preLoaderRoute: typeof AuthenticatedCrmIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/api/public/supabase-proxy': {
       id: '/api/public/supabase-proxy'
@@ -1310,31 +1382,31 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/sales/return': {
       id: '/_authenticated/sales/return'
-      path: '/sales/return'
+      path: '/return'
       fullPath: '/sales/return'
       preLoaderRoute: typeof AuthenticatedSalesReturnRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedSalesRoute
     }
     '/_authenticated/sales/payments': {
       id: '/_authenticated/sales/payments'
-      path: '/sales/payments'
+      path: '/payments'
       fullPath: '/sales/payments'
       preLoaderRoute: typeof AuthenticatedSalesPaymentsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedSalesRoute
     }
     '/_authenticated/sales/list': {
       id: '/_authenticated/sales/list'
-      path: '/sales/list'
+      path: '/list'
       fullPath: '/sales/list'
       preLoaderRoute: typeof AuthenticatedSalesListRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedSalesRoute
     }
     '/_authenticated/sales/history': {
       id: '/_authenticated/sales/history'
-      path: '/sales/history'
+      path: '/history'
       fullPath: '/sales/history'
       preLoaderRoute: typeof AuthenticatedSalesHistoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedSalesRoute
     }
     '/_authenticated/reports/stock': {
       id: '/_authenticated/reports/stock'
@@ -1373,66 +1445,66 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/purchasing/returns': {
       id: '/_authenticated/purchasing/returns'
-      path: '/purchasing/returns'
+      path: '/returns'
       fullPath: '/purchasing/returns'
       preLoaderRoute: typeof AuthenticatedPurchasingReturnsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedPurchasingRoute
     }
     '/_authenticated/purchasing/payments': {
       id: '/_authenticated/purchasing/payments'
-      path: '/purchasing/payments'
+      path: '/payments'
       fullPath: '/purchasing/payments'
       preLoaderRoute: typeof AuthenticatedPurchasingPaymentsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedPurchasingRoute
     }
     '/_authenticated/purchasing/new': {
       id: '/_authenticated/purchasing/new'
-      path: '/purchasing/new'
+      path: '/new'
       fullPath: '/purchasing/new'
       preLoaderRoute: typeof AuthenticatedPurchasingNewRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedPurchasingRoute
     }
     '/_authenticated/purchasing/list': {
       id: '/_authenticated/purchasing/list'
-      path: '/purchasing/list'
+      path: '/list'
       fullPath: '/purchasing/list'
       preLoaderRoute: typeof AuthenticatedPurchasingListRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedPurchasingRoute
     }
     '/_authenticated/purchasing/categories': {
       id: '/_authenticated/purchasing/categories'
-      path: '/purchasing/categories'
+      path: '/categories'
       fullPath: '/purchasing/categories'
       preLoaderRoute: typeof AuthenticatedPurchasingCategoriesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedPurchasingRoute
     }
     '/_authenticated/products/units': {
       id: '/_authenticated/products/units'
-      path: '/products/units'
+      path: '/units'
       fullPath: '/products/units'
       preLoaderRoute: typeof AuthenticatedProductsUnitsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedProductsRoute
     }
     '/_authenticated/products/selling-price-groups': {
       id: '/_authenticated/products/selling-price-groups'
-      path: '/products/selling-price-groups'
+      path: '/selling-price-groups'
       fullPath: '/products/selling-price-groups'
       preLoaderRoute: typeof AuthenticatedProductsSellingPriceGroupsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedProductsRoute
     }
     '/_authenticated/products/new': {
       id: '/_authenticated/products/new'
-      path: '/products/new'
+      path: '/new'
       fullPath: '/products/new'
       preLoaderRoute: typeof AuthenticatedProductsNewRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedProductsRoute
     }
     '/_authenticated/products/categories': {
       id: '/_authenticated/products/categories'
-      path: '/products/categories'
+      path: '/categories'
       fullPath: '/products/categories'
       preLoaderRoute: typeof AuthenticatedProductsCategoriesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedProductsRoute
     }
     '/_authenticated/production/work-orders': {
       id: '/_authenticated/production/work-orders'
@@ -1548,10 +1620,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/crm/$id/': {
       id: '/_authenticated/crm/$id/'
-      path: '/crm/$id'
+      path: '/$id'
       fullPath: '/crm/$id/'
       preLoaderRoute: typeof AuthenticatedCrmIdIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
     '/_authenticated/transfers/receive/$id': {
       id: '/_authenticated/transfers/receive/$id'
@@ -1569,17 +1641,17 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/purchasing/edit/$id': {
       id: '/_authenticated/purchasing/edit/$id'
-      path: '/purchasing/edit/$id'
+      path: '/edit/$id'
       fullPath: '/purchasing/edit/$id'
       preLoaderRoute: typeof AuthenticatedPurchasingEditIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedPurchasingRoute
     }
     '/_authenticated/products/edit/$id': {
       id: '/_authenticated/products/edit/$id'
-      path: '/products/edit/$id'
+      path: '/edit/$id'
       fullPath: '/products/edit/$id'
       preLoaderRoute: typeof AuthenticatedProductsEditIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedProductsRoute
     }
     '/_authenticated/production/labels/$ledgerId': {
       id: '/_authenticated/production/labels/$ledgerId'
@@ -1597,13 +1669,28 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/crm/$id/ledger': {
       id: '/_authenticated/crm/$id/ledger'
-      path: '/crm/$id/ledger'
+      path: '/$id/ledger'
       fullPath: '/crm/$id/ledger'
       preLoaderRoute: typeof AuthenticatedCrmIdLedgerRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedCrmRoute
     }
   }
 }
+
+interface AuthenticatedCrmRouteChildren {
+  AuthenticatedCrmIndexRoute: typeof AuthenticatedCrmIndexRoute
+  AuthenticatedCrmIdLedgerRoute: typeof AuthenticatedCrmIdLedgerRoute
+  AuthenticatedCrmIdIndexRoute: typeof AuthenticatedCrmIdIndexRoute
+}
+
+const AuthenticatedCrmRouteChildren: AuthenticatedCrmRouteChildren = {
+  AuthenticatedCrmIndexRoute: AuthenticatedCrmIndexRoute,
+  AuthenticatedCrmIdLedgerRoute: AuthenticatedCrmIdLedgerRoute,
+  AuthenticatedCrmIdIndexRoute: AuthenticatedCrmIdIndexRoute,
+}
+
+const AuthenticatedCrmRouteWithChildren =
+  AuthenticatedCrmRoute._addFileChildren(AuthenticatedCrmRouteChildren)
 
 interface AuthenticatedEmployeesRouteChildren {
   AuthenticatedEmployeesNewRoute: typeof AuthenticatedEmployeesNewRoute
@@ -1689,6 +1776,55 @@ const AuthenticatedProductionRouteWithChildren =
     AuthenticatedProductionRouteChildren,
   )
 
+interface AuthenticatedProductsRouteChildren {
+  AuthenticatedProductsCategoriesRoute: typeof AuthenticatedProductsCategoriesRoute
+  AuthenticatedProductsNewRoute: typeof AuthenticatedProductsNewRoute
+  AuthenticatedProductsSellingPriceGroupsRoute: typeof AuthenticatedProductsSellingPriceGroupsRoute
+  AuthenticatedProductsUnitsRoute: typeof AuthenticatedProductsUnitsRoute
+  AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
+  AuthenticatedProductsEditIdRoute: typeof AuthenticatedProductsEditIdRoute
+}
+
+const AuthenticatedProductsRouteChildren: AuthenticatedProductsRouteChildren = {
+  AuthenticatedProductsCategoriesRoute: AuthenticatedProductsCategoriesRoute,
+  AuthenticatedProductsNewRoute: AuthenticatedProductsNewRoute,
+  AuthenticatedProductsSellingPriceGroupsRoute:
+    AuthenticatedProductsSellingPriceGroupsRoute,
+  AuthenticatedProductsUnitsRoute: AuthenticatedProductsUnitsRoute,
+  AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
+  AuthenticatedProductsEditIdRoute: AuthenticatedProductsEditIdRoute,
+}
+
+const AuthenticatedProductsRouteWithChildren =
+  AuthenticatedProductsRoute._addFileChildren(
+    AuthenticatedProductsRouteChildren,
+  )
+
+interface AuthenticatedPurchasingRouteChildren {
+  AuthenticatedPurchasingCategoriesRoute: typeof AuthenticatedPurchasingCategoriesRoute
+  AuthenticatedPurchasingListRoute: typeof AuthenticatedPurchasingListRoute
+  AuthenticatedPurchasingNewRoute: typeof AuthenticatedPurchasingNewRoute
+  AuthenticatedPurchasingPaymentsRoute: typeof AuthenticatedPurchasingPaymentsRoute
+  AuthenticatedPurchasingReturnsRoute: typeof AuthenticatedPurchasingReturnsRoute
+  AuthenticatedPurchasingEditIdRoute: typeof AuthenticatedPurchasingEditIdRoute
+}
+
+const AuthenticatedPurchasingRouteChildren: AuthenticatedPurchasingRouteChildren =
+  {
+    AuthenticatedPurchasingCategoriesRoute:
+      AuthenticatedPurchasingCategoriesRoute,
+    AuthenticatedPurchasingListRoute: AuthenticatedPurchasingListRoute,
+    AuthenticatedPurchasingNewRoute: AuthenticatedPurchasingNewRoute,
+    AuthenticatedPurchasingPaymentsRoute: AuthenticatedPurchasingPaymentsRoute,
+    AuthenticatedPurchasingReturnsRoute: AuthenticatedPurchasingReturnsRoute,
+    AuthenticatedPurchasingEditIdRoute: AuthenticatedPurchasingEditIdRoute,
+  }
+
+const AuthenticatedPurchasingRouteWithChildren =
+  AuthenticatedPurchasingRoute._addFileChildren(
+    AuthenticatedPurchasingRouteChildren,
+  )
+
 interface AuthenticatedReportsRouteChildren {
   AuthenticatedReportsExpensesRoute: typeof AuthenticatedReportsExpensesRoute
   AuthenticatedReportsLedgersRoute: typeof AuthenticatedReportsLedgersRoute
@@ -1710,11 +1846,29 @@ const AuthenticatedReportsRouteChildren: AuthenticatedReportsRouteChildren = {
 const AuthenticatedReportsRouteWithChildren =
   AuthenticatedReportsRoute._addFileChildren(AuthenticatedReportsRouteChildren)
 
+interface AuthenticatedSalesRouteChildren {
+  AuthenticatedSalesHistoryRoute: typeof AuthenticatedSalesHistoryRoute
+  AuthenticatedSalesListRoute: typeof AuthenticatedSalesListRoute
+  AuthenticatedSalesPaymentsRoute: typeof AuthenticatedSalesPaymentsRoute
+  AuthenticatedSalesReturnRoute: typeof AuthenticatedSalesReturnRoute
+}
+
+const AuthenticatedSalesRouteChildren: AuthenticatedSalesRouteChildren = {
+  AuthenticatedSalesHistoryRoute: AuthenticatedSalesHistoryRoute,
+  AuthenticatedSalesListRoute: AuthenticatedSalesListRoute,
+  AuthenticatedSalesPaymentsRoute: AuthenticatedSalesPaymentsRoute,
+  AuthenticatedSalesReturnRoute: AuthenticatedSalesReturnRoute,
+}
+
+const AuthenticatedSalesRouteWithChildren =
+  AuthenticatedSalesRoute._addFileChildren(AuthenticatedSalesRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountingRoute: typeof AuthenticatedAccountingRoute
   AuthenticatedAiInsightsRoute: typeof AuthenticatedAiInsightsRoute
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRoute
+  AuthenticatedCrmRoute: typeof AuthenticatedCrmRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRouteWithChildren
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRouteWithChildren
@@ -1723,40 +1877,24 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
   AuthenticatedProductStockRoute: typeof AuthenticatedProductStockRoute
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRouteWithChildren
+  AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedPurchasingRoute: typeof AuthenticatedPurchasingRouteWithChildren
   AuthenticatedRawMaterialStockRoute: typeof AuthenticatedRawMaterialStockRoute
   AuthenticatedRawMaterialsRoute: typeof AuthenticatedRawMaterialsRoute
   AuthenticatedRecipesRoute: typeof AuthenticatedRecipesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
+  AuthenticatedSalesRoute: typeof AuthenticatedSalesRouteWithChildren
   AuthenticatedSubRecipesRoute: typeof AuthenticatedSubRecipesRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
-  AuthenticatedProductsCategoriesRoute: typeof AuthenticatedProductsCategoriesRoute
-  AuthenticatedProductsNewRoute: typeof AuthenticatedProductsNewRoute
-  AuthenticatedProductsSellingPriceGroupsRoute: typeof AuthenticatedProductsSellingPriceGroupsRoute
-  AuthenticatedProductsUnitsRoute: typeof AuthenticatedProductsUnitsRoute
-  AuthenticatedPurchasingCategoriesRoute: typeof AuthenticatedPurchasingCategoriesRoute
-  AuthenticatedPurchasingListRoute: typeof AuthenticatedPurchasingListRoute
-  AuthenticatedPurchasingNewRoute: typeof AuthenticatedPurchasingNewRoute
-  AuthenticatedPurchasingPaymentsRoute: typeof AuthenticatedPurchasingPaymentsRoute
-  AuthenticatedPurchasingReturnsRoute: typeof AuthenticatedPurchasingReturnsRoute
-  AuthenticatedSalesHistoryRoute: typeof AuthenticatedSalesHistoryRoute
-  AuthenticatedSalesListRoute: typeof AuthenticatedSalesListRoute
-  AuthenticatedSalesPaymentsRoute: typeof AuthenticatedSalesPaymentsRoute
-  AuthenticatedSalesReturnRoute: typeof AuthenticatedSalesReturnRoute
   AuthenticatedSettingsAccessRoute: typeof AuthenticatedSettingsAccessRoute
   AuthenticatedSettingsLandingRoute: typeof AuthenticatedSettingsLandingRoute
   AuthenticatedSettingsShowroomsRoute: typeof AuthenticatedSettingsShowroomsRoute
   AuthenticatedTransfersNewRoute: typeof AuthenticatedTransfersNewRoute
-  AuthenticatedCrmIndexRoute: typeof AuthenticatedCrmIndexRoute
-  AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
   AuthenticatedTransfersIndexRoute: typeof AuthenticatedTransfersIndexRoute
-  AuthenticatedCrmIdLedgerRoute: typeof AuthenticatedCrmIdLedgerRoute
-  AuthenticatedProductsEditIdRoute: typeof AuthenticatedProductsEditIdRoute
-  AuthenticatedPurchasingEditIdRoute: typeof AuthenticatedPurchasingEditIdRoute
   AuthenticatedTransfersDamagedNewRoute: typeof AuthenticatedTransfersDamagedNewRoute
   AuthenticatedTransfersReceiveIdRoute: typeof AuthenticatedTransfersReceiveIdRoute
-  AuthenticatedCrmIdIndexRoute: typeof AuthenticatedCrmIdIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1764,6 +1902,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAiInsightsRoute: AuthenticatedAiInsightsRoute,
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCatalogRoute: AuthenticatedCatalogRoute,
+  AuthenticatedCrmRoute: AuthenticatedCrmRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRouteWithChildren,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRouteWithChildren,
@@ -1772,42 +1911,24 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPosRoute: AuthenticatedPosRoute,
   AuthenticatedProductStockRoute: AuthenticatedProductStockRoute,
   AuthenticatedProductionRoute: AuthenticatedProductionRouteWithChildren,
+  AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedPurchasingRoute: AuthenticatedPurchasingRouteWithChildren,
   AuthenticatedRawMaterialStockRoute: AuthenticatedRawMaterialStockRoute,
   AuthenticatedRawMaterialsRoute: AuthenticatedRawMaterialsRoute,
   AuthenticatedRecipesRoute: AuthenticatedRecipesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
+  AuthenticatedSalesRoute: AuthenticatedSalesRouteWithChildren,
   AuthenticatedSubRecipesRoute: AuthenticatedSubRecipesRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
-  AuthenticatedProductsCategoriesRoute: AuthenticatedProductsCategoriesRoute,
-  AuthenticatedProductsNewRoute: AuthenticatedProductsNewRoute,
-  AuthenticatedProductsSellingPriceGroupsRoute:
-    AuthenticatedProductsSellingPriceGroupsRoute,
-  AuthenticatedProductsUnitsRoute: AuthenticatedProductsUnitsRoute,
-  AuthenticatedPurchasingCategoriesRoute:
-    AuthenticatedPurchasingCategoriesRoute,
-  AuthenticatedPurchasingListRoute: AuthenticatedPurchasingListRoute,
-  AuthenticatedPurchasingNewRoute: AuthenticatedPurchasingNewRoute,
-  AuthenticatedPurchasingPaymentsRoute: AuthenticatedPurchasingPaymentsRoute,
-  AuthenticatedPurchasingReturnsRoute: AuthenticatedPurchasingReturnsRoute,
-  AuthenticatedSalesHistoryRoute: AuthenticatedSalesHistoryRoute,
-  AuthenticatedSalesListRoute: AuthenticatedSalesListRoute,
-  AuthenticatedSalesPaymentsRoute: AuthenticatedSalesPaymentsRoute,
-  AuthenticatedSalesReturnRoute: AuthenticatedSalesReturnRoute,
   AuthenticatedSettingsAccessRoute: AuthenticatedSettingsAccessRoute,
   AuthenticatedSettingsLandingRoute: AuthenticatedSettingsLandingRoute,
   AuthenticatedSettingsShowroomsRoute: AuthenticatedSettingsShowroomsRoute,
   AuthenticatedTransfersNewRoute: AuthenticatedTransfersNewRoute,
-  AuthenticatedCrmIndexRoute: AuthenticatedCrmIndexRoute,
-  AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   AuthenticatedTransfersIndexRoute: AuthenticatedTransfersIndexRoute,
-  AuthenticatedCrmIdLedgerRoute: AuthenticatedCrmIdLedgerRoute,
-  AuthenticatedProductsEditIdRoute: AuthenticatedProductsEditIdRoute,
-  AuthenticatedPurchasingEditIdRoute: AuthenticatedPurchasingEditIdRoute,
   AuthenticatedTransfersDamagedNewRoute: AuthenticatedTransfersDamagedNewRoute,
   AuthenticatedTransfersReceiveIdRoute: AuthenticatedTransfersReceiveIdRoute,
-  AuthenticatedCrmIdIndexRoute: AuthenticatedCrmIdIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -1826,13 +1947,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

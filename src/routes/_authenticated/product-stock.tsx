@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { Link } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { Input } from "@/components/ui/input";
@@ -22,8 +24,13 @@ import { useShowroomScope } from "@/hooks/use-showroom-scope";
 
 export const Route = createFileRoute("/_authenticated/product-stock")({
   head: () => ({ meta: [{ title: "Product Stock · Muzahid Food" }] }),
-  component: ProductStockPage,
+  component: () => (
+    <PermissionGate anyOf={["inventory.view", "inventory.adjust"]} title="Product Stock">
+      <ProductStockPage />
+    </PermissionGate>
+  ),
 });
+
 
 const sb = supabase as any;
 
@@ -58,7 +65,7 @@ function ProductStockPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [adjustFor, setAdjustFor] = useState<StockRow | null>(null);
-  const [prodOpen, setProdOpen] = useState(false);
+  
   const [historyFor, setHistoryFor] = useState<StockRow | null>(null);
 
   const load = useCallback(async () => {
@@ -142,11 +149,17 @@ function ProductStockPage() {
           />
         </div>
         {isFactory && hasGlobalAccess && (
-          <Button onClick={() => setProdOpen(true)}>
-            <PackagePlus className="w-4 h-4 mr-2" /> Add Production
-          </Button>
+          <Link
+            to="/production/produce"
+            className="inline-flex items-center justify-center h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+          >
+            <PackagePlus className="w-4 h-4 mr-2" /> New Production
+          </Link>
         )}
       </div>
+
+
+
 
       <Card>
         {loading ? (
@@ -216,13 +229,8 @@ function ProductStockPage() {
         />
       )}
 
-      {prodOpen && (
-        <ProductionDialog
-          products={rows.map((r) => r.product)}
-          onClose={() => setProdOpen(false)}
-          onSaved={() => { setProdOpen(false); load(); }}
-        />
-      )}
+
+
 
       {historyFor && (
         <HistorySheet
@@ -320,75 +328,11 @@ function AdjustDialog({
   );
 }
 
-function ProductionDialog({
-  products, onClose, onSaved,
-}: {
-  products: Product[];
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const [productId, setProductId] = useState(products[0]?.id ?? "");
-  const [qty, setQty] = useState("");
-  const [note, setNote] = useState("");
-  const [saving, setSaving] = useState(false);
+// Finished-goods production lives in Production → New Production (factory
+// scope, gated by production.* permissions). This page only adjusts stock for
+// the currently selected location.
 
-  const submit = async () => {
-    const n = Number(qty);
-    if (!productId) { toast.error("Pick a product"); return; }
-    if (!qty || Number.isNaN(n) || n <= 0) { toast.error("Enter a positive quantity"); return; }
-    setSaving(true);
-    const { error } = await sb.rpc("commit_stock_movement", {
-      _product_id: productId,
-      _showroom_id: null,
-      _qty: n,
-      _kind: "production",
-      _ref_type: null,
-      _ref_id: null,
-      _note: note || null,
-    });
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Production added to factory stock");
-    onSaved();
-  };
 
-  return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Production (Factory)</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div>
-            <Label>Product</Label>
-            <Select value={productId} onValueChange={setProductId}>
-              <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
-              <SelectContent>
-                {products.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}{p.sku ? ` (${p.sku})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Quantity</Label>
-            <Input type="number" min="0" step="any" value={qty} onChange={(e) => setQty(e.target.value)} />
-          </div>
-          <div>
-            <Label>Note</Label>
-            <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Add"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function HistorySheet({
   row, showroomId, onClose,

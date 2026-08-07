@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import { Check, Circle, Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -10,8 +12,13 @@ import { scopeTo } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({ meta: [{ title: pageTitle("Orders") }] }),
-  component: Orders,
+  component: () => (
+    <PermissionGate anyOf={["sales.view"]} title="Orders">
+      <Orders />
+    </PermissionGate>
+  ),
 });
+
 
 type OrderStatus = "Pending" | "In Production" | "Ready" | "Delivered";
 type OrderType = "Retail" | "Wholesale" | "Custom Cake" | "Online";

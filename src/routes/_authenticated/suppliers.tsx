@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { AppShell, Card } from "@/components/app-shell";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -18,8 +20,13 @@ import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/suppliers")({
   head: () => ({ meta: [{ title: pageTitle("Suppliers") }] }),
-  component: Suppliers,
+  component: () => (
+    <PermissionGate anyOf={["contacts.suppliers.view", "contacts.suppliers.manage"]} title="Suppliers">
+      <Suppliers />
+    </PermissionGate>
+  ),
 });
+
 
 function Suppliers() {
   const [open, setOpen] = useState(false);

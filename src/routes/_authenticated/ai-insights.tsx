@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import { Sparkles, TrendingUp, AlertCircle, Lightbulb } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -12,8 +14,13 @@ import { scopeTo } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/ai-insights")({
   head: () => ({ meta: [{ title: pageTitle("AI Insights") }] }),
-  component: AIInsights,
+  component: () => (
+    <PermissionGate anyOf={["dashboard.access"]} title="AI Insights">
+      <AIInsights />
+    </PermissionGate>
+  ),
 });
+
 
 type Point = { day: string; actual: number | null; predicted: number | null };
 type Insight = { icon: LucideIcon; title: string; body: string };
