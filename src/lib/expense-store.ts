@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { scopeTo } from "@/lib/scope";
 
 export type Expense = {
   id: string;
@@ -69,7 +70,7 @@ function toExpense(r: any): Expense {
 
 export async function loadExpenses(showroomId?: string | null): Promise<Expense[]> {
   let q = sb.from("expenses").select("*").order("expense_date", { ascending: false });
-  if (showroomId) q = q.eq("showroom_id", showroomId);
+  q = scopeTo(q, showroomId, "showroom_id");
   const { data, error } = await q;
   if (error) throw error;
   return (data ?? []).map(toExpense);

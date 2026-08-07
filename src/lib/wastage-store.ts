@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { scopeTo } from "@/lib/scope";
 
 const sb = supabase as any;
 
@@ -24,7 +25,7 @@ export async function loadWastage(showroomId: string | null): Promise<WastageEnt
     )
     .order("logged_at", { ascending: false })
     .limit(500);
-  if (showroomId) q = q.eq("showroom_id", showroomId);
+  q = scopeTo(q, showroomId, "showroom_id");
   const { data, error } = await q;
   if (error) throw error;
   return ((data ?? []) as any[]).map((r) => ({

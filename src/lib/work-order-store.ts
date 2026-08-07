@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { loadRecipeFor, commitProduction } from "@/lib/recipe-store";
+import { scopeTo } from "@/lib/scope";
 
 const sb = supabase as any;
 
@@ -27,7 +28,7 @@ export async function loadWorkOrders(showroomId: string | null): Promise<WorkOrd
     .select("id,product_id,showroom_id,batch_qty,assigned_to,status,planned_date,started_at,completed_at,notes,batch_id,created_at,products(name)")
     .order("created_at", { ascending: false })
     .limit(500);
-  if (showroomId) q = q.eq("showroom_id", showroomId);
+  q = scopeTo(q, showroomId, "showroom_id");
   const { data, error } = await q;
   if (error) throw error;
   return ((data ?? []) as any[]).map((r) => ({

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { scopeTo } from "@/lib/scope";
 
 const sb = supabase as any;
 
@@ -67,7 +68,7 @@ export async function loadPurchases(showroomId?: string | null): Promise<Purchas
        purchase_items(material_id,name,unit,qty,price)`,
     )
     .order("purchase_date", { ascending: false });
-  if (showroomId) q = q.eq("showroom_id", showroomId);
+  q = scopeTo(q, showroomId, "showroom_id");
   const { data, error } = await q;
   if (error) throw error;
   return ((data ?? []) as any[]).map((r) => ({

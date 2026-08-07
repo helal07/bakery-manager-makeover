@@ -2798,6 +2798,10 @@ export type Database = {
     }
     Functions: {
       assert_app_staff: { Args: never; Returns: undefined }
+      assert_location_access: {
+        Args: { _showroom: string }
+        Returns: undefined
+      }
       commit_damaged_movement: {
         Args: {
           _kind: string
@@ -2869,6 +2873,10 @@ export type Database = {
         }
         Returns: string
       }
+      commit_transfer_receive: {
+        Args: { _transfer_id: string }
+        Returns: undefined
+      }
       find_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_effective_invoice_settings: {
         Args: { _showroom_id: string }
@@ -2895,10 +2903,15 @@ export type Database = {
         }
         Returns: string
       }
+      user_can_access_location: {
+        Args: { _showroom: string; _user: string }
+        Returns: boolean
+      }
       user_has_showroom_access: {
         Args: { _showroom: string; _user: string }
         Returns: boolean
       }
+      user_is_factory_user: { Args: { _user: string }; Returns: boolean }
       user_is_global_admin: { Args: { _user: string }; Returns: boolean }
     }
     Enums: {

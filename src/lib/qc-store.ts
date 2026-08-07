@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { scopeTo } from "@/lib/scope";
 
 const sb = supabase as any;
 
@@ -31,7 +32,7 @@ export async function loadRecentBatchesWithQc(showroomId: string | null): Promis
     .eq("kind", "production")
     .order("created_at", { ascending: false })
     .limit(100);
-  if (showroomId) q = q.eq("showroom_id", showroomId);
+  q = scopeTo(q, showroomId, "showroom_id");
   const { data: batches, error } = await q;
   if (error) throw error;
 

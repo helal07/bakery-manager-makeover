@@ -7,6 +7,7 @@ import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { loadOverheadsInRange, type BatchOverheadRow } from "@/lib/production-overhead-store";
 import { toast } from "sonner";
 import { PermissionGate } from "@/components/permission-gate";
+import { scopeTo } from "@/lib/scope";
 
 const sb = supabase as any;
 
@@ -44,7 +45,7 @@ function ConsumptionReportPage() {
         .in("kind", ["production_consume", "wastage"])
         .gte("created_at", `${from}T00:00:00Z`)
         .lte("created_at", `${to}T23:59:59Z`);
-      if (currentShowroomId) q = q.eq("showroom_id", currentShowroomId);
+      q = scopeTo(q, currentShowroomId, "showroom_id");
       const { data, error } = await q;
       if (error) throw error;
 

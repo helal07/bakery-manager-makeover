@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ReceivePaymentDialog } from "@/components/receive-payment-dialog";
+import { scopeTo } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/sales/payments")({
   head: () => ({ meta: [{ title: "Customer Payments · Muzahid Food" }] }),
@@ -55,7 +56,7 @@ function CustomerPayments() {
     let query = sb.from("customer_payments")
       .select("id,paid_on,amount,method,reference,note,showroom_id,sale_id,invoice_ref,customer_id,customer_name,customer_phone,sales(total,due,customer_name,customer_phone),customers(name,phone)")
       .order("paid_on", { ascending: false }).order("created_at", { ascending: false });
-    if (currentShowroomId) query = query.eq("showroom_id", currentShowroomId);
+    query = scopeTo(query, currentShowroomId, "showroom_id");
     const { data, error } = await query;
     if (error) { console.error(error); setRows([]); }
     else setRows((data ?? []).map((r: any) => ({
@@ -308,7 +309,7 @@ function NewPayment({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
       if (!saleQuery.trim()) { setSaleMatches([]); return; }
       let q = sb.from("sales").select("id,customer_name,customer_phone,total,paid,due,created_at,showroom_id")
         .order("created_at", { ascending: false }).limit(15);
-      if (currentShowroomId) q = q.eq("showroom_id", currentShowroomId);
+      q = scopeTo(q, currentShowroomId, "showroom_id");
       const s = saleQuery.trim();
       q = q.or(`id.ilike.%${s}%,customer_name.ilike.%${s}%,customer_phone.ilike.%${s}%`);
       const { data } = await q;

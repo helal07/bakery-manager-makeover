@@ -6,9 +6,11 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
+import { scopeTo } from "@/lib/scope";
 import {
   pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings,
 } from "@/lib/company-settings";
+
 
 const sb = supabase as any;
 
@@ -72,7 +74,7 @@ function ProfitLossPage() {
         .select("material_id,qty,created_at,raw_materials(name,unit,cost)")
         .eq("kind", "production_consume")
         .gte("created_at", fromTs).lte("created_at", toTs);
-      if (currentShowroomId) consumeQ = consumeQ.eq("showroom_id", currentShowroomId);
+      consumeQ = scopeTo(consumeQ, currentShowroomId, "showroom_id");
 
       // Finished goods produced
       let produceQ = sb
@@ -80,7 +82,7 @@ function ProfitLossPage() {
         .select("id,product_id,qty,created_at,products(name,price)")
         .eq("kind", "production")
         .gte("created_at", fromTs).lte("created_at", toTs);
-      if (currentShowroomId) produceQ = produceQ.eq("showroom_id", currentShowroomId);
+      produceQ = scopeTo(produceQ, currentShowroomId, "showroom_id");
 
       // Transfers dispatched to showrooms
       let transferQ = sb
@@ -89,7 +91,7 @@ function ProfitLossPage() {
 
         .gte("created_at", fromTs).lte("created_at", toTs)
         .order("created_at", { ascending: false });
-      if (currentShowroomId) transferQ = transferQ.eq("source_showroom_id", currentShowroomId);
+      transferQ = scopeTo(transferQ, currentShowroomId, "source_showroom_id");
 
       // Overheads booked in the period
       const overheadQ = sb
@@ -103,14 +105,14 @@ function ProfitLossPage() {
         .select("id,material_id,qty,created_at,raw_materials(name,unit,cost)")
         .eq("kind", "wastage")
         .gte("created_at", fromTs).lte("created_at", toTs);
-      if (currentShowroomId) rawWasteQ = rawWasteQ.eq("showroom_id", currentShowroomId);
+      rawWasteQ = scopeTo(rawWasteQ, currentShowroomId, "showroom_id");
 
       let prodWasteQ = sb
         .from("wastage_log")
         .select("id,qty,reason,logged_at,product_id,products(name,cost)")
         .not("product_id", "is", null)
         .gte("logged_at", fromTs).lte("logged_at", toTs);
-      if (currentShowroomId) prodWasteQ = prodWasteQ.eq("showroom_id", currentShowroomId);
+      prodWasteQ = scopeTo(prodWasteQ, currentShowroomId, "showroom_id");
 
       const showroomsQ = sb.from("showrooms").select("id,name");
 

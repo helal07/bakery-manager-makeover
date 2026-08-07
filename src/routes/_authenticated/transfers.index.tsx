@@ -56,9 +56,12 @@ function TransfersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     let q = sb.from("transfers").select("*").order("created_at", { ascending: false }).limit(200);
-    if (!hasGlobalAccess && currentShowroomId) {
-      q = q.or(`source_showroom_id.eq.${currentShowroomId},dest_showroom_id.eq.${currentShowroomId}`);
-    }
+    // Strict location scope: only transfers this location sent or is receiving.
+    // No scope selected means Factory (source/dest IS NULL).
+    q = currentShowroomId
+      ? q.or(`source_showroom_id.eq.${currentShowroomId},dest_showroom_id.eq.${currentShowroomId}`)
+      : q.or("source_showroom_id.is.null,dest_showroom_id.is.null");
+
     const [{ data: t }, { data: p }] = await Promise.all([
       q,
       sb.from("products").select("id,name,sku,unit").eq("is_active", true).order("name"),
