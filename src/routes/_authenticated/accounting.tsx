@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
 import { pageTitle } from "@/lib/company-settings";
+import { scopeTo } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/accounting")({
   head: () => ({ meta: [{ title: pageTitle("Accounting") }] }),
@@ -49,9 +50,9 @@ function Accounting() {
         .gte("purchase_date", day);
 
       const [sales, expenses, purchases] = await Promise.all([
-        currentShowroomId ? salesQ.eq("showroom_id", currentShowroomId) : salesQ,
-        currentShowroomId ? expQ.eq("showroom_id", currentShowroomId) : expQ,
-        currentShowroomId ? purQ.eq("showroom_id", currentShowroomId) : purQ,
+        scopeTo(salesQ, currentShowroomId),
+        scopeTo(expQ, currentShowroomId),
+        scopeTo(purQ, currentShowroomId),
       ]);
 
       if (cancelled) return;

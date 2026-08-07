@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Plus, X, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { scopeTo } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/purchasing/payments")({
   head: () => ({ meta: [{ title: "Supplier Payments · Muzahid Food" }] }),
@@ -41,7 +42,7 @@ function SupplierPayments() {
     let query = sb.from("supplier_payments")
       .select("id,paid_on,amount,method,reference,note,showroom_id,supplier_id,purchase_id,suppliers(name),purchases(code)")
       .order("paid_on", { ascending: false }).order("created_at", { ascending: false });
-    if (currentShowroomId) query = query.eq("showroom_id", currentShowroomId);
+    query = scopeTo(query, currentShowroomId, "showroom_id");
     const { data, error } = await query;
     if (error) { console.error(error); setRows([]); }
     else setRows((data ?? []).map((r: any) => ({
@@ -181,7 +182,7 @@ function NewPayment({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
     if (!supplierId) { setPurchases([]); return; }
     (async () => {
       let q = sb.from("purchases").select("id,code,total,paid,due,purchase_date").eq("supplier_id", supplierId).order("purchase_date", { ascending: false }).limit(50);
-      if (currentShowroomId) q = q.eq("showroom_id", currentShowroomId);
+      q = scopeTo(q, currentShowroomId, "showroom_id");
       const { data } = await q;
       setPurchases(data ?? []);
     })();

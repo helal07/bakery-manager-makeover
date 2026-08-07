@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Undo2, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { scopeTo } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/sales/return")({
   head: () => ({ meta: [{ title: "Return Sale · Muzahid Food" }] }),
@@ -52,7 +53,7 @@ function ReturnSale() {
       .from("sale_returns")
       .select("id,code,created_at,sale_id,invoice_ref,customer_name,amount,reason,showroom_id,sale_return_items(id)")
       .order("created_at", { ascending: false });
-    if (currentShowroomId) query = query.eq("showroom_id", currentShowroomId);
+    query = scopeTo(query, currentShowroomId, "showroom_id");
     const { data, error } = await query;
     if (error) {
       console.error(error);
@@ -202,7 +203,7 @@ function NewReturnModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     const t = setTimeout(async () => {
       if (!saleQuery.trim()) { setSaleMatches([]); return; }
       let q = sb.from("sales").select("id,customer_name,customer_phone,total,created_at,showroom_id").order("created_at", { ascending: false }).limit(20);
-      if (currentShowroomId) q = q.eq("showroom_id", currentShowroomId);
+      q = scopeTo(q, currentShowroomId, "showroom_id");
       const s = saleQuery.trim();
       q = q.or(`id.ilike.%${s}%,customer_name.ilike.%${s}%,customer_phone.ilike.%${s}%`);
       const { data } = await q;

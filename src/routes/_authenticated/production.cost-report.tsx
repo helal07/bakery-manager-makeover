@@ -9,6 +9,7 @@ import { loadRawMaterials } from "@/lib/raw-material-store";
 import { loadOverheadsForBatches, type BatchOverheadRow } from "@/lib/production-overhead-store";
 import { toast } from "sonner";
 import { PermissionGate } from "@/components/permission-gate";
+import { scopeTo } from "@/lib/scope";
 
 const sb = supabase as any;
 
@@ -58,7 +59,7 @@ function CostReportPage() {
         .gte("created_at", `${from}T00:00:00Z`)
         .lte("created_at", `${to}T23:59:59Z`)
         .order("created_at", { ascending: false });
-      if (currentShowroomId) q = q.eq("showroom_id", currentShowroomId);
+      q = scopeTo(q, currentShowroomId, "showroom_id");
       const { data: batches, error } = await q;
       if (error) throw error;
 

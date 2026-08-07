@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
 import { pageTitle } from "@/lib/company-settings";
+import { scopeTo } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({ meta: [{ title: pageTitle("Orders") }] }),
@@ -50,7 +51,7 @@ function Orders() {
       .select("id, code, customer_name, order_type, status, items, total, due_date")
       .order("created_at", { ascending: false })
       .limit(200);
-    if (currentShowroomId) q = q.eq("showroom_id", currentShowroomId);
+    q = scopeTo(q, currentShowroomId, "showroom_id");
     q.then(({ data, error }) => {
       if (error) toast.error(error.message);
       else setOrders((data ?? []) as Order[]);

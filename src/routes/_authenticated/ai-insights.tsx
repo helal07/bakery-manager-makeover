@@ -8,6 +8,7 @@ import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
 import type { LucideIcon } from "lucide-react";
 import { pageTitle } from "@/lib/company-settings";
+import { scopeTo } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/ai-insights")({
   head: () => ({ meta: [{ title: pageTitle("AI Insights") }] }),
@@ -41,13 +42,13 @@ function AIInsights() {
         .from("sales")
         .select("total, created_at, showroom_id")
         .gte("created_at", since.toISOString());
-      if (currentShowroomId) salesQ = salesQ.eq("showroom_id", currentShowroomId);
+      salesQ = scopeTo(salesQ, currentShowroomId, "showroom_id");
 
       let itemsQ = supabase
         .from("sale_items")
         .select("product_name, qty, line_total, sale_id, sales!inner(created_at, showroom_id)")
         .gte("sales.created_at", since.toISOString());
-      if (currentShowroomId) itemsQ = itemsQ.eq("sales.showroom_id", currentShowroomId);
+      itemsQ = scopeTo(itemsQ, currentShowroomId, "sales.showroom_id");
 
       const [sales, items] = await Promise.all([salesQ, itemsQ]);
       if (cancelled) return;

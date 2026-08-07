@@ -19,6 +19,7 @@ import {
   type RegisterSession, type HeldSaleRow,
 } from "@/lib/pos-v7-store";
 import { BarcodeScannerDialog } from "@/components/barcode-scanner-dialog";
+import { scopeTo } from "@/lib/scope";
 
 const sb = supabase as any;
 
@@ -104,7 +105,7 @@ function PosPage() {
         .gte("created_at", start.toISOString())
         .order("created_at", { ascending: false })
         .limit(50);
-      if (loc) q = q.eq("showroom_id", loc);
+      q = scopeTo(q, loc, "showroom_id");
       const { data, error } = await q;
       if (error) throw error;
       setRecentSales((data ?? []).map((r: any) => ({
