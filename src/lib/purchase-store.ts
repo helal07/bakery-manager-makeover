@@ -3,6 +3,36 @@ import { scopeTo } from "@/lib/scope";
 
 const sb = supabase as any;
 
+/**
+ * Turn raw Postgres/PostgREST errors from the stock RPCs into messages a user
+ * can act on. The most common self-hosted failure is a database that never got
+ * the staff-guard helper installed (see sql/29_missing_staff_guard.sql).
+ */
+export function explainStockRpcError(err: any): Error {
+  const msg = String(err?.message ?? err ?? "Unknown error");
+  if (/assert_app_staff|is_app_staff/.test(msg) && /does not exist/i.test(msg)) {
+    return new Error(
+      "Stock could not be updated: the database is missing the staff-permission guard " +
+        "(public.assert_app_staff). Run sql/29_missing_staff_guard.sql on your database, " +
+        "then try the purchase again.",
+    );
+  }
+  if (/Not authorized for this location/i.test(msg)) {
+    return new Error(
+      "Stock could not be updated: your account is not assigned to this location. " +
+        "Raw materials belong to the Factory — pick Factory scope or ask an admin to assign you.",
+    );
+  }
+  if (/Not authorized/i.test(msg)) {
+    return new Error(
+      "Stock could not be updated: your account has no role assigned yet. " +
+        "Ask a Superadmin to assign a role under Settings → Roles & Teams.",
+    );
+  }
+  return err instanceof Error ? err : new Error(msg);
+}
+
+
 export type PurchaseCategory = { id: string; name: string };
 export type PurchaseItem = {
   materialId: string;
@@ -138,7 +168,7 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
       price: it.price,
     }));
     const { error: e2 } = await sb.from("purchase_items").insert(rows);
-    if (e2) throw e2;
+    if (e2) throw explainStockRpcError(e2);
     for (const it of input.items) {
       const { error: e3 } = await sb.rpc("commit_raw_stock_movement", {
         _material_id: it.materialId,
@@ -150,7 +180,7 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
         _ref_type: "purchase",
         _ref_id: p.id,
       });
-      if (e3) throw e3;
+      if (e3) throw explainStockRpcError(e3);
     }
   }
   return {
@@ -241,7 +271,7 @@ export async function updatePurchase(
   if (e1) throw e1;
 
   const { error: e2 } = await sb.from("purchase_items").delete().eq("purchase_id", uuid);
-  if (e2) throw e2;
+  if (e2) throw explainStockRpcError(e2);
   if (input.items.length) {
     const rows = input.items.map((it) => ({
       purchase_id: uuid,
@@ -252,7 +282,7 @@ export async function updatePurchase(
       price: it.price,
     }));
     const { error: e3 } = await sb.from("purchase_items").insert(rows);
-    if (e3) throw e3;
+    if (e3) throw explainStockRpcError(e3);
   }
 
   for (const [materialId, qty] of delta) {
@@ -266,7 +296,7 @@ export async function updatePurchase(
       _ref_type: "purchase",
       _ref_id: uuid,
     });
-    if (e4) throw e4;
+    if (e4) throw explainStockRpcError(e4);
   }
 }
 
@@ -306,11 +336,11 @@ export async function deletePurchase(uuid: string): Promise<void> {
       _ref_type: "purchase",
       _ref_id: uuid,
     });
-    if (e2) throw e2;
+    if (e2) throw explainStockRpcError(e2);
   }
 
   const { error: e3 } = await sb.from("purchase_items").delete().eq("purchase_id", uuid);
-  if (e3) throw e3;
+  if (e3) throw explainStockRpcError(e3);
   const { error: e4 } = await sb.from("purchases").delete().eq("id", uuid);
-  if (e4) throw e4;
+  if (e4) throw explainStockRpcError(e4);
 }
