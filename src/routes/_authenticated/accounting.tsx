@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { AppShell, Card } from "@/components/app-shell";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +11,13 @@ import { scopeTo } from "@/lib/scope";
 
 export const Route = createFileRoute("/_authenticated/accounting")({
   head: () => ({ meta: [{ title: pageTitle("Accounting") }] }),
-  component: Accounting,
+  component: () => (
+    <PermissionGate anyOf={["reports.ledgers", "reports.sales"]} title="Accounting">
+      <Accounting />
+    </PermissionGate>
+  ),
 });
+
 
 type LedgerRow = {
   date: string;

@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ScanBarcode, Search, Plus, Minus, Trash2, Check, Clock, PieChart, Camera,
