@@ -68,7 +68,7 @@ function NumField({
 
 type Row = { materialId: string; name: string; unit: string; qty: string; price: string };
 
-function AddPurchase() {
+export function PurchaseFormPage({ editId }: { editId?: string }) {
   const nav = useNavigate();
   const { currentShowroomId } = useShowroomScope();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -77,6 +77,7 @@ function AddPurchase() {
   const [supplierId, setSupplierId] = useState("");
   const [ref, setRef] = useState(() => `PO-${Date.now().toString().slice(-6)}`);
   const [saving, setSaving] = useState(false);
+  const [loadingPurchase, setLoadingPurchase] = useState(!!editId);
 
   useEffect(() => {
     loadSuppliers()
@@ -95,6 +96,36 @@ function AddPurchase() {
   const [items, setItems] = useState<Row[]>([]);
   const [payment, setPayment] = useState<"Paid" | "Due" | "Partial">("Paid");
   const [paid, setPaid] = useState("");
+
+  // Load the existing purchase when editing.
+  useEffect(() => {
+    if (!editId) return;
+    let alive = true;
+    setLoadingPurchase(true);
+    loadPurchase(editId)
+      .then((p) => {
+        if (!alive) return;
+        if (!p) { toast.error("Purchase not found"); nav({ to: "/purchasing/list" }); return; }
+        setSupplierId(p.supplier_id ?? "");
+        setRef(p.id);
+        setDate(p.date);
+        setItems(
+          (p.items ?? []).map((it) => ({
+            materialId: it.materialId,
+            name: it.name,
+            unit: it.unit,
+            qty: String(it.qty),
+            price: String(it.price),
+          })),
+        );
+        const pay = p.payment ?? (p.paid && p.paid >= p.total ? "Paid" : p.paid ? "Partial" : "Due");
+        setPayment(pay);
+        setPaid(String(p.paid ?? ""));
+      })
+      .catch((e) => toast.error(e?.message ?? "Failed to load purchase"))
+      .finally(() => { if (alive) setLoadingPurchase(false); });
+    return () => { alive = false; };
+  }, [editId, nav]);
 
   // Supplier dialog
   const [supOpen, setSupOpen] = useState(false);
