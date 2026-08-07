@@ -115,14 +115,38 @@ export const ROUTE_GUARDS: Record<string, string[]> = {
   "/transfers/new": ["inventory.transfer"],
   "/transfers/damaged/new": ["inventory.damaged_return", "inventory.transfer"],
 
+  // Operations
+  "/pos": ["pos.access"],
+  "/dashboard": ["dashboard.access"],
+  "/ai-insights": ["dashboard.access"],
+  "/inventory": ["inventory.view"],
+  "/product-stock": ["inventory.view", "inventory.adjust"],
+  "/catalog": ["products.view"],
+  "/orders": ["sales.view"],
+  "/accounting": ["reports.ledgers", "reports.sales"],
+  "/reports": ["reports.stock", "reports.sales", "reports.purchase", "reports.ledgers", "reports.expenses"],
+  "/purchasing": ["purchases.view", "purchases.create", "purchases.return", "purchases.payments"],
+  "/sales": ["sales.view", "sales.create", "sales.return", "sales.payments"],
+  "/products": [
+    "products.view",
+    "products.categories.manage",
+    "products.units.manage",
+    "products.selling_prices.manage",
+  ],
+  "/expenses": ["expenses.view", "expenses.manage", "expenses.categories.manage", "reports.expenses"],
+
   // Contacts + settings
+  "/crm": ["contacts.customers.view", "contacts.customers.manage", "contacts.customers.ledger"],
   "/crm/:id/ledger": ["contacts.customers.ledger", "contacts.customers.view"],
+  "/suppliers": ["contacts.suppliers.view", "contacts.suppliers.manage"],
+  "/branches": ["showrooms.view", "showrooms.manage"],
   "/employees": ["employees.view", "employees.manage"],
   "/settings": ["settings.general"],
   "/settings/showrooms": ["showrooms.view", "showrooms.manage"],
   "/settings/access": ["settings.access"],
   "/settings/landing": ["settings.landing"],
 };
+
 
 /** Routes whose only purpose is reporting — used for report-coverage assertions. */
 export const REPORT_ROUTES = [
