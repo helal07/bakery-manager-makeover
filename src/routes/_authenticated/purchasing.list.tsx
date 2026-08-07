@@ -254,6 +254,7 @@ function ActionsMenu({
   onPayment,
   onInvoice,
   onDelete,
+  editId,
 }: {
   open: boolean;
   onToggle: () => void;
@@ -263,6 +264,7 @@ function ActionsMenu({
   onPayment: () => void;
   onInvoice: () => void;
   onDelete: () => void;
+  editId?: string;
 }) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
