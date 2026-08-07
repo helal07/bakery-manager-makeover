@@ -140,8 +140,13 @@ function NewTransferPage() {
   const rmRow = (i: number) => setItems((v) => v.filter((_, idx) => idx !== i));
 
   const submit = async () => {
+    if (!sourceOptions.some((o) => o.id === source)) {
+      toast.error("You don't have access to this source location");
+      return;
+    }
     if (!dest) { toast.error("Pick destination"); return; }
     if (source !== "factory" && source === dest) { toast.error("Source and destination cannot be same"); return; }
+
     const clean = items
       .map((r) => ({ product_id: r.product_id, qty: Number(r.qty) }))
       .filter((r) => r.product_id && r.qty > 0);
