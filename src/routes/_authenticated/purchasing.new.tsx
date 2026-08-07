@@ -272,7 +272,10 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
   };
 
   return (
-    <AppShell title="Add Purchase" subtitle="Record a new supplier purchase order">
+    <AppShell
+      title={editId ? "Edit Purchase" : "Add Purchase"}
+      subtitle={editId ? "Update this supplier purchase order" : "Record a new supplier purchase order"}
+    >
       {currentShowroomId ? (
         <div
           role="alert"
