@@ -10,7 +10,6 @@
  */
 
 export const PERMISSION_CATALOG = [
-  "contacts.customer_groups.manage",
   "contacts.customers.ledger",
   "contacts.customers.manage",
   "contacts.customers.view",
@@ -176,7 +175,7 @@ export const ROLE_MATRIX: Record<string, string[]> = {
     "contacts.customers.view",
     "contacts.customers.manage",
     "contacts.customers.ledger",
-    "contacts.customer_groups.manage",
+    
     "contacts.suppliers.view",
     "products.view",
     "products.create",
