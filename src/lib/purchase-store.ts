@@ -137,6 +137,20 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
   const { data: userData } = await supabase.auth.getUser();
   const due = Math.max(0, input.total - input.paid);
   const code = input.code ?? `PO-${Date.now().toString().slice(-6)}`;
+
+  // Guard against duplicate purchases: retrying a failed save keeps the same
+  // reference number, which previously created several identical rows.
+  const { data: dup, error: dupErr } = await sb
+    .from("purchases")
+    .select("id")
+    .eq("code", code)
+    .limit(1);
+  if (dupErr) throw dupErr;
+  if (dup && dup.length > 0)
+    throw new Error(
+      `Purchase ${code} already exists. Change the reference no. or open the existing purchase to edit it.`,
+    );
+
   const { data: p, error } = await sb
     .from("purchases")
     .insert({
@@ -159,6 +173,12 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
   if (error) throw error;
 
   if (input.items.length) {
+    // If any step below fails the purchase header must not survive, otherwise
+    // the list fills up with half-saved purchases that carry no stock.
+    const rollback = async () => {
+      await sb.from("purchase_items").delete().eq("purchase_id", p.id);
+      await sb.from("purchases").delete().eq("id", p.id);
+    };
     const rows = input.items.map((it) => ({
       purchase_id: p.id,
       material_id: it.materialId,
@@ -168,7 +188,10 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
       price: it.price,
     }));
     const { error: e2 } = await sb.from("purchase_items").insert(rows);
-    if (e2) throw explainStockRpcError(e2);
+    if (e2) {
+      await rollback();
+      throw explainStockRpcError(e2);
+    }
     for (const it of input.items) {
       const { error: e3 } = await sb.rpc("commit_raw_stock_movement", {
         _material_id: it.materialId,
@@ -180,7 +203,10 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
         _ref_type: "purchase",
         _ref_id: p.id,
       });
-      if (e3) throw explainStockRpcError(e3);
+      if (e3) {
+        await rollback();
+        throw explainStockRpcError(e3);
+      }
     }
   }
   return {
@@ -195,6 +221,7 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
     items: input.items,
   };
 }
+
 
 /** Load a single purchase (by DB uuid) with its item lines, for editing. */
 export async function loadPurchase(uuid: string): Promise<Purchase | null> {
