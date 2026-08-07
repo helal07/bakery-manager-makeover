@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { FileText, Search, Eye, Pencil, Wallet, Printer, X, ChevronDown } from "lucide-react";
+import { FileText, Search, Eye, Pencil, Wallet, Printer, X, ChevronDown, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { loadPurchases, updatePurchasePayment, type Purchase } from "@/lib/purchase-store";
+import { loadPurchases, updatePurchasePayment, deletePurchase, type Purchase } from "@/lib/purchase-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { pageTitle, getCompanyName } from "@/lib/company-settings";
+
 
 export const Route = createFileRoute("/_authenticated/purchasing/list")({
   head: () => ({ meta: [{ title: pageTitle("Purchase List") }] }),
@@ -23,6 +25,24 @@ function PurchaseList() {
   const [modal, setModal] = useState<{ mode: "view" | "payment" | "invoice"; p: Purchase } | null>(null);
   const [payDraft, setPayDraft] = useState<{ payment: "Paid" | "Due" | "Partial"; paid: number }>({ payment: "Due", paid: 0 });
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [delTarget, setDelTarget] = useState<Purchase | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!delTarget?.uuid) { toast.error("Missing purchase id"); return; }
+    setDeleting(true);
+    try {
+      await deletePurchase(delTarget.uuid);
+      setList((l) => l.filter((x) => x.id !== delTarget.id));
+      toast.success(`Purchase ${delTarget.id} deleted`);
+      setDelTarget(null);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete purchase");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
     loadPurchases(currentShowroomId)
       .then(setList)
@@ -133,6 +153,8 @@ function PurchaseList() {
                         setModal({ mode: "payment", p });
                       }}
                       onInvoice={() => setModal({ mode: "invoice", p })}
+                      onDelete={() => setDelTarget(p)}
+
                     />
                   </div>
                 </td>
@@ -209,6 +231,16 @@ function PurchaseList() {
           )}
         </Modal>
       )}
+      <ConfirmDialog
+        open={!!delTarget}
+        destructive
+        busy={deleting}
+        title={`Delete purchase ${delTarget?.id ?? ""}?`}
+        description="This removes the purchase and its items, and reverses the raw-material stock it added. This cannot be undone."
+        confirmLabel="Delete purchase"
+        onConfirm={confirmDelete}
+        onCancel={() => { if (!deleting) setDelTarget(null); }}
+      />
     </AppShell>
   );
 }
@@ -221,6 +253,7 @@ function ActionsMenu({
   canPay,
   onPayment,
   onInvoice,
+  onDelete,
 }: {
   open: boolean;
   onToggle: () => void;
@@ -229,6 +262,7 @@ function ActionsMenu({
   canPay: boolean;
   onPayment: () => void;
   onInvoice: () => void;
+  onDelete: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -278,6 +312,12 @@ function ActionsMenu({
             <button className={item} onClick={run(onPayment)}><Wallet className="size-4" /> Payment</button>
           )}
           <button className={item} onClick={run(onInvoice)}><FileText className="size-4" /> Invoice</button>
+          <button
+            className={`${item} text-destructive hover:bg-destructive/10 border-t border-border mt-1 pt-2`}
+            onClick={run(onDelete)}
+          >
+            <Trash2 className="size-4" /> Delete
+          </button>
         </div>
       )}
     </>
