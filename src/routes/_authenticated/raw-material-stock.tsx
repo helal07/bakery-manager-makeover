@@ -285,6 +285,7 @@ function AdjustDialog({
         <div className="grid gap-3">
           <div className="text-sm text-muted-foreground">
             Current: <span className="font-medium text-foreground">{row.stock} {row.unit}</span>
+            <span className="ml-2 text-xs">· Location: <strong>Factory</strong></span>
           </div>
           <div>
             <Label>Change (+ / −)</Label>
