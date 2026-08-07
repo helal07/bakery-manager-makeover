@@ -237,15 +237,15 @@ function NewTransferPage() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>From</Label>
-                  <Select value={source} onValueChange={setSource} disabled={!hasGlobalAccess}>
+                  <Select value={source} onValueChange={setSource} disabled={sourceOptions.length <= 1}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {hasGlobalAccess && <SelectItem value="factory">Factory</SelectItem>}
-                      {showrooms.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      {sourceOptions.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+
                 </div>
                 <div className="space-y-1.5">
                   <Label>To</Label>
