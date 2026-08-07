@@ -231,6 +231,16 @@ function PurchaseList() {
           )}
         </Modal>
       )}
+      <ConfirmDialog
+        open={!!delTarget}
+        destructive
+        busy={deleting}
+        title={`Delete purchase ${delTarget?.id ?? ""}?`}
+        description="This removes the purchase and its items, and reverses the raw-material stock it added. This cannot be undone."
+        confirmLabel="Delete purchase"
+        onConfirm={confirmDelete}
+        onCancel={() => { if (!deleting) setDelTarget(null); }}
+      />
     </AppShell>
   );
 }
@@ -243,6 +253,7 @@ function ActionsMenu({
   canPay,
   onPayment,
   onInvoice,
+  onDelete,
 }: {
   open: boolean;
   onToggle: () => void;
@@ -251,6 +262,7 @@ function ActionsMenu({
   canPay: boolean;
   onPayment: () => void;
   onInvoice: () => void;
+  onDelete: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -300,6 +312,12 @@ function ActionsMenu({
             <button className={item} onClick={run(onPayment)}><Wallet className="size-4" /> Payment</button>
           )}
           <button className={item} onClick={run(onInvoice)}><FileText className="size-4" /> Invoice</button>
+          <button
+            className={`${item} text-destructive hover:bg-destructive/10 border-t border-border mt-1 pt-2`}
+            onClick={run(onDelete)}
+          >
+            <Trash2 className="size-4" /> Delete
+          </button>
         </div>
       )}
     </>
