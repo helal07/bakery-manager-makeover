@@ -538,7 +538,7 @@ function AddPurchase() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="nm-cost">Unit cost (৳)</Label>
-                <Input id="nm-cost" type="number" min={0} step="0.01" value={matForm.cost} onChange={(e) => setMatForm({ ...matForm, cost: e.target.value })} />
+                <NumField id="nm-cost" value={matForm.cost} onChange={(v) => setMatForm({ ...matForm, cost: v })} placeholder="0.00" />
               </div>
             </div>
             <DialogFooter>
