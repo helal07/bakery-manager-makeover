@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import { Building2, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -10,8 +12,13 @@ const sb = supabase as any;
 
 export const Route = createFileRoute("/_authenticated/branches")({
   head: () => ({ meta: [{ title: pageTitle("Branches") }] }),
-  component: Branches,
+  component: () => (
+    <PermissionGate anyOf={["showrooms.view", "showrooms.manage"]} title="Branches">
+      <Branches />
+    </PermissionGate>
+  ),
 });
+
 
 type Branch = { id: string; name: string; city: string | null; code: string | null };
 type Stat = { monthSales: number; todaySales: number };
