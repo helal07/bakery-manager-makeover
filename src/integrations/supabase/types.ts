@@ -292,6 +292,7 @@ export type Database = {
           loyalty_points: number
           name: string
           phone: string | null
+          selling_price_group_id: string | null
           updated_at: string
         }
         Insert: {
@@ -305,6 +306,7 @@ export type Database = {
           loyalty_points?: number
           name: string
           phone?: string | null
+          selling_price_group_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -318,6 +320,7 @@ export type Database = {
           loyalty_points?: number
           name?: string
           phone?: string | null
+          selling_price_group_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -326,6 +329,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "customer_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_selling_price_group_id_fkey"
+            columns: ["selling_price_group_id"]
+            isOneToOne: false
+            referencedRelation: "selling_price_groups"
             referencedColumns: ["id"]
           },
         ]
