@@ -25,3 +25,4 @@
 - [ ] `sql/21_unit_conversions.sql` — units টেবিলে base_unit_id / conversion_factor / allow_decimal যোগ (purely additive, পুরনো ডাটা অপরিবর্তিত; Ultimate POS স্টাইল "1 kg = 1000 g")
 
 
+- 25_strict_tenant_isolation.sql — strict factory/showroom isolation (RLS + RPC location asserts + indexes)
