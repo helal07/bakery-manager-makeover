@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { exportCsv } from "@/components/report-filters";
 import { PermissionGate } from "@/components/permission-gate";
+import { scopeTo } from "@/lib/scope";
+
 
 export const Route = createFileRoute("/_authenticated/reports/ledgers")({
   head: () => ({ meta: [{ title: "Payment & Return Ledger · Muzahid Food" }] }),
