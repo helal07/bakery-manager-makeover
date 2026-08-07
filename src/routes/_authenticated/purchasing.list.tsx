@@ -153,6 +153,8 @@ function PurchaseList() {
                         setModal({ mode: "payment", p });
                       }}
                       onInvoice={() => setModal({ mode: "invoice", p })}
+                      onDelete={() => setDelTarget(p)}
+
                     />
                   </div>
                 </td>
