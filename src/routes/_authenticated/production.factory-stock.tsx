@@ -186,6 +186,21 @@ function FactoryStockPage() {
         </Button>
       }
     >
+      {raw.some((r) => r.stock < 0) || products.some((p) => p.quantity < 0) ? (
+        <div
+          role="alert"
+          className="mb-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+        >
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>
+            <strong>Negative stock detected.</strong> More was consumed than received for{" "}
+            {raw.filter((r) => r.stock < 0).length} material(s) and{" "}
+            {products.filter((p) => p.quantity < 0).length} product(s). Review purchases, production
+            batches and transfers, then adjust to correct the counts.
+          </span>
+        </div>
+      ) : null}
+
       <div className="flex justify-end mb-3">
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
