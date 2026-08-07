@@ -154,6 +154,7 @@ function PurchaseList() {
                       }}
                       onInvoice={() => setModal({ mode: "invoice", p })}
                       onDelete={() => setDelTarget(p)}
+                      editId={p.uuid}
 
                     />
                   </div>
