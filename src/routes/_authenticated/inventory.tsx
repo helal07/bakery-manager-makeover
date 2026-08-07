@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import { useEffect, useState } from "react";
 import { loadProducts, type Product } from "@/lib/product-store";
@@ -9,8 +11,13 @@ import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/inventory")({
   head: () => ({ meta: [{ title: pageTitle("Inventory") }] }),
-  component: Inventory,
+  component: () => (
+    <PermissionGate anyOf={["inventory.view"]} title="Inventory">
+      <Inventory />
+    </PermissionGate>
+  ),
 });
+
 
 function Inventory() {
   const { currentShowroomId } = useShowroomScope();

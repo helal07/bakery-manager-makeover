@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PermissionGate } from "@/components/permission-gate";
+
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import {
   ShoppingBag, Cake, AlertTriangle, ArrowUpRight, ArrowDownRight,
@@ -28,8 +30,13 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "description", content: "Unified dashboard for multi-branch commercial bakery operations." },
     ],
   }),
-  component: Dashboard,
+  component: () => (
+    <PermissionGate anyOf={["dashboard.access"]} title="Dashboard">
+      <Dashboard />
+    </PermissionGate>
+  ),
 });
+
 
 function useDashboardData() {
   const { currentShowroomId } = useShowroomScope();
