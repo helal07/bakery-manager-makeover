@@ -181,17 +181,30 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
     }));
     setSaving(true);
     try {
-      const p = await savePurchase({
-        supplier_id: supplierId,
-        showroom_id: null,
-        date,
-        items: payloadItems,
-        total,
-        paid: paidAmount,
-        payment,
-        code: ref.trim() || undefined,
-      });
-      toast.success(`Purchase ${p.id} added`);
+      if (editId) {
+        await updatePurchase(editId, {
+          supplier_id: supplierId,
+          date,
+          items: payloadItems,
+          total,
+          paid: paidAmount,
+          payment,
+          code: ref.trim() || undefined,
+        });
+        toast.success(`Purchase ${ref.trim()} updated`);
+      } else {
+        const p = await savePurchase({
+          supplier_id: supplierId,
+          showroom_id: null,
+          date,
+          items: payloadItems,
+          total,
+          paid: paidAmount,
+          payment,
+          code: ref.trim() || undefined,
+        });
+        toast.success(`Purchase ${p.id} added`);
+      }
       nav({ to: "/purchasing/list" });
     } catch (err: any) {
       const msg = String(err?.message ?? "");
