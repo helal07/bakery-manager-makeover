@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
-import { FileText, Search, Eye, Pencil, Wallet, Printer, X, ChevronDown } from "lucide-react";
+import { FileText, Search, Eye, Pencil, Wallet, Printer, X, ChevronDown, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { loadPurchases, updatePurchasePayment, type Purchase } from "@/lib/purchase-store";
+import { loadPurchases, updatePurchasePayment, deletePurchase, type Purchase } from "@/lib/purchase-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { pageTitle, getCompanyName } from "@/lib/company-settings";
+
 
 export const Route = createFileRoute("/_authenticated/purchasing/list")({
   head: () => ({ meta: [{ title: pageTitle("Purchase List") }] }),
