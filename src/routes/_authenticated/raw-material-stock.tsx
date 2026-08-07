@@ -110,6 +110,22 @@ function RawMaterialStockPage() {
         Reports on-hand ingredients scoped to your current location. Adjust to correct counts.
       </div>
 
+      {rows.some((r) => r.stock < 0) ? (
+        <div
+          role="alert"
+          className="mb-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+        >
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>
+            <strong>
+              {rows.filter((r) => r.stock < 0).length} material(s) have negative stock.
+            </strong>{" "}
+            More was consumed than received — check purchases and production batches, then adjust to
+            correct the count.
+          </span>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <StatCard icon={<Boxes className="w-4 h-4" />} label="Ingredients" value={totals.items.toString()} />
         <StatCard icon={<PackagePlus className="w-4 h-4" />} label="Stock value" value={`৳${totals.value.toFixed(0)}`} />
@@ -211,7 +227,8 @@ function RawMaterialStockPage() {
       {adjustFor && (
         <AdjustDialog
           row={adjustFor}
-          showroomId={loc}
+          /* Raw material stock is factory-only (showroom_id IS NULL). */
+          showroomId={null}
           onClose={() => setAdjustFor(null)}
           onSaved={() => { setAdjustFor(null); load(); }}
         />
@@ -220,7 +237,7 @@ function RawMaterialStockPage() {
       {historyFor && (
         <HistorySheet
           row={historyFor}
-          showroomId={loc}
+          showroomId={null}
           onClose={() => setHistoryFor(null)}
         />
       )}
@@ -284,6 +301,7 @@ function AdjustDialog({
         <div className="grid gap-3">
           <div className="text-sm text-muted-foreground">
             Current: <span className="font-medium text-foreground">{row.stock} {row.unit}</span>
+            <span className="ml-2 text-xs">· Location: <strong>Factory</strong></span>
           </div>
           <div>
             <Label>Change (+ / −)</Label>

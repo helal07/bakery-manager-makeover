@@ -154,6 +154,7 @@ function PurchaseList() {
                       }}
                       onInvoice={() => setModal({ mode: "invoice", p })}
                       onDelete={() => setDelTarget(p)}
+                      editId={p.uuid}
 
                     />
                   </div>
@@ -254,6 +255,7 @@ function ActionsMenu({
   onPayment,
   onInvoice,
   onDelete,
+  editId,
 }: {
   open: boolean;
   onToggle: () => void;
@@ -263,6 +265,7 @@ function ActionsMenu({
   onPayment: () => void;
   onInvoice: () => void;
   onDelete: () => void;
+  editId?: string;
 }) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -307,7 +310,11 @@ function ActionsMenu({
           className="z-50 rounded-md border border-border bg-background shadow-lg py-1"
         >
           <button className={item} onClick={run(onView)}><Eye className="size-4" /> View</button>
-          <Link to="/purchasing/new" className={item} onClick={onClose}><Pencil className="size-4" /> Edit</Link>
+          {editId ? (
+            <Link to="/purchasing/edit/$id" params={{ id: editId }} className={item} onClick={onClose}>
+              <Pencil className="size-4" /> Edit
+            </Link>
+          ) : null}
           {canPay && (
             <button className={item} onClick={run(onPayment)}><Wallet className="size-4" /> Payment</button>
           )}

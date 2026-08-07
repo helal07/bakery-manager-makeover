@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2, UserPlus, PackagePlus, Search, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { savePurchase, type PurchaseItem } from "@/lib/purchase-store";
+import { savePurchase, updatePurchase, loadPurchase, type PurchaseItem } from "@/lib/purchase-store";
 import { loadSuppliers, addSupplier, type Supplier } from "@/lib/supplier-store";
 import { loadRawMaterials, addRawMaterial, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
@@ -21,7 +21,7 @@ import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/purchasing/new")({
   head: () => ({ meta: [{ title: pageTitle("Add Purchase") }] }),
-  component: AddPurchase,
+  component: () => <PurchaseFormPage />,
 });
 
 /** Digits + single decimal point only — keeps partial input like "" or "1." typable. */
@@ -68,7 +68,7 @@ function NumField({
 
 type Row = { materialId: string; name: string; unit: string; qty: string; price: string };
 
-function AddPurchase() {
+export function PurchaseFormPage({ editId }: { editId?: string }) {
   const nav = useNavigate();
   const { currentShowroomId } = useShowroomScope();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -77,6 +77,7 @@ function AddPurchase() {
   const [supplierId, setSupplierId] = useState("");
   const [ref, setRef] = useState(() => `PO-${Date.now().toString().slice(-6)}`);
   const [saving, setSaving] = useState(false);
+  const [loadingPurchase, setLoadingPurchase] = useState(!!editId);
 
   useEffect(() => {
     loadSuppliers()
@@ -95,6 +96,36 @@ function AddPurchase() {
   const [items, setItems] = useState<Row[]>([]);
   const [payment, setPayment] = useState<"Paid" | "Due" | "Partial">("Paid");
   const [paid, setPaid] = useState("");
+
+  // Load the existing purchase when editing.
+  useEffect(() => {
+    if (!editId) return;
+    let alive = true;
+    setLoadingPurchase(true);
+    loadPurchase(editId)
+      .then((p) => {
+        if (!alive) return;
+        if (!p) { toast.error("Purchase not found"); nav({ to: "/purchasing/list" }); return; }
+        setSupplierId(p.supplier_id ?? "");
+        setRef(p.id);
+        setDate(p.date);
+        setItems(
+          (p.items ?? []).map((it) => ({
+            materialId: it.materialId,
+            name: it.name,
+            unit: it.unit,
+            qty: String(it.qty),
+            price: String(it.price),
+          })),
+        );
+        const pay = p.payment ?? (p.paid && p.paid >= p.total ? "Paid" : p.paid ? "Partial" : "Due");
+        setPayment(pay);
+        setPaid(String(p.paid ?? ""));
+      })
+      .catch((e) => toast.error(e?.message ?? "Failed to load purchase"))
+      .finally(() => { if (alive) setLoadingPurchase(false); });
+    return () => { alive = false; };
+  }, [editId, nav]);
 
   // Supplier dialog
   const [supOpen, setSupOpen] = useState(false);
@@ -150,17 +181,30 @@ function AddPurchase() {
     }));
     setSaving(true);
     try {
-      const p = await savePurchase({
-        supplier_id: supplierId,
-        showroom_id: null,
-        date,
-        items: payloadItems,
-        total,
-        paid: paidAmount,
-        payment,
-        code: ref.trim() || undefined,
-      });
-      toast.success(`Purchase ${p.id} added`);
+      if (editId) {
+        await updatePurchase(editId, {
+          supplier_id: supplierId,
+          date,
+          items: payloadItems,
+          total,
+          paid: paidAmount,
+          payment,
+          code: ref.trim() || undefined,
+        });
+        toast.success(`Purchase ${ref.trim()} updated`);
+      } else {
+        const p = await savePurchase({
+          supplier_id: supplierId,
+          showroom_id: null,
+          date,
+          items: payloadItems,
+          total,
+          paid: paidAmount,
+          payment,
+          code: ref.trim() || undefined,
+        });
+        toast.success(`Purchase ${p.id} added`);
+      }
       nav({ to: "/purchasing/list" });
     } catch (err: any) {
       const msg = String(err?.message ?? "");
@@ -228,7 +272,10 @@ function AddPurchase() {
   };
 
   return (
-    <AppShell title="Add Purchase" subtitle="Record a new supplier purchase order">
+    <AppShell
+      title={editId ? "Edit Purchase" : "Add Purchase"}
+      subtitle={editId ? "Update this supplier purchase order" : "Record a new supplier purchase order"}
+    >
       {currentShowroomId ? (
         <div
           role="alert"
@@ -482,8 +529,16 @@ function AddPurchase() {
               <Button type="button" variant="outline" onClick={() => nav({ to: "/purchasing/list" })}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={!!currentShowroomId || saving} className="font-semibold">
-                {currentShowroomId ? "Factory only" : saving ? "Saving…" : "Save Purchase"}
+              <Button type="submit" disabled={!!currentShowroomId || saving || loadingPurchase} className="font-semibold">
+                {currentShowroomId
+                  ? "Factory only"
+                  : loadingPurchase
+                    ? "Loading…"
+                    : saving
+                      ? "Saving…"
+                      : editId
+                        ? "Update Purchase"
+                        : "Save Purchase"}
               </Button>
             </div>
           </div>

@@ -630,19 +630,13 @@ function PosPage() {
 
       const rpcs: Promise<unknown>[] = [];
       for (const { p, qty } of items) {
+        // Selling only decrements finished-product stock. Raw materials are
+        // consumed once, at production time — deducting them again here would
+        // double-count and drive raw stock negative.
         rpcs.push(sb.rpc("commit_stock_movement", {
           _product_id: p.id, _showroom_id: loc, _qty: -qty,
           _kind: "sale", _ref_type: "sale", _ref_id: sale.id, _note: null,
         }));
-        const recipe = recipeMap[p.id];
-        if (!recipe) continue;
-        for (const ing of recipe) {
-          rpcs.push(sb.rpc("commit_raw_stock_movement", {
-            _material_id: ing.materialId, _showroom_id: loc,
-            _qty: -Math.abs(ing.qty * qty),
-            _kind: "production_consume", _ref_type: "sale", _ref_id: sale.id, _note: null,
-          }));
-        }
       }
       await Promise.all(rpcs);
       invalidate("pos:products:");

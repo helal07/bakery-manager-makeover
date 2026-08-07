@@ -165,6 +165,110 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
   };
 }
 
+/** Load a single purchase (by DB uuid) with its item lines, for editing. */
+export async function loadPurchase(uuid: string): Promise<Purchase | null> {
+  const { data, error } = await sb
+    .from("purchases")
+    .select(
+      `id, code, purchase_date, total, paid, status, payment, supplier_id,
+       supplier:suppliers(id,name),
+       purchase_items(material_id,name,unit,qty,price)`,
+    )
+    .eq("id", uuid)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const r = data as any;
+  return {
+    id: r.code || r.id,
+    uuid: r.id,
+    supplier: r.supplier?.name ?? "",
+    supplier_id: r.supplier_id ?? r.supplier?.id ?? undefined,
+    date: r.purchase_date,
+    total: Number(r.total) || 0,
+    paid: Number(r.paid) || 0,
+    status: r.status as Purchase["status"],
+    payment: (r.payment ?? undefined) as Purchase["payment"],
+    items: (r.purchase_items ?? []).map((it: any) => ({
+      materialId: it.material_id,
+      name: it.name,
+      unit: it.unit ?? "",
+      qty: Number(it.qty) || 0,
+      price: Number(it.price) || 0,
+    })),
+  };
+}
+
+/**
+ * Update an existing purchase. Raw stock is adjusted by the DIFFERENCE per
+ * material through the ledger RPC (kind `purchase_edit`) so balances stay
+ * correct and history stays auditable.
+ */
+export async function updatePurchase(
+  uuid: string,
+  input: Omit<SavePurchaseInput, "showroom_id"> & { showroom_id?: string | null },
+): Promise<void> {
+  const { data: oldRows, error: e0 } = await sb
+    .from("purchase_items")
+    .select("material_id,qty")
+    .eq("purchase_id", uuid);
+  if (e0) throw e0;
+
+  const delta = new Map<string, number>();
+  for (const r of oldRows ?? []) {
+    if (!r.material_id) continue;
+    delta.set(r.material_id, (delta.get(r.material_id) ?? 0) - (Number(r.qty) || 0));
+  }
+  for (const it of input.items) {
+    delta.set(it.materialId, (delta.get(it.materialId) ?? 0) + it.qty);
+  }
+
+  const due = Math.max(0, input.total - input.paid);
+  const { error: e1 } = await sb
+    .from("purchases")
+    .update({
+      supplier_id: input.supplier_id,
+      purchase_date: input.date,
+      subtotal: input.total,
+      total: input.total,
+      paid: input.paid,
+      due,
+      payment: input.payment,
+      ...(input.code ? { code: input.code } : {}),
+    })
+    .eq("id", uuid);
+  if (e1) throw e1;
+
+  const { error: e2 } = await sb.from("purchase_items").delete().eq("purchase_id", uuid);
+  if (e2) throw e2;
+  if (input.items.length) {
+    const rows = input.items.map((it) => ({
+      purchase_id: uuid,
+      material_id: it.materialId,
+      name: it.name,
+      unit: it.unit,
+      qty: it.qty,
+      price: it.price,
+    }));
+    const { error: e3 } = await sb.from("purchase_items").insert(rows);
+    if (e3) throw e3;
+  }
+
+  for (const [materialId, qty] of delta) {
+    if (Math.abs(qty) < 1e-9) continue;
+    const { error: e4 } = await sb.rpc("commit_raw_stock_movement", {
+      _material_id: materialId,
+      // Raw material stock lives at the factory only (showroom_id IS NULL).
+      _showroom_id: null,
+      _qty: qty,
+      _kind: "purchase_edit",
+      _ref_type: "purchase",
+      _ref_id: uuid,
+    });
+    if (e4) throw e4;
+  }
+}
+
 export async function updatePurchasePayment(
   uuid: string,
   payment: "Paid" | "Due" | "Partial",

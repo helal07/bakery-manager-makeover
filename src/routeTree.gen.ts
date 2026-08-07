@@ -84,6 +84,7 @@ import { Route as AuthenticatedEmployeesNewRouteImport } from './routes/_authent
 import { Route as AuthenticatedCrmIdIndexRouteImport } from './routes/_authenticated/crm.$id.index'
 import { Route as AuthenticatedTransfersReceiveIdRouteImport } from './routes/_authenticated/transfers.receive.$id'
 import { Route as AuthenticatedTransfersDamagedNewRouteImport } from './routes/_authenticated/transfers.damaged.new'
+import { Route as AuthenticatedPurchasingEditIdRouteImport } from './routes/_authenticated/purchasing.edit.$id'
 import { Route as AuthenticatedProductsEditIdRouteImport } from './routes/_authenticated/products.edit.$id'
 import { Route as AuthenticatedProductionLabelsLedgerIdRouteImport } from './routes/_authenticated/production.labels.$ledgerId'
 import { Route as AuthenticatedEmployeesEditIdRouteImport } from './routes/_authenticated/employees.edit.$id'
@@ -511,6 +512,12 @@ const AuthenticatedTransfersDamagedNewRoute =
     path: '/transfers/damaged/new',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPurchasingEditIdRoute =
+  AuthenticatedPurchasingEditIdRouteImport.update({
+    id: '/purchasing/edit/$id',
+    path: '/purchasing/edit/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProductsEditIdRoute =
   AuthenticatedProductsEditIdRouteImport.update({
     id: '/products/edit/$id',
@@ -612,6 +619,7 @@ export interface FileRoutesByFullPath {
   '/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
   '/production/labels/$ledgerId': typeof AuthenticatedProductionLabelsLedgerIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
+  '/purchasing/edit/$id': typeof AuthenticatedPurchasingEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
   '/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
@@ -689,6 +697,7 @@ export interface FileRoutesByTo {
   '/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
   '/production/labels/$ledgerId': typeof AuthenticatedProductionLabelsLedgerIdRoute
   '/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
+  '/purchasing/edit/$id': typeof AuthenticatedPurchasingEditIdRoute
   '/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
   '/crm/$id': typeof AuthenticatedCrmIdIndexRoute
@@ -771,6 +780,7 @@ export interface FileRoutesById {
   '/_authenticated/employees/edit/$id': typeof AuthenticatedEmployeesEditIdRoute
   '/_authenticated/production/labels/$ledgerId': typeof AuthenticatedProductionLabelsLedgerIdRoute
   '/_authenticated/products/edit/$id': typeof AuthenticatedProductsEditIdRoute
+  '/_authenticated/purchasing/edit/$id': typeof AuthenticatedPurchasingEditIdRoute
   '/_authenticated/transfers/damaged/new': typeof AuthenticatedTransfersDamagedNewRoute
   '/_authenticated/transfers/receive/$id': typeof AuthenticatedTransfersReceiveIdRoute
   '/_authenticated/crm/$id/': typeof AuthenticatedCrmIdIndexRoute
@@ -853,6 +863,7 @@ export interface FileRouteTypes {
     | '/employees/edit/$id'
     | '/production/labels/$ledgerId'
     | '/products/edit/$id'
+    | '/purchasing/edit/$id'
     | '/transfers/damaged/new'
     | '/transfers/receive/$id'
     | '/crm/$id/'
@@ -930,6 +941,7 @@ export interface FileRouteTypes {
     | '/employees/edit/$id'
     | '/production/labels/$ledgerId'
     | '/products/edit/$id'
+    | '/purchasing/edit/$id'
     | '/transfers/damaged/new'
     | '/transfers/receive/$id'
     | '/crm/$id'
@@ -1011,6 +1023,7 @@ export interface FileRouteTypes {
     | '/_authenticated/employees/edit/$id'
     | '/_authenticated/production/labels/$ledgerId'
     | '/_authenticated/products/edit/$id'
+    | '/_authenticated/purchasing/edit/$id'
     | '/_authenticated/transfers/damaged/new'
     | '/_authenticated/transfers/receive/$id'
     | '/_authenticated/crm/$id/'
@@ -1554,6 +1567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTransfersDamagedNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/purchasing/edit/$id': {
+      id: '/_authenticated/purchasing/edit/$id'
+      path: '/purchasing/edit/$id'
+      fullPath: '/purchasing/edit/$id'
+      preLoaderRoute: typeof AuthenticatedPurchasingEditIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/products/edit/$id': {
       id: '/_authenticated/products/edit/$id'
       path: '/products/edit/$id'
@@ -1733,6 +1753,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTransfersIndexRoute: typeof AuthenticatedTransfersIndexRoute
   AuthenticatedCrmIdLedgerRoute: typeof AuthenticatedCrmIdLedgerRoute
   AuthenticatedProductsEditIdRoute: typeof AuthenticatedProductsEditIdRoute
+  AuthenticatedPurchasingEditIdRoute: typeof AuthenticatedPurchasingEditIdRoute
   AuthenticatedTransfersDamagedNewRoute: typeof AuthenticatedTransfersDamagedNewRoute
   AuthenticatedTransfersReceiveIdRoute: typeof AuthenticatedTransfersReceiveIdRoute
   AuthenticatedCrmIdIndexRoute: typeof AuthenticatedCrmIdIndexRoute
@@ -1783,6 +1804,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTransfersIndexRoute: AuthenticatedTransfersIndexRoute,
   AuthenticatedCrmIdLedgerRoute: AuthenticatedCrmIdLedgerRoute,
   AuthenticatedProductsEditIdRoute: AuthenticatedProductsEditIdRoute,
+  AuthenticatedPurchasingEditIdRoute: AuthenticatedPurchasingEditIdRoute,
   AuthenticatedTransfersDamagedNewRoute: AuthenticatedTransfersDamagedNewRoute,
   AuthenticatedTransfersReceiveIdRoute: AuthenticatedTransfersReceiveIdRoute,
   AuthenticatedCrmIdIndexRoute: AuthenticatedCrmIdIndexRoute,
@@ -1804,13 +1826,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
