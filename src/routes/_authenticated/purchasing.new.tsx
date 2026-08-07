@@ -529,8 +529,16 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
               <Button type="button" variant="outline" onClick={() => nav({ to: "/purchasing/list" })}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={!!currentShowroomId || saving} className="font-semibold">
-                {currentShowroomId ? "Factory only" : saving ? "Saving…" : "Save Purchase"}
+              <Button type="submit" disabled={!!currentShowroomId || saving || loadingPurchase} className="font-semibold">
+                {currentShowroomId
+                  ? "Factory only"
+                  : loadingPurchase
+                    ? "Loading…"
+                    : saving
+                      ? "Saving…"
+                      : editId
+                        ? "Update Purchase"
+                        : "Save Purchase"}
               </Button>
             </div>
           </div>
