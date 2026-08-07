@@ -178,3 +178,34 @@ export async function updatePurchasePayment(
     .eq("id", uuid);
   if (error) throw error;
 }
+
+/**
+ * Delete a purchase and reverse its raw-material stock effect.
+ * Stock is reversed through the ledger RPC (negative qty) so history stays auditable.
+ */
+export async function deletePurchase(uuid: string): Promise<void> {
+  const { data: rows, error } = await sb
+    .from("purchase_items")
+    .select("material_id,qty")
+    .eq("purchase_id", uuid);
+  if (error) throw error;
+
+  for (const r of rows ?? []) {
+    if (!r.material_id || !r.qty) continue;
+    const { error: e2 } = await sb.rpc("commit_raw_stock_movement", {
+      _material_id: r.material_id,
+      // Raw material stock lives at the factory only (showroom_id IS NULL).
+      _showroom_id: null,
+      _qty: -Number(r.qty),
+      _kind: "purchase_delete",
+      _ref_type: "purchase",
+      _ref_id: uuid,
+    });
+    if (e2) throw e2;
+  }
+
+  const { error: e3 } = await sb.from("purchase_items").delete().eq("purchase_id", uuid);
+  if (e3) throw e3;
+  const { error: e4 } = await sb.from("purchases").delete().eq("id", uuid);
+  if (e4) throw e4;
+}
