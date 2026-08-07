@@ -75,11 +75,11 @@ function CRM() {
     try {
       const [cRes, sRes, gRes] = await Promise.all([
         sb.from("customers")
-          .select("id,name,phone,email,address,loyalty_points,avatar_url,group_id")
+          .select("id,name,phone,email,address,loyalty_points,avatar_url,selling_price_group_id")
           .eq("is_active", true)
           .order("name"),
         sb.from("sales").select("customer_phone,due"),
-        sb.from("customer_groups").select("id,name").eq("is_active", true).order("name"),
+        sb.from("selling_price_groups").select("id,name").eq("is_active", true).order("name"),
       ]);
       if (cRes.error) throw cRes.error;
       setGroups(((gRes?.data ?? []) as any[]).map((g) => ({ id: g.id, name: g.name })));
@@ -99,7 +99,7 @@ function CRM() {
           points: Number(c.loyalty_points ?? 0),
           due: dueByPhone.get((c.phone ?? "").replace(/\D/g, "")) ?? 0,
           avatarUrl: c.avatar_url ?? undefined,
-          groupId: c.group_id ?? null,
+          groupId: c.selling_price_group_id ?? null,
         })),
       );
     } catch (e: any) {
@@ -230,7 +230,7 @@ function CRM() {
     if (!assignFor) return;
     try {
       const gid = assignGroupId === "__none__" ? null : assignGroupId;
-      const { error } = await sb.from("customers").update({ group_id: gid }).eq("id", assignFor.id);
+      const { error } = await sb.from("customers").update({ selling_price_group_id: gid }).eq("id", assignFor.id);
       if (error) throw error;
       toast.success("Group updated");
       setAssignFor(null);
@@ -297,7 +297,7 @@ function CRM() {
               <th className="text-left font-medium px-5 py-3">Name</th>
               <th className="text-left font-medium px-5 py-3">Number</th>
               <th className="text-left font-medium px-5 py-3">Email</th>
-              <th className="text-left font-medium px-5 py-3">Group</th>
+              <th className="text-left font-medium px-5 py-3">Price Group</th>
               <th className="text-right font-medium px-5 py-3">Loyalty</th>
               <th className="text-right font-medium px-5 py-3">Balance</th>
               <th className="text-right font-medium px-5 py-3">Actions</th>
@@ -357,7 +357,7 @@ function CRM() {
                         <Pencil className="size-4 mr-2" /> Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openAssign(c)}>
-                        <Users className="size-4 mr-2" /> Assign to group
+                        <Users className="size-4 mr-2" /> Assign price group
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -449,25 +449,25 @@ function CRM() {
       <Dialog open={!!assignFor} onOpenChange={(o) => !o && setAssignFor(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign to Customer Group</DialogTitle>
+            <DialogTitle>Assign Selling Price Group</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="text-sm text-muted-foreground">
               Customer: <span className="text-foreground font-medium">{assignFor?.name}</span>
             </div>
             <div className="space-y-1.5">
-              <Label>Group</Label>
+              <Label>Selling price group</Label>
               <Select value={assignGroupId} onValueChange={setAssignGroupId}>
                 <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">— No group —</SelectItem>
+                  <SelectItem value="__none__">— No group (default price) —</SelectItem>
                   {groups.map((g) => (
                     <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {groups.length === 0 && (
-                <div className="text-xs text-muted-foreground">No groups yet. Create one under Customer Groups.</div>
+                <div className="text-xs text-muted-foreground">No price groups yet. Create one under Products → Selling Price Groups.</div>
               )}
             </div>
           </div>

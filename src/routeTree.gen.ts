@@ -30,7 +30,6 @@ import { Route as AuthenticatedInventoryRouteImport } from './routes/_authentica
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedCustomerGroupsRouteImport } from './routes/_authenticated/customer-groups'
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedAiInsightsRouteImport } from './routes/_authenticated/ai-insights'
@@ -197,12 +196,6 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedCustomerGroupsRoute =
-  AuthenticatedCustomerGroupsRouteImport.update({
-    id: '/customer-groups',
-    path: '/customer-groups',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedCatalogRoute = AuthenticatedCatalogRouteImport.update({
   id: '/catalog',
   path: '/catalog',
@@ -552,7 +545,6 @@ export interface FileRoutesByFullPath {
   '/ai-insights': typeof AuthenticatedAiInsightsRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/catalog': typeof AuthenticatedCatalogRoute
-  '/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRouteWithChildren
@@ -633,7 +625,6 @@ export interface FileRoutesByTo {
   '/ai-insights': typeof AuthenticatedAiInsightsRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/catalog': typeof AuthenticatedCatalogRoute
-  '/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRouteWithChildren
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -713,7 +704,6 @@ export interface FileRoutesById {
   '/_authenticated/ai-insights': typeof AuthenticatedAiInsightsRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/catalog': typeof AuthenticatedCatalogRoute
-  '/_authenticated/customer-groups': typeof AuthenticatedCustomerGroupsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRouteWithChildren
@@ -796,7 +786,6 @@ export interface FileRouteTypes {
     | '/ai-insights'
     | '/branches'
     | '/catalog'
-    | '/customer-groups'
     | '/dashboard'
     | '/employees'
     | '/expenses'
@@ -877,7 +866,6 @@ export interface FileRouteTypes {
     | '/ai-insights'
     | '/branches'
     | '/catalog'
-    | '/customer-groups'
     | '/dashboard'
     | '/expenses'
     | '/inventory'
@@ -956,7 +944,6 @@ export interface FileRouteTypes {
     | '/_authenticated/ai-insights'
     | '/_authenticated/branches'
     | '/_authenticated/catalog'
-    | '/_authenticated/customer-groups'
     | '/_authenticated/dashboard'
     | '/_authenticated/employees'
     | '/_authenticated/expenses'
@@ -1187,13 +1174,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/customer-groups': {
-      id: '/_authenticated/customer-groups'
-      path: '/customer-groups'
-      fullPath: '/customer-groups'
-      preLoaderRoute: typeof AuthenticatedCustomerGroupsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/catalog': {
@@ -1715,7 +1695,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAiInsightsRoute: typeof AuthenticatedAiInsightsRoute
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRoute
-  AuthenticatedCustomerGroupsRoute: typeof AuthenticatedCustomerGroupsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRouteWithChildren
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRouteWithChildren
@@ -1764,7 +1743,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAiInsightsRoute: AuthenticatedAiInsightsRoute,
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCatalogRoute: AuthenticatedCatalogRoute,
-  AuthenticatedCustomerGroupsRoute: AuthenticatedCustomerGroupsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRouteWithChildren,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRouteWithChildren,
@@ -1826,13 +1804,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

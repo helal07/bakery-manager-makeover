@@ -90,7 +90,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         icon: ContactIcon,
         children: [
           { to: "/crm", label: "Customer", icon: Users, permission: "contacts.customers.view" },
-          { to: "/customer-groups", label: "Customer Group", icon: Users, permission: "contacts.customer_groups.manage" },
+          
           { to: "/suppliers", label: "Supplier", icon: Truck, permission: "contacts.suppliers.view" },
         ],
       },

@@ -11,7 +11,7 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import type { ProductCategory } from "@/lib/product-types";
-type CustomerGroup = { id: string; name: string; discountPct: number };
+
 import { loadProducts, type Product } from "@/lib/product-store";
 import { loadRecipes, type RecipeMap } from "@/lib/recipe-store";
 import { supabase } from "@/integrations/supabase/client";
@@ -236,28 +236,6 @@ export function QuickSaleModal({ onClose }: { onClose: () => void }) {
   const [mode, setMode] = useState<"cash" | "due" | "partial">("cash");
   const [customers, setCustomers] = useState<Customer[]>(seedCustomers);
   const [customerId, setCustomerId] = useState<string>("walkin");
-  const [groups, setGroups] = useState<CustomerGroup[]>([{ id: "none", name: "No Group", discountPct: 0 }]);
-  const [groupId, setGroupId] = useState<string>("none");
-  useEffect(() => {
-    supabase
-      .from("customer_groups")
-      .select("id, name, discount_pct, is_default")
-      .eq("is_active", true)
-      .order("is_default", { ascending: false })
-      .order("discount_pct", { ascending: true })
-      .then(({ data, error }) => {
-        if (error || !data) return;
-        const mapped = data.map((r) => ({
-          id: r.id as string,
-          name: r.name as string,
-          discountPct: Number(r.discount_pct ?? 0),
-        }));
-        if (!mapped.length) return;
-        setGroups(mapped);
-        const def = data.find((r) => r.is_default);
-        if (def) setGroupId(def.id as string);
-      });
-  }, []);
   const [addCustOpen, setAddCustOpen] = useState(false);
   const [newCust, setNewCust] = useState({ name: "", phone: "" });
   const [partialPaid, setPartialPaid] = useState<number>(0);
@@ -273,9 +251,8 @@ export function QuickSaleModal({ onClose }: { onClose: () => void }) {
   }, [cat, query, products]);
   const items = Object.entries(cart).map(([id, qty]) => ({ p: products.find((x) => x.id === id)!, qty })).filter((x) => x.p);
   const subtotal = items.reduce((s, { p, qty }) => s + p.price * qty, 0);
-  const group = groups.find((g) => g.id === groupId) ?? groups[0];
-  const discountPct = group?.discountPct ?? 0;
-  const discount = +((subtotal * discountPct) / 100).toFixed(2);
+  const discountPct = 0;
+  const discount = 0;
   const afterDiscount = +(subtotal - discount).toFixed(2);
   const tax = +(afterDiscount * 0.05).toFixed(2);
   const total = +(afterDiscount + tax).toFixed(2);
@@ -530,20 +507,6 @@ export function QuickSaleModal({ onClose }: { onClose: () => void }) {
                   </div>
                 </div>
               )}
-              <div className="text-xs font-semibold text-muted-foreground mb-2">DISCOUNT GROUP</div>
-              <div className="mb-3">
-                <select
-                  value={groupId}
-                  onChange={(e) => setGroupId(e.target.value)}
-                  className="w-full px-2.5 py-2 rounded-md border border-border bg-background text-xs outline-none focus:border-primary"
-                >
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}{g.discountPct ? ` · ${g.discountPct}% off` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <div className="text-xs font-semibold text-muted-foreground mb-2">CART</div>
               {items.length === 0 ? (
                 <div className="text-sm text-muted-foreground py-6 text-center">Tap items to add</div>

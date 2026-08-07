@@ -33,8 +33,8 @@ export const Route = createFileRoute("/_authenticated/pos")({
 type Mode = "cash" | "card" | "credit" | "multi";
 type PayMethod = "cash" | "card" | "mobile" | "bank" | "cheque" | "other";
 type Tender = { method: PayMethod; amount: number; reference?: string };
-type CustomerLite = { id: string; name: string; phone: string | null; group_id: string | null };
-type GroupLite = { id: string; name: string; discount_pct: number; mode: string | null; selling_price_group_id: string | null };
+type CustomerLite = { id: string; name: string; phone: string | null; selling_price_group_id: string | null };
+type GroupLite = { id: string; name: string };
 
 const METHOD_LABEL: Record<PayMethod, string> = {
   cash: "Cash", card: "Card", mobile: "Mobile Banking",
@@ -83,7 +83,6 @@ function PosPage() {
   // Groups
   const [groups, setGroups] = useState<GroupLite[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
-  const [groupPct, setGroupPct] = useState(0);
   const [groupName, setGroupName] = useState<string | null>(null);
   const [groupPrices, setGroupPrices] = useState<Record<string, number>>({});
 
@@ -135,10 +134,11 @@ function PosPage() {
   useEffect(() => {
     (async () => {
       const { data } = await sb
-        .from("customer_groups")
-        .select("id,name,discount_pct,pricing_mode,selling_price_group_id")
+        .from("selling_price_groups")
+        .select("id,name")
+        .eq("is_active", true)
         .order("name");
-      setGroups((data ?? []).map((g: any) => ({ ...g, mode: g.pricing_mode ?? "percentage" })) as GroupLite[]);
+      setGroups((data ?? []) as GroupLite[]);
     })();
   }, []);
 
@@ -150,23 +150,17 @@ function PosPage() {
   }, [loc]);
 
   const applyGroup = async (groupId: string | null) => {
-    if (!groupId) { setGroupPct(0); setGroupName(null); setGroupPrices({}); return; }
+    if (!groupId) { setGroupName(null); setGroupPrices({}); return; }
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
     setGroupName(g.name);
-    if (g.mode === "price_group" && g.selling_price_group_id) {
-      setGroupPct(0);
-      const { data: rows } = await sb
-        .from("product_selling_prices")
-        .select("product_id,price")
-        .eq("selling_price_group_id", g.selling_price_group_id);
-      const map: Record<string, number> = {};
-      for (const r of rows ?? []) map[r.product_id as string] = Number(r.price);
-      setGroupPrices(map);
-    } else {
-      setGroupPct(Number(g.discount_pct ?? 0));
-      setGroupPrices({});
-    }
+    const { data: rows } = await sb
+      .from("product_selling_prices")
+      .select("product_id,price")
+      .eq("selling_price_group_id", groupId);
+    const map: Record<string, number> = {};
+    for (const r of rows ?? []) map[r.product_id as string] = Number(r.price);
+    setGroupPrices(map);
   };
   useEffect(() => { applyGroup(selectedGroupId || null); /* eslint-disable-next-line */ }, [selectedGroupId, groups]);
 
@@ -176,7 +170,7 @@ function PosPage() {
     const q = custQuery.trim();
     let cancelled = false;
     const t = setTimeout(async () => {
-      let query = sb.from("customers").select("id,name,phone,group_id").order("name").limit(10);
+      let query = sb.from("customers").select("id,name,phone,selling_price_group_id").order("name").limit(10);
       if (q.length >= 1) {
         const safe = q.replace(/[,()"']/g, " ").trim();
         if (safe) query = query.or(`name.ilike.%${safe}%,phone.ilike.%${safe}%`);
@@ -241,7 +235,7 @@ function PosPage() {
     setCustomerPhone(c.phone ?? "");
     setCustQuery(`${c.name}${c.phone ? " · " + c.phone : ""}`);
     setCustOpen(false);
-    setSelectedGroupId(c.group_id ?? "");
+    setSelectedGroupId(c.selling_price_group_id ?? "");
   };
 
   const resetCustomer = () => {
@@ -266,7 +260,7 @@ function PosPage() {
           address: newCust.address.trim() || null,
           is_active: true,
         })
-        .select("id,name,phone,group_id")
+        .select("id,name,phone,selling_price_group_id")
         .single();
       if (error || !data) throw error ?? new Error("Insert failed");
       pickCustomer(data as CustomerLite);
@@ -332,7 +326,7 @@ function PosPage() {
 
   const priceFor = (p: Product) => {
     if (groupPrices[p.id] != null) return +groupPrices[p.id].toFixed(2);
-    return +(p.price * (1 + groupPct / 100)).toFixed(2);
+    return +p.price.toFixed(2);
   };
   const items = Object.entries(cart)
     .map(([id, qty]) => ({ p: products.find((x) => x.id === id)!, qty }))
