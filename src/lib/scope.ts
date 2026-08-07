@@ -9,13 +9,15 @@
  * table MUST go through `scopeTo` so a showroom can never read factory rows
  * (or another showroom's rows) by accidentally omitting the filter.
  */
-export function scopeTo<T extends { eq: (c: string, v: unknown) => T; is: (c: string, v: null) => T }>(
+export function scopeTo<T>(
   query: T,
   showroomId: string | null | undefined,
   column = "showroom_id",
 ): T {
-  return showroomId ? query.eq(column, showroomId) : query.is(column, null);
+  const q = query as any;
+  return (showroomId ? q.eq(column, showroomId) : q.is(column, null)) as T;
 }
+
 
 /** True when the given scope means the factory. */
 export function isFactoryScope(showroomId: string | null | undefined): boolean {
