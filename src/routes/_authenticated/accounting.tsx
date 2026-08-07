@@ -28,7 +28,7 @@ type LedgerRow = {
 };
 
 function Accounting() {
-  const { currentShowroomId } = useShowroomScope();
+  const { currentShowroomId, showrooms } = useShowroomScope();
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -117,8 +117,21 @@ function Accounting() {
     return { income, expenses, liabilities, profit: income - expenses };
   }, [ledger]);
 
+  // Accounts are kept per location: factory and each outlet never mix.
+  const locationName = currentShowroomId
+    ? (showrooms.find((s) => s.id === currentShowroomId)?.name ?? "Outlet")
+    : "Factory";
+
   return (
-    <AppShell title="Accounting" subtitle="Double-entry ledger · expenses · P&L">
+    <AppShell
+      title="Accounting"
+      subtitle={`${locationName} · double-entry ledger · expenses · P&L`}
+    >
+      <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs">
+        <span className="text-muted-foreground">Account scope</span>
+        <span className="font-semibold">{locationName}</span>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
         {[
           { l: "Total Income", v: income, c: "text-[color:var(--success)]" },
