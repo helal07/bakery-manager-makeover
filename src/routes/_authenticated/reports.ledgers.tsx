@@ -116,12 +116,12 @@ function PaymentReturnLedger() {
         purchaseReturns = purchaseReturns.lte("created_at", toIso);
       }
 
-      if (currentShowroomId) {
-        customerPayments = customerPayments.eq("showroom_id", currentShowroomId);
-        supplierPayments = supplierPayments.eq("showroom_id", currentShowroomId);
-        saleReturns = saleReturns.eq("showroom_id", currentShowroomId);
-        purchaseReturns = purchaseReturns.eq("showroom_id", currentShowroomId);
-      }
+      // Strict location scope: no scope selected means Factory (showroom_id IS NULL).
+      customerPayments = scopeTo(customerPayments, currentShowroomId);
+      supplierPayments = scopeTo(supplierPayments, currentShowroomId);
+      saleReturns = scopeTo(saleReturns, currentShowroomId);
+      purchaseReturns = scopeTo(purchaseReturns, currentShowroomId);
+
 
       const [cp, sp, sr, pr] = await Promise.all([
         customerPayments,
