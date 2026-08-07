@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2, UserPlus, PackagePlus, Search, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { savePurchase, type PurchaseItem } from "@/lib/purchase-store";
+import { savePurchase, updatePurchase, loadPurchase, type PurchaseItem } from "@/lib/purchase-store";
 import { loadSuppliers, addSupplier, type Supplier } from "@/lib/supplier-store";
 import { loadRawMaterials, addRawMaterial, type RawMaterial } from "@/lib/raw-material-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
@@ -21,7 +21,7 @@ import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/purchasing/new")({
   head: () => ({ meta: [{ title: pageTitle("Add Purchase") }] }),
-  component: AddPurchase,
+  component: () => <PurchaseFormPage />,
 });
 
 /** Digits + single decimal point only — keeps partial input like "" or "1." typable. */
