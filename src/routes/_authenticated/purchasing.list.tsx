@@ -309,7 +309,11 @@ function ActionsMenu({
           className="z-50 rounded-md border border-border bg-background shadow-lg py-1"
         >
           <button className={item} onClick={run(onView)}><Eye className="size-4" /> View</button>
-          <Link to="/purchasing/new" className={item} onClick={onClose}><Pencil className="size-4" /> Edit</Link>
+          {editId ? (
+            <Link to="/purchasing/edit/$id" params={{ id: editId }} className={item} onClick={onClose}>
+              <Pencil className="size-4" /> Edit
+            </Link>
+          ) : null}
           {canPay && (
             <button className={item} onClick={run(onPayment)}><Wallet className="size-4" /> Payment</button>
           )}
