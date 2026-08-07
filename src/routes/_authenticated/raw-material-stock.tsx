@@ -211,7 +211,8 @@ function RawMaterialStockPage() {
       {adjustFor && (
         <AdjustDialog
           row={adjustFor}
-          showroomId={loc}
+          /* Raw material stock is factory-only (showroom_id IS NULL). */
+          showroomId={null}
           onClose={() => setAdjustFor(null)}
           onSaved={() => { setAdjustFor(null); load(); }}
         />
@@ -220,7 +221,7 @@ function RawMaterialStockPage() {
       {historyFor && (
         <HistorySheet
           row={historyFor}
-          showroomId={loc}
+          showroomId={null}
           onClose={() => setHistoryFor(null)}
         />
       )}
