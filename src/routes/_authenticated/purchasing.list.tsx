@@ -25,6 +25,24 @@ function PurchaseList() {
   const [modal, setModal] = useState<{ mode: "view" | "payment" | "invoice"; p: Purchase } | null>(null);
   const [payDraft, setPayDraft] = useState<{ payment: "Paid" | "Due" | "Partial"; paid: number }>({ payment: "Due", paid: 0 });
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [delTarget, setDelTarget] = useState<Purchase | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!delTarget?.uuid) { toast.error("Missing purchase id"); return; }
+    setDeleting(true);
+    try {
+      await deletePurchase(delTarget.uuid);
+      setList((l) => l.filter((x) => x.id !== delTarget.id));
+      toast.success(`Purchase ${delTarget.id} deleted`);
+      setDelTarget(null);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete purchase");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
     loadPurchases(currentShowroomId)
       .then(setList)
