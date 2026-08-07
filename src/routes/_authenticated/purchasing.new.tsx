@@ -24,6 +24,50 @@ export const Route = createFileRoute("/_authenticated/purchasing/new")({
   component: AddPurchase,
 });
 
+/** Digits + single decimal point only — keeps partial input like "" or "1." typable. */
+function sanitizeNum(raw: string): string {
+  let v = raw.replace(/[^0-9.]/g, "");
+  const first = v.indexOf(".");
+  if (first !== -1) v = v.slice(0, first + 1) + v.slice(first + 1).replace(/\./g, "");
+  return v;
+}
+const num = (s: string) => {
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : 0;
+};
+
+function NumField({
+  value,
+  onChange,
+  className = "",
+  id,
+  placeholder,
+  align = "right",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  id?: string;
+  placeholder?: string;
+  align?: "right" | "left";
+}) {
+  return (
+    <Input
+      id={id}
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
+      placeholder={placeholder}
+      value={value}
+      onWheel={(e) => (e.target as HTMLInputElement).blur()}
+      onChange={(e) => onChange(sanitizeNum(e.target.value))}
+      className={`${align === "right" ? "text-right" : ""} tabular-nums ${className}`}
+    />
+  );
+}
+
+type Row = { materialId: string; name: string; unit: string; qty: string; price: string };
+
 function AddPurchase() {
   const nav = useNavigate();
   const { currentShowroomId } = useShowroomScope();
@@ -31,6 +75,8 @@ function AddPurchase() {
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
   const today = new Date().toISOString().slice(0, 10);
   const [supplierId, setSupplierId] = useState("");
+  const [ref, setRef] = useState(() => `PO-${Date.now().toString().slice(-6)}`);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadSuppliers()
@@ -46,7 +92,7 @@ function AddPurchase() {
       .catch((e) => toast.error(e?.message ?? "Failed to load raw materials"));
   }, [currentShowroomId]);
   const [date, setDate] = useState(today);
-  const [items, setItems] = useState<PurchaseItem[]>([]);
+  const [items, setItems] = useState<Row[]>([]);
   const [payment, setPayment] = useState<"Paid" | "Due" | "Partial">("Paid");
   const [paid, setPaid] = useState("");
 
@@ -59,13 +105,15 @@ function AddPurchase() {
   const [matTargetIdx, setMatTargetIdx] = useState<number | null>(null);
   const [matForm, setMatForm] = useState({ name: "", unit: "kg", cost: "" });
 
-  const total = useMemo(() => items.reduce((s, it) => s + it.qty * it.price, 0), [items]);
+  const lineTotal = (it: Row) => num(it.qty) * num(it.price);
+  const total = useMemo(() => items.reduce((s, it) => s + lineTotal(it), 0), [items]);
+  const totalQty = useMemo(() => items.reduce((s, it) => s + num(it.qty), 0), [items]);
 
   const paidAmount =
-    payment === "Paid" ? total : payment === "Due" ? 0 : Math.min(Number(paid) || 0, total);
+    payment === "Paid" ? total : payment === "Due" ? 0 : Math.min(num(paid), total);
   const dueAmount = Math.max(0, total - paidAmount);
 
-  const updateItem = (idx: number, patch: Partial<PurchaseItem>) =>
+  const updateItem = (idx: number, patch: Partial<Row>) =>
     setItems((l) =>
       l.map((it, i) => {
         if (i !== idx) return it;
@@ -75,7 +123,7 @@ function AddPurchase() {
           if (raw) {
             merged.name = raw.name;
             merged.unit = raw.unit;
-            if (patch.price === undefined) merged.price = raw.cost;
+            if (patch.price === undefined) merged.price = String(raw.cost ?? "");
           }
         }
         return merged;
@@ -89,17 +137,28 @@ function AddPurchase() {
     if (items.length === 0) return toast.error("Add at least one item");
     if (currentShowroomId)
       return toast.error("Factory Only Can Purchase Raw Materials. Change your showroom to Factory.");
+    if (items.some((it) => !it.materialId)) return toast.error("Select a material for every row");
+    if (items.some((it) => num(it.qty) <= 0)) return toast.error("Quantity must be greater than 0");
     if (payment === "Partial" && (paidAmount <= 0 || paidAmount >= total))
       return toast.error("Partial paid must be greater than 0 and less than total");
+    const payloadItems: PurchaseItem[] = items.map((it) => ({
+      materialId: it.materialId,
+      name: it.name,
+      unit: it.unit,
+      qty: num(it.qty),
+      price: num(it.price),
+    }));
+    setSaving(true);
     try {
       const p = await savePurchase({
         supplier_id: supplierId,
         showroom_id: null,
         date,
-        items,
+        items: payloadItems,
         total,
         paid: paidAmount,
         payment,
+        code: ref.trim() || undefined,
       });
       toast.success(`Purchase ${p.id} added`);
       nav({ to: "/purchasing/list" });
@@ -110,6 +169,8 @@ function AddPurchase() {
       } else {
         toast.error(msg || "Failed to save purchase");
       }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -147,7 +208,7 @@ function AddPurchase() {
       const m = await addRawMaterial({
         name: matForm.name.trim(),
         unit: matForm.unit.trim() || "unit",
-        cost: Number(matForm.cost) || 0,
+        cost: num(matForm.cost),
         threshold: 0,
       });
       setRawMaterials((l) => [m, ...l]);
@@ -156,7 +217,7 @@ function AddPurchase() {
       } else {
         setItems((l) => [
           ...l,
-          { materialId: m.id, name: m.name, unit: m.unit, qty: 1, price: m.cost },
+          { materialId: m.id, name: m.name, unit: m.unit, qty: "1", price: String(m.cost ?? "") },
         ]);
       }
       setMatOpen(false);
@@ -171,7 +232,7 @@ function AddPurchase() {
       {currentShowroomId ? (
         <div
           role="alert"
-          className="mb-4 max-w-4xl flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+          className="mb-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
         >
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
           <span>
@@ -180,18 +241,18 @@ function AddPurchase() {
           </span>
         </div>
       ) : null}
-      <Card className="p-6 max-w-4xl">
-        <form onSubmit={submit} className="space-y-5">
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="pu-sup">Supplier</Label>
+      <form onSubmit={submit} className="pb-28">
+        {/* ---- Header details ---- */}
+        <Card className="p-4 sm:p-5 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="pu-sup">Supplier *</Label>
               <div className="flex gap-2">
                 <select
                   id="pu-sup"
                   value={supplierId}
                   onChange={(e) => setSupplierId(e.target.value)}
-                  className="flex-1 h-9 px-2.5 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
+                  className="flex-1 min-w-0 h-10 px-2.5 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
                 >
                   {suppliers.length === 0 && <option value="">— No suppliers —</option>}
                   {suppliers.map((s) => (
@@ -202,65 +263,88 @@ function AddPurchase() {
                   type="button"
                   onClick={() => setSupOpen(true)}
                   title="Add supplier"
-                  className="size-9 grid place-items-center rounded-md border border-border bg-background hover:bg-accent text-primary shrink-0"
+                  className="size-10 grid place-items-center rounded-md border border-border bg-background hover:bg-accent text-primary shrink-0"
                 >
                   <UserPlus className="size-4" />
                 </button>
               </div>
             </div>
-            <div>
-              <Label htmlFor="pu-date">Date</Label>
-              <Input id="pu-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label htmlFor="pu-ref">Reference no.</Label>
+              <Input id="pu-ref" value={ref} onChange={(e) => setRef(e.target.value)} className="h-10" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pu-date">Purchase date *</Label>
+              <Input id="pu-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Location</Label>
+              <div className="h-10 flex items-center px-3 rounded-md border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
+                Factory (raw materials only)
+              </div>
             </div>
           </div>
+        </Card>
 
-          <div className="pt-2 border-t border-border">
-            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-              <Label>Raw material items</Label>
-              <button
-                type="button"
-                onClick={() => openAddMaterial(null)}
-                className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded border border-border hover:bg-accent text-primary"
-              >
-                <PackagePlus className="size-3.5" /> New material
-              </button>
+        {/* ---- Items ---- */}
+        <Card className="p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+            <div className="text-sm font-semibold">Purchase items</div>
+            <button
+              type="button"
+              onClick={() => openAddMaterial(null)}
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded border border-border hover:bg-accent text-primary"
+            >
+              <PackagePlus className="size-3.5" /> New material
+            </button>
+          </div>
+          <div className="mb-4">
+            <MultiMaterialPicker
+              materials={rawMaterials}
+              selectedIds={items.map((i) => i.materialId)}
+              onAdd={(ids) => {
+                const existing = new Set(items.map((i) => i.materialId));
+                const toAdd = ids
+                  .filter((id) => !existing.has(id))
+                  .map((id) => rawMaterials.find((r) => r.id === id))
+                  .filter((r): r is RawMaterial => !!r)
+                  .map((r) => ({
+                    materialId: r.id,
+                    name: r.name,
+                    unit: r.unit,
+                    qty: "1",
+                    price: String(r.cost ?? ""),
+                  }));
+                if (toAdd.length === 0) return toast.info("No new materials selected");
+                setItems((l) => [...l, ...toAdd]);
+              }}
+            />
+          </div>
+
+          {items.length === 0 ? (
+            <div className="text-xs text-muted-foreground py-10 text-center border border-dashed rounded-md">
+              No items yet. Search a raw material above to add it.
             </div>
-            <div className="mb-3">
-              <MultiMaterialPicker
-                materials={rawMaterials}
-                selectedIds={items.map((i) => i.materialId)}
-                onAdd={(ids) => {
-                  const existing = new Set(items.map((i) => i.materialId));
-                  const toAdd = ids
-                    .filter((id) => !existing.has(id))
-                    .map((id) => rawMaterials.find((r) => r.id === id))
-                    .filter((r): r is RawMaterial => !!r)
-                    .map((r) => ({ materialId: r.id, name: r.name, unit: r.unit, qty: 1, price: r.cost }));
-                  if (toAdd.length === 0) return toast.info("No new materials selected");
-                  setItems((l) => [...l, ...toAdd]);
-                }}
-              />
-            </div>
-            {items.length === 0 ? (
-              <div className="text-xs text-muted-foreground py-6 text-center border border-dashed rounded-md">
-                No items yet. Click “Add item” to add raw materials.
-              </div>
-            ) : (
-              <div className="overflow-hidden border border-border rounded-md">
-                <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
+          ) : (
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-hidden border border-border rounded-md">
+                <div className="overflow-x-auto"><table className="w-full text-sm min-w-[720px]">
                   <thead className="text-xs text-muted-foreground bg-muted/40">
                     <tr>
+                      <th className="text-left font-medium px-3 py-2">#</th>
                       <th className="text-left font-medium px-3 py-2">Material</th>
-                      <th className="text-right font-medium px-3 py-2 w-24">Qty</th>
-                      <th className="text-left font-medium px-3 py-2 w-16">Unit</th>
-                      <th className="text-right font-medium px-3 py-2 w-28">Unit price</th>
-                      <th className="text-right font-medium px-3 py-2 w-28">Line total</th>
+                      <th className="text-right font-medium px-3 py-2 w-32">Quantity</th>
+                      <th className="text-left font-medium px-3 py-2 w-20">Unit</th>
+                      <th className="text-right font-medium px-3 py-2 w-36">Unit cost</th>
+                      <th className="text-right font-medium px-3 py-2 w-32">Subtotal</th>
                       <th className="w-10"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {items.map((it, idx) => (
-                      <tr key={idx}>
+                      <tr key={idx} className="hover:bg-muted/20">
+                        <td className="px-3 py-2 text-xs text-muted-foreground">{idx + 1}</td>
                         <td className="px-3 py-2">
                           <div className="flex gap-1.5">
                             <MaterialCombo
@@ -279,33 +363,20 @@ function AddPurchase() {
                           </div>
                         </td>
                         <td className="px-3 py-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={it.qty}
-                            onChange={(e) => updateItem(idx, { qty: Number(e.target.value) || 0 })}
-                            className="h-8 text-right"
-                          />
+                          <NumField value={it.qty} onChange={(v) => updateItem(idx, { qty: v })} className="h-8" />
                         </td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">{it.unit}</td>
                         <td className="px-3 py-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={it.price}
-                            onChange={(e) => updateItem(idx, { price: Number(e.target.value) || 0 })}
-                            className="h-8 text-right"
-                          />
+                          <NumField value={it.price} onChange={(v) => updateItem(idx, { price: v })} className="h-8" />
                         </td>
-                        <td className="px-3 py-2 text-right tabular-nums">
-                          ৳{(it.qty * it.price).toFixed(2)}
+                        <td className="px-3 py-2 text-right tabular-nums font-medium">
+                          ৳{lineTotal(it).toFixed(2)}
                         </td>
                         <td className="px-2 py-2 text-right">
                           <button
                             type="button"
                             onClick={() => removeItem(idx)}
+                            title="Remove row"
                             className="size-7 grid place-items-center rounded text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="size-3.5" />
@@ -315,67 +386,110 @@ function AddPurchase() {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-muted/30">
-                      <td colSpan={4} className="px-3 py-2 text-right font-medium">Total</td>
-                      <td className="px-3 py-2 text-right font-semibold">৳{total.toFixed(2)}</td>
+                    <tr className="bg-muted/30 text-sm">
+                      <td colSpan={2} className="px-3 py-2 text-right font-medium">Total</td>
+                      <td className="px-3 py-2 text-right font-medium tabular-nums">{totalQty}</td>
+                      <td colSpan={2}></td>
+                      <td className="px-3 py-2 text-right font-semibold tabular-nums">৳{total.toFixed(2)}</td>
                       <td></td>
                     </tr>
                   </tfoot>
                 </table></div>
               </div>
-            )}
-          </div>
 
-          <div className="pt-2 border-t border-border">
-            <Label>Bill payment</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {(["Paid", "Due", "Partial"] as const).map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setPayment(opt)}
-                  className={`px-3 py-1.5 rounded-md border text-sm ${
-                    payment === opt
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:bg-accent"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-            {payment === "Partial" && (
-              <div className="mt-3 max-w-xs">
-                <Label htmlFor="pu-paid">Paid amount (৳)</Label>
-                <Input
-                  id="pu-paid"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  max={total}
-                  value={paid}
-                  onChange={(e) => setPaid(e.target.value)}
-                />
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {items.map((it, idx) => (
+                  <div key={idx} className="rounded-md border border-border p-3 space-y-2">
+                    <div className="flex items-start gap-1.5">
+                      <MaterialCombo
+                        value={it.materialId}
+                        materials={rawMaterials}
+                        onChange={(id) => updateItem(idx, { materialId: id })}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeItem(idx)}
+                        className="size-8 grid place-items-center rounded text-destructive hover:bg-destructive/10 shrink-0"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-[11px] text-muted-foreground">Qty ({it.unit})</Label>
+                        <NumField value={it.qty} onChange={(v) => updateItem(idx, { qty: v })} className="h-9" />
+                      </div>
+                      <div>
+                        <Label className="text-[11px] text-muted-foreground">Unit cost</Label>
+                        <NumField value={it.price} onChange={(v) => updateItem(idx, { price: v })} className="h-9" />
+                      </div>
+                    </div>
+                    <div className="text-right text-sm font-medium tabular-nums">
+                      ৳{lineTotal(it).toFixed(2)}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-            <div className="mt-3 grid grid-cols-3 gap-3 text-sm max-w-md">
+            </>
+          )}
+
+          {/* ---- Payment ---- */}
+          <div className="mt-6 pt-4 border-t border-border grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div>
+              <Label>Bill payment</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {(["Paid", "Due", "Partial"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setPayment(opt)}
+                    className={`px-4 py-2 rounded-md border text-sm font-medium ${
+                      payment === opt
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border hover:bg-accent"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+              {payment === "Partial" && (
+                <div className="mt-3 max-w-xs">
+                  <Label htmlFor="pu-paid">Paid amount (৳)</Label>
+                  <NumField id="pu-paid" value={paid} onChange={setPaid} className="h-10" placeholder="0.00" />
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-sm self-end">
               <Stat label="Total" value={`৳${total.toFixed(2)}`} />
               <Stat label="Paid" value={`৳${paidAmount.toFixed(2)}`} tone="success" />
               <Stat label="Due" value={`৳${dueAmount.toFixed(2)}`} tone={dueAmount > 0 ? "danger" : undefined} />
             </div>
           </div>
+        </Card>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => nav({ to: "/purchasing/list" })}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!!currentShowroomId}>
-              {currentShowroomId ? "Factory only" : "Save Purchase"}
-            </Button>
-
+        {/* ---- Sticky action bar ---- */}
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur px-4 py-3">
+          <div className="mx-auto flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground">
+              <span>Items: <strong className="text-foreground">{items.length}</strong></span>
+              <span className="hidden sm:inline">Qty: <strong className="text-foreground tabular-nums">{totalQty}</strong></span>
+              <span>Net: <strong className="text-foreground tabular-nums">৳{total.toFixed(2)}</strong></span>
+              <span className="hidden sm:inline">Due: <strong className="text-foreground tabular-nums">৳{dueAmount.toFixed(2)}</strong></span>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => nav({ to: "/purchasing/list" })}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!!currentShowroomId || saving} className="font-semibold">
+                {currentShowroomId ? "Factory only" : saving ? "Saving…" : "Save Purchase"}
+              </Button>
+            </div>
           </div>
-        </form>
-      </Card>
+        </div>
+      </form>
+
 
       <Dialog open={supOpen} onOpenChange={setSupOpen}>
         <DialogContent>
