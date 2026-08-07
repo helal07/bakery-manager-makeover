@@ -64,23 +64,9 @@ export async function receiveTransfer(t: IncomingTransfer): Promise<void> {
     if (error) throw error;
     return;
   }
-  const items = await loadTransferItems(t.id);
-  for (const it of items) {
-    if (!it.product_id) continue;
-    const { error } = await sb.rpc("commit_stock_movement", {
-      _product_id: it.product_id,
-      _showroom_id: t.dest_showroom_id,
-      _qty: Number(it.qty),
-      _kind: "transfer_in",
-      _ref_type: "transfer",
-      _ref_id: t.id,
-      _note: null,
-    });
-    if (error) throw error;
-  }
-  const { error: upErr } = await sb
-    .from("transfers")
-    .update({ status: "received", received_at: new Date().toISOString() })
-    .eq("id", t.id);
-  if (upErr) throw upErr;
+  // Stock only lands in the destination when the receiving location accepts.
+  // The RPC verifies the caller belongs to the destination location.
+  const { error } = await sb.rpc("commit_transfer_receive", { _transfer_id: t.id });
+  if (error) throw error;
 }
+
