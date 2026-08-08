@@ -291,6 +291,17 @@ function Workbench() {
     if (!active || !canProduce) return;
     setBusy(true);
     try {
+      // Guard against accidental double-saves of the same batch today.
+      if (!dupWarn) {
+        const dup = await findRecentSimilarBatch(active.product.id, batch);
+        if (dup) {
+          setDupWarn(
+            `A nearly identical batch (${batch} × ${active.product.name}) was saved ${dup.minutesAgo} minute(s) ago — batch #${String(dup.batchId).replace(/-/g, "").slice(0, 6).toUpperCase()}. Save anyway?`,
+          );
+          setBusy(false);
+          return;
+        }
+      }
       const res = await commitProduction({
         productId: active.product.id,
         showroomId: null, // Factory-only production model
