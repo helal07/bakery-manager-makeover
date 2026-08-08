@@ -332,14 +332,41 @@ function PosPage() {
 
   useEffect(() => { setCursor(0); }, [cat, query]);
 
+  // Per-line price override + discount (Ultimate POS style)
+  const [lineEdits, setLineEdits] = useState<Record<string, LineEdit>>({});
+  const [lineEditFor, setLineEditFor] = useState<string | null>(null);
+
+  /** Catalog / price-group price, before any manual override. */
   const priceFor = (p: Product) => {
     if (groupPrices[p.id] != null) return +groupPrices[p.id].toFixed(2);
     return +p.price.toFixed(2);
   };
+  /** Unit price actually charged before line discount. */
+  const unitPriceFor = (p: Product) => {
+    const e = lineEdits[p.id];
+    const v = e && e.price.trim() !== "" ? Number(e.price) : Number.NaN;
+    return Number.isFinite(v) && v >= 0 ? +v.toFixed(2) : priceFor(p);
+  };
+  /** Line discount expressed per unit, never more than the unit price. */
+  const lineDiscountPerUnit = (p: Product) => {
+    const e = lineEdits[p.id];
+    if (!e) return 0;
+    const amt = Number(e.discAmt) || 0;
+    if (amt <= 0) return 0;
+    const up = unitPriceFor(p);
+    const d = e.discType === "pct" ? (up * amt) / 100 : amt;
+    return +Math.min(up, Math.max(0, d)).toFixed(2);
+  };
+  /** Net unit price after line discount — what the sale line is stored with. */
+  const netPriceFor = (p: Product) => +(unitPriceFor(p) - lineDiscountPerUnit(p)).toFixed(2);
+
   const items = Object.entries(cart)
     .map(([id, qty]) => ({ p: products.find((x) => x.id === id)!, qty }))
     .filter((x) => x.p);
-  const subtotal = +items.reduce((s, { p, qty }) => s + priceFor(p) * qty, 0).toFixed(2);
+  const subtotal = +items.reduce((s, { p, qty }) => s + netPriceFor(p) * qty, 0).toFixed(2);
+  const lineDiscountTotal = +items
+    .reduce((s, { p, qty }) => s + lineDiscountPerUnit(p) * qty, 0)
+    .toFixed(2);
   const [discount, setDiscount] = useState(0);
   const [shipping, setShipping] = useState(0);
   const total = +(subtotal - discount + shipping).toFixed(2);
