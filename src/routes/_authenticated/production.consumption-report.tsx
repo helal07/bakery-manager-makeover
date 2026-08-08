@@ -42,7 +42,8 @@ function ConsumptionReportPage() {
       let q = sb
         .from("raw_stock_ledger")
         .select("material_id,qty,kind,raw_materials(name,unit)")
-        .in("kind", ["production_consume", "wastage"])
+        .in("kind", ["production_consume", "production_reverse", "wastage"])
+
         .gte("created_at", `${from}T00:00:00Z`)
         .lte("created_at", `${to}T23:59:59Z`);
       q = scopeTo(q, currentShowroomId, "showroom_id");
