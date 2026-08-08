@@ -80,6 +80,7 @@ import { Route as AuthenticatedProductionOverheadReportRouteImport } from './rou
 import { Route as AuthenticatedProductionFactoryStockRouteImport } from './routes/_authenticated/production.factory-stock'
 import { Route as AuthenticatedProductionCostReportRouteImport } from './routes/_authenticated/production.cost-report'
 import { Route as AuthenticatedProductionConsumptionReportRouteImport } from './routes/_authenticated/production.consumption-report'
+import { Route as AuthenticatedProductionBatchHistoryRouteImport } from './routes/_authenticated/production.batch-history'
 import { Route as AuthenticatedExpensesReportRouteImport } from './routes/_authenticated/expenses.report'
 import { Route as AuthenticatedExpensesNewRouteImport } from './routes/_authenticated/expenses.new'
 import { Route as AuthenticatedExpensesListRouteImport } from './routes/_authenticated/expenses.list'
@@ -489,6 +490,12 @@ const AuthenticatedProductionConsumptionReportRoute =
     path: '/consumption-report',
     getParentRoute: () => AuthenticatedProductionRoute,
   } as any)
+const AuthenticatedProductionBatchHistoryRoute =
+  AuthenticatedProductionBatchHistoryRouteImport.update({
+    id: '/batch-history',
+    path: '/batch-history',
+    getParentRoute: () => AuthenticatedProductionRoute,
+  } as any)
 const AuthenticatedExpensesReportRoute =
   AuthenticatedExpensesReportRouteImport.update({
     id: '/report',
@@ -601,6 +608,7 @@ export interface FileRoutesByFullPath {
   '/expenses/list': typeof AuthenticatedExpensesListRoute
   '/expenses/new': typeof AuthenticatedExpensesNewRoute
   '/expenses/report': typeof AuthenticatedExpensesReportRoute
+  '/production/batch-history': typeof AuthenticatedProductionBatchHistoryRoute
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
@@ -681,6 +689,7 @@ export interface FileRoutesByTo {
   '/expenses/list': typeof AuthenticatedExpensesListRoute
   '/expenses/new': typeof AuthenticatedExpensesNewRoute
   '/expenses/report': typeof AuthenticatedExpensesReportRoute
+  '/production/batch-history': typeof AuthenticatedProductionBatchHistoryRoute
   '/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
@@ -768,6 +777,7 @@ export interface FileRoutesById {
   '/_authenticated/expenses/list': typeof AuthenticatedExpensesListRoute
   '/_authenticated/expenses/new': typeof AuthenticatedExpensesNewRoute
   '/_authenticated/expenses/report': typeof AuthenticatedExpensesReportRoute
+  '/_authenticated/production/batch-history': typeof AuthenticatedProductionBatchHistoryRoute
   '/_authenticated/production/consumption-report': typeof AuthenticatedProductionConsumptionReportRoute
   '/_authenticated/production/cost-report': typeof AuthenticatedProductionCostReportRoute
   '/_authenticated/production/factory-stock': typeof AuthenticatedProductionFactoryStockRoute
@@ -855,6 +865,7 @@ export interface FileRouteTypes {
     | '/expenses/list'
     | '/expenses/new'
     | '/expenses/report'
+    | '/production/batch-history'
     | '/production/consumption-report'
     | '/production/cost-report'
     | '/production/factory-stock'
@@ -935,6 +946,7 @@ export interface FileRouteTypes {
     | '/expenses/list'
     | '/expenses/new'
     | '/expenses/report'
+    | '/production/batch-history'
     | '/production/consumption-report'
     | '/production/cost-report'
     | '/production/factory-stock'
@@ -1021,6 +1033,7 @@ export interface FileRouteTypes {
     | '/_authenticated/expenses/list'
     | '/_authenticated/expenses/new'
     | '/_authenticated/expenses/report'
+    | '/_authenticated/production/batch-history'
     | '/_authenticated/production/consumption-report'
     | '/_authenticated/production/cost-report'
     | '/_authenticated/production/factory-stock'
@@ -1583,6 +1596,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionConsumptionReportRouteImport
       parentRoute: typeof AuthenticatedProductionRoute
     }
+    '/_authenticated/production/batch-history': {
+      id: '/_authenticated/production/batch-history'
+      path: '/batch-history'
+      fullPath: '/production/batch-history'
+      preLoaderRoute: typeof AuthenticatedProductionBatchHistoryRouteImport
+      parentRoute: typeof AuthenticatedProductionRoute
+    }
     '/_authenticated/expenses/report': {
       id: '/_authenticated/expenses/report'
       path: '/report'
@@ -1730,6 +1750,7 @@ const AuthenticatedExpensesRouteWithChildren =
   )
 
 interface AuthenticatedProductionRouteChildren {
+  AuthenticatedProductionBatchHistoryRoute: typeof AuthenticatedProductionBatchHistoryRoute
   AuthenticatedProductionConsumptionReportRoute: typeof AuthenticatedProductionConsumptionReportRoute
   AuthenticatedProductionCostReportRoute: typeof AuthenticatedProductionCostReportRoute
   AuthenticatedProductionFactoryStockRoute: typeof AuthenticatedProductionFactoryStockRoute
@@ -1747,6 +1768,8 @@ interface AuthenticatedProductionRouteChildren {
 
 const AuthenticatedProductionRouteChildren: AuthenticatedProductionRouteChildren =
   {
+    AuthenticatedProductionBatchHistoryRoute:
+      AuthenticatedProductionBatchHistoryRoute,
     AuthenticatedProductionConsumptionReportRoute:
       AuthenticatedProductionConsumptionReportRoute,
     AuthenticatedProductionCostReportRoute:
@@ -1947,13 +1970,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

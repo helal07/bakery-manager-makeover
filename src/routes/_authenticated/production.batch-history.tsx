@@ -93,7 +93,7 @@ function BatchHistoryPage() {
   }, []);
 
   const setSearch = (patch: Search) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch }) });
+    navigate({ search: (prev: Search) => ({ ...prev, ...patch }) });
 
   const activePreset: Preset = useMemo(() => {
     for (const p of ["today", "yesterday", "week", "month", "year"] as Preset[]) {
