@@ -64,9 +64,17 @@ function ConsumptionReportPage() {
         }
         const abs = Math.abs(Number(r.qty));
         if (r.kind === "production_consume") map[id].consumed += abs;
+        // Deleted / corrected batches return material — net it out.
+        else if (r.kind === "production_reverse") map[id].consumed -= abs;
         else if (r.kind === "wastage") map[id].wasted += abs;
       }
-      setRows(Object.values(map).sort((a, b) => (b.consumed + b.wasted) - (a.consumed + a.wasted)));
+      setRows(
+        Object.values(map)
+          .map((r) => ({ ...r, consumed: Math.max(0, r.consumed) }))
+          .filter((r) => r.consumed > 1e-9 || r.wasted > 1e-9)
+          .sort((a, b) => (b.consumed + b.wasted) - (a.consumed + a.wasted)),
+      );
+
 
       const oh = await loadOverheadsInRange(`${from}T00:00:00Z`, `${to}T23:59:59Z`);
       setOverheads(oh);
