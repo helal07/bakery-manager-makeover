@@ -68,21 +68,23 @@ function ProfitLossPage() {
     const toTs = `${to}T23:59:59Z`;
     setLoading(true);
     (async () => {
-      // Raw material consumption (production only)
+      // Raw material consumption (production only; reversals of deleted/edited
+      // batches are netted out below)
       let consumeQ = sb
         .from("raw_stock_ledger")
-        .select("material_id,qty,created_at,raw_materials(name,unit,cost)")
-        .eq("kind", "production_consume")
+        .select("material_id,qty,kind,created_at,raw_materials(name,unit,cost)")
+        .in("kind", ["production_consume", "production_reverse"])
         .gte("created_at", fromTs).lte("created_at", toTs);
       consumeQ = scopeTo(consumeQ, currentShowroomId, "showroom_id");
 
       // Finished goods produced
       let produceQ = sb
         .from("stock_ledger")
-        .select("id,product_id,qty,created_at,products(name,price)")
-        .eq("kind", "production")
+        .select("id,ref_id,product_id,qty,kind,created_at,products(name,price)")
+        .in("kind", ["production", "production_void"])
         .gte("created_at", fromTs).lte("created_at", toTs);
       produceQ = scopeTo(produceQ, currentShowroomId, "showroom_id");
+
 
       // Transfers dispatched to showrooms
       let transferQ = sb
