@@ -39,6 +39,7 @@ export const PERMISSION_CATALOG = [
   "production.raw_materials.view",
   "production.recipes.manage",
   "production.recipes.view",
+  "production.reports.batch_history",
   "production.reports.consumption",
   "production.reports.cost",
   "production.reports.daily_register",
