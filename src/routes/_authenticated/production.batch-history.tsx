@@ -408,7 +408,7 @@ function BatchHistoryPage() {
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-8 text-muted-foreground text-sm">
+                  <td colSpan={canEditBatch || canDeleteBatch ? 10 : 9} className="text-center py-8 text-muted-foreground text-sm">
                     {loading
                       ? "Loading…"
                       : denied
