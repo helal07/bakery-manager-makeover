@@ -93,6 +93,11 @@ export const ROUTE_GUARDS: Record<string, string[]> = {
   // Production module + its reports
   "/production": ["production.reports.daily_register", "production.reports.view"],
   "/production/factory-stock": ["production.access", "inventory.view"],
+  "/production/batch-history": [
+    "production.reports.batch_history",
+    "production.reports.view",
+    "production.batches",
+  ],
   "/production/cost-report": ["production.reports.cost", "production.reports.view"],
   "/production/consumption-report": ["production.reports.consumption", "production.reports.view"],
   "/production/overhead-report": ["production.reports.overhead", "production.reports.view"],
