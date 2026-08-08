@@ -218,7 +218,13 @@ function TransfersPage() {
                       {new Date(r.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-2 px-2 text-right">
-                      <Button size="sm" variant="outline" onClick={() => openTransfer(r)}>Open</Button>
+                      {r.status === "draft" ? (
+                        <Button size="sm" variant="outline" onClick={() => openTransfer(r)}>Open</Button>
+                      ) : (
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to="/transfers/receive/$id" params={{ id: r.id }}>Open</Link>
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
