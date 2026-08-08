@@ -123,6 +123,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
           { to: "/raw-materials", label: "Raw Materials", icon: Wheat, permission: "production.raw_materials.view" },
           { to: "/recipes", label: "Recipes & Production", icon: ChefHat, permission: "production.recipes.view" },
           { to: "/sub-recipes", label: "Sub-Recipes", icon: ChefHat, permission: ["production.sub_recipes.manage", "production.recipes.view"] },
+          { to: "/production/batch-history", label: "Batch History", icon: History, permission: ["production.reports.batch_history", "production.reports.view", "production.batches"] },
           { to: "/production/wastage", label: "Wastage Management", icon: Recycle, permission: ["production.wastage.manage", "production.repurpose"] },
           { to: "/production/profit-loss", label: "Profit & Loss", icon: BarChart3, permission: ["production.reports.profit_loss", "production.reports.view"] },
           { to: "/production/cost-report", label: "Cost Report", icon: BarChart3, permission: ["production.reports.cost", "production.reports.view"] },
