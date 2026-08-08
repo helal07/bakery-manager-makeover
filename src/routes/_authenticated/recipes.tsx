@@ -25,6 +25,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   loadRecipes,
   commitProduction,
+  findRecentSimilarBatch,
   saveRecipe,
   type Ingredient,
 } from "@/lib/recipe-store";
