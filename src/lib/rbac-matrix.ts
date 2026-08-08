@@ -31,6 +31,8 @@ export const PERMISSION_CATALOG = [
   "pos.void",
   "production.access",
   "production.batches",
+  "production.batches.delete",
+  "production.batches.edit",
   "production.damaged.sell",
   "production.factory_stock.view",
   "production.labels.print",
