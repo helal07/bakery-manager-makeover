@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
-import { Printer, FileDown, ChevronRight, Boxes, Layers, Receipt, BarChart3, Search } from "lucide-react";
+import { Printer, FileDown, ChevronRight, Boxes, Layers, Receipt, BarChart3, Search, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeTo } from "@/lib/scope";
@@ -10,6 +10,16 @@ import { Input } from "@/components/ui/input";
 import { PermissionGate } from "@/components/permission-gate";
 import { printBatchHistoryReport, exportBatchHistoryXlsx, type BatchReportRow } from "@/lib/batch-history-report";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/use-permissions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { editProductionBatch, loadRecipeFor, voidProductionBatch } from "@/lib/recipe-store";
 
 const sb = supabase as any;
 
