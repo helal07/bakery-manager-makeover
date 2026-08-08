@@ -95,8 +95,9 @@ function CostReportPage() {
         (ohByBatch[o.batch_id] ??= []).push(o);
       }
 
-      const out: BatchRow[] = ((batches ?? []) as any[]).map((b) => {
-        const qty = Number(b.qty);
+      const out: BatchRow[] = (batches as any[]).map((b) => {
+        const qty = netQty.get(b.ref_id ?? b.id) ?? (Number(b.qty) || 0);
+
         const ing = recipes[b.product_id] ?? [];
         const unitMaterial = ing.reduce((s, it) => s + (costMap[it.materialId] ?? 0) * it.qty, 0);
         const materialCost = unitMaterial * qty;
