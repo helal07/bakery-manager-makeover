@@ -44,6 +44,51 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          changed_fields: string[] | null
+          id: string
+          new_data: Json | null
+          note: string | null
+          occurred_at: string
+          old_data: Json | null
+          record_id: string | null
+          showroom_id: string | null
+          table_name: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          changed_fields?: string[] | null
+          id?: string
+          new_data?: Json | null
+          note?: string | null
+          occurred_at?: string
+          old_data?: Json | null
+          record_id?: string | null
+          showroom_id?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          changed_fields?: string[] | null
+          id?: string
+          new_data?: Json | null
+          note?: string | null
+          occurred_at?: string
+          old_data?: Json | null
+          record_id?: string | null
+          showroom_id?: string | null
+          table_name?: string | null
+        }
+        Relationships: []
+      }
       cash_registers: {
         Row: {
           cashier_id: string | null
@@ -2803,6 +2848,11 @@ export type Database = {
         Returns: undefined
       }
       assert_permission: { Args: { _key: string }; Returns: undefined }
+      audit_actor_email: { Args: { _user: string }; Returns: string }
+      audit_note: {
+        Args: { _note: string; _record_id: string; _table_name: string }
+        Returns: undefined
+      }
       commit_damaged_movement: {
         Args: {
           _kind: string
@@ -2903,6 +2953,15 @@ export type Database = {
       }
       is_app_staff: { Args: { _user: string }; Returns: boolean }
       is_bootstrap_superadmin: { Args: { _user: string }; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          _action: string
+          _note?: string
+          _record_id?: string
+          _table_name?: string
+        }
+        Returns: undefined
+      }
       log_finished_product_wastage: {
         Args: {
           _note?: string
@@ -2913,6 +2972,7 @@ export type Database = {
         }
         Returns: string
       }
+      purge_audit_log: { Args: { _before: string }; Returns: number }
       reverse_production_batch_internal: {
         Args: { _batch_id: string; _note: string }
         Returns: undefined
