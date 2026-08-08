@@ -144,7 +144,7 @@ function ProductionRegister() {
 
       const batchRows: BatchRow[] = liveProd.map((b) => {
         const key = b.ref_id ?? b.id;
-        const qty = netBatchQty.get(key) ?? Number(b.qty) || 0;
+        const qty = netBatchQty.get(key) ?? (Number(b.qty) || 0);
         const ings = recipeMap.get(b.product_id) ?? [];
         const materialsUsed = ings.map((it) => {
           const m = matById.get(it.material_id);
