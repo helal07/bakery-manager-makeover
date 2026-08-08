@@ -77,10 +77,11 @@ function ProductionRegister() {
         sb.from("raw_material_stock").select("material_id,quantity").is("showroom_id", null),
         sb.from("raw_stock_ledger").select("material_id,qty,kind,created_at")
           .gte("created_at", startIso).lte("created_at", endIso),
-        sb.from("stock_ledger").select("id,product_id,qty,created_at,products(name,cost,price)")
-          .eq("kind", "production").is("showroom_id", null)
+        sb.from("stock_ledger").select("id,ref_id,product_id,qty,kind,created_at,products(name,cost,price)")
+          .in("kind", ["production", "production_void"]).is("showroom_id", null)
           .gte("created_at", startIso).lte("created_at", endIso)
           .order("created_at", { ascending: false }),
+
         sb.from("recipes").select("product_id,material_id,qty"),
         sb.from("products").select("id,name,cost,price"),
       ]);
