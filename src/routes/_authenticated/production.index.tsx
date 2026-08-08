@@ -97,8 +97,11 @@ function ProductionRegister() {
       for (const r of (periodLedRes.data ?? []) as any[]) {
         const q = Number(r.qty) || 0;
         netInPeriod.set(r.material_id, (netInPeriod.get(r.material_id) || 0) + q);
-        if (r.kind === "production_consume") {
-          consumeInPeriod.set(r.material_id, (consumeInPeriod.get(r.material_id) || 0) + Math.abs(q));
+        // Deleted/edited batches write positive `production_reverse` rows that put
+        // the material back — net them out so consumption is not overstated.
+        if (r.kind === "production_consume" || r.kind === "production_reverse") {
+          const delta = r.kind === "production_consume" ? Math.abs(q) : -Math.abs(q);
+          consumeInPeriod.set(r.material_id, (consumeInPeriod.get(r.material_id) || 0) + delta);
         }
       }
       const mats: MatRow[] = rmList.map((m) => {
@@ -107,7 +110,7 @@ function ProductionRegister() {
         return {
           id: m.id, name: m.name, unit: m.unit || "", cost: Number(m.cost) || 0,
           opening: closing - net,
-          consumption: consumeInPeriod.get(m.id) ?? 0,
+          consumption: Math.max(0, consumeInPeriod.get(m.id) ?? 0),
           closing,
         };
       }).sort((a, b) => a.name.localeCompare(b.name));
@@ -121,8 +124,27 @@ function ProductionRegister() {
       }
       const matById = new Map<string, any>(rmList.map((m) => [m.id, m]));
 
-      const batchRows: BatchRow[] = ((prodLedRes.data ?? []) as any[]).map((b) => {
-        const qty = Number(b.qty) || 0;
+      // Net out voided batches: a deleted batch nets to zero and must disappear,
+      // an edited one keeps only its latest effective quantity.
+      const allProd = (prodLedRes.data ?? []) as any[];
+      const netBatchQty = new Map<string, number>();
+      for (const r of allProd) {
+        const key = r.ref_id ?? r.id;
+        netBatchQty.set(key, (netBatchQty.get(key) ?? 0) + (Number(r.qty) || 0));
+      }
+      const seenBatch = new Set<string>();
+      const liveProd = allProd.filter((r) => {
+        const key = r.ref_id ?? r.id;
+        if (r.kind !== "production") return false;
+        if ((netBatchQty.get(key) ?? 0) <= 1e-9) return false;
+        if (seenBatch.has(key)) return false;
+        seenBatch.add(key);
+        return true;
+      });
+
+      const batchRows: BatchRow[] = liveProd.map((b) => {
+        const key = b.ref_id ?? b.id;
+        const qty = netBatchQty.get(key) ?? Number(b.qty) || 0;
         const ings = recipeMap.get(b.product_id) ?? [];
         const materialsUsed = ings.map((it) => {
           const m = matById.get(it.material_id);
@@ -146,6 +168,7 @@ function ProductionRegister() {
           value: price * qty,
         };
       });
+
 
       setMaterials(mats);
       setBatches(batchRows);
