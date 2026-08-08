@@ -516,12 +516,62 @@ function BatchHistoryPage() {
                   <td className="px-3 py-2 text-right tabular-nums">{money(totals.cost)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{money(totals.overhead)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{money(totals.value)}</td>
+                  {(canEditBatch || canDeleteBatch) && <td />}
                 </tr>
               </tfoot>
             )}
           </table>
         </div>
       </Card>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title={`Delete batch #${toDelete?.batchNo ?? ""}?`}
+        description={
+          <>
+            This reverses the batch: <b>{fmt(toDelete?.qty ?? 0, 3)}</b> × <b>{toDelete?.productName}</b> will be
+            removed from finished stock, the consumed raw materials go back into factory stock, and this batch's
+            overheads are cleared. Reversal entries stay in the ledger for audit.
+          </>
+        }
+        confirmLabel="Delete batch"
+        destructive
+        busy={crudBusy}
+        onConfirm={doDelete}
+        onCancel={() => setToDelete(null)}
+      />
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Correct batch #{editing?.batchNo}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              {editing?.productName} — the old consumption is reversed and re-applied at the corrected quantity using
+              the product's current recipe. Batch number and date stay the same.
+            </p>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Produced quantity</label>
+              <Input
+                autoFocus
+                value={editQty}
+                onChange={(e) => setEditQty(e.target.value.replace(/[^\d.]/g, ""))}
+                inputMode="decimal"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={crudBusy}>
+              Cancel
+            </Button>
+            <Button onClick={doEdit} disabled={crudBusy}>
+              {crudBusy ? "Saving…" : "Save correction"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
