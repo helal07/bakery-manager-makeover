@@ -22,7 +22,7 @@ Confirmed by reading the code:
 A standalone full page (nothing removed from the existing workbench tab), permission-gated like the other production reports:
 
 - **Filters:** Today / Yesterday / This week / This month / This year / Custom range, plus a product filter and batch-no. search.
-- **Summary strip:** total batches, total produced qty, total production cost, total overhead, total value.
+- **Summary strip:** total batches, total produced qty, total production cost, total overhead, total value. 
 - **List:** one row per batch — Date & time, Batch `#XXXXXX`, Product, Qty produced, materials count, Cost, Value.
 - **Expand a row** to reveal the raw materials actually consumed by that batch (e.g. `Atta — 5 kg`, `Sugar — 4 kg`) with qty, unit and line cost, plus that batch's overheads. Consumption is read from the batch's own consumption records, so it reflects what was truly deducted — not a recalculation from the recipe.
 - Empty state distinguishes "no batches in this range" from "no access to Factory records".
@@ -33,7 +33,7 @@ A **Print** button on the new page producing a professional A4 report you can fi
 
 - Company name, address and contact header, plus the date range.
 - Batch list table with totals.
-- Under each batch, the consumed-material breakdown, so one printout shows what was produced and what it consumed.
+- Under each batch, the consumed-material breakdown, so one printout shows what was produced and what it consumed. Add a column there in print only titel will be "Actual" where production manager write actually how much artisan took from manager. so owner can compair this will show only in print version.
 - Same print styling family as the existing factory-stock and register reports.
 - Also an Excel export of the same data.
 
