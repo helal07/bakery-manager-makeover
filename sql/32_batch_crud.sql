@@ -217,7 +217,7 @@ INSERT INTO public.role_permissions (role_id, permission_key)
 SELECT r.id, k.key
 FROM public.app_roles r
 CROSS JOIN (VALUES ('production.batches.edit'), ('production.batches.delete')) AS k(key)
-WHERE lower(r.name) IN ('admin', 'superadmin', 'owner')
+WHERE lower(r.name) IN ('admin', 'owner')
 ON CONFLICT DO NOTHING;
 
 COMMIT;
