@@ -222,18 +222,30 @@ function BatchHistoryPage() {
 
       if (cancel) return;
 
-      const matsByBatch = new Map<string, Batch["materials"]>();
+      // Net consumption per material (consume rows are negative, reverse rows positive)
+      const netMats = new Map<string, Map<string, { name: string; unit: string; cost: number; qty: number }>>();
       for (const c of consumed) {
-        const qty = Math.abs(Number(c.qty) || 0);
-        const unitCost = Number(c.raw_materials?.cost) || 0;
-        const arr = matsByBatch.get(c.ref_id) ?? [];
-        arr.push({
-          name: c.raw_materials?.name ?? "—",
-          unit: c.raw_materials?.unit ?? "",
-          qty,
-          cost: qty * unitCost,
-        });
-        matsByBatch.set(c.ref_id, arr);
+        const perBatch = netMats.get(c.ref_id) ?? new Map();
+        const entry =
+          perBatch.get(c.material_id) ?? {
+            name: c.raw_materials?.name ?? "—",
+            unit: c.raw_materials?.unit ?? "",
+            cost: Number(c.raw_materials?.cost) || 0,
+            qty: 0,
+          };
+        entry.qty += Number(c.qty) || 0;
+        perBatch.set(c.material_id, entry);
+        netMats.set(c.ref_id, perBatch);
+      }
+      const matsByBatch = new Map<string, Batch["materials"]>();
+      for (const [ref, perBatch] of netMats) {
+        const arr: Batch["materials"] = [];
+        for (const e of perBatch.values()) {
+          const qty = Math.abs(e.qty);
+          if (qty <= 1e-9) continue;
+          arr.push({ name: e.name, unit: e.unit, qty, cost: qty * e.cost });
+        }
+        matsByBatch.set(ref, arr);
       }
       const ohByBatch = new Map<string, number>();
       for (const o of overheads) {
@@ -249,7 +261,8 @@ function BatchHistoryPage() {
           createdAt: r.created_at,
           productId: r.product_id,
           productName: r.products?.name ?? "—",
-          qty: Number(r.qty) || 0,
+          qty: netQty.get(batchId) ?? Number(r.qty) || 0,
+
           price: Number(r.products?.price) || 0,
           materials: mats,
           materialCost: mats.reduce((s, m) => s + m.cost, 0),
