@@ -172,8 +172,8 @@ function BatchHistoryPage() {
       const ledRes = await scopeTo(
         sb
           .from("stock_ledger")
-          .select("id,ref_id,product_id,qty,created_at,products(name,price)")
-          .eq("kind", "production")
+          .select("id,ref_id,product_id,qty,kind,created_at,products(name,price)")
+          .in("kind", ["production", "production_void"])
           .gte("created_at", `${from}T00:00:00.000Z`)
           .lte("created_at", `${to}T23:59:59.999Z`)
           .order("created_at", { ascending: false }),
@@ -186,7 +186,23 @@ function BatchHistoryPage() {
         setLoading(false);
         return;
       }
-      const rows = (ledRes.data ?? []) as any[];
+      const allRows = (ledRes.data ?? []) as any[];
+      // Net out reversals: a deleted (voided) batch nets to zero and must vanish
+      // from the list; an edited batch keeps only its latest effective quantity.
+      const netQty = new Map<string, number>();
+      for (const r of allRows) {
+        const key = r.ref_id ?? r.id;
+        netQty.set(key, (netQty.get(key) ?? 0) + (Number(r.qty) || 0));
+      }
+      const seen = new Set<string>();
+      const rows = allRows.filter((r) => {
+        const key = r.ref_id ?? r.id;
+        if (r.kind !== "production") return false;
+        if ((netQty.get(key) ?? 0) <= 1e-9) return false;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
       const ids = Array.from(new Set(rows.map((r) => r.ref_id).filter(Boolean)));
 
       let consumed: any[] = [];
@@ -195,28 +211,41 @@ function BatchHistoryPage() {
         const [cRes, oRes] = await Promise.all([
           sb
             .from("raw_stock_ledger")
-            .select("ref_id,material_id,qty,raw_materials(name,unit,cost)")
-            .eq("kind", "production_consume")
+            .select("ref_id,material_id,qty,kind,raw_materials(name,unit,cost)")
+            .in("kind", ["production_consume", "production_reverse"])
             .in("ref_id", ids),
           sb.from("production_overheads").select("batch_id,amount").in("batch_id", ids),
         ]);
         consumed = (cRes.data ?? []) as any[];
         overheads = (oRes.data ?? []) as any[];
       }
+
       if (cancel) return;
 
-      const matsByBatch = new Map<string, Batch["materials"]>();
+      // Net consumption per material (consume rows are negative, reverse rows positive)
+      const netMats = new Map<string, Map<string, { name: string; unit: string; cost: number; qty: number }>>();
       for (const c of consumed) {
-        const qty = Math.abs(Number(c.qty) || 0);
-        const unitCost = Number(c.raw_materials?.cost) || 0;
-        const arr = matsByBatch.get(c.ref_id) ?? [];
-        arr.push({
-          name: c.raw_materials?.name ?? "—",
-          unit: c.raw_materials?.unit ?? "",
-          qty,
-          cost: qty * unitCost,
-        });
-        matsByBatch.set(c.ref_id, arr);
+        const perBatch = netMats.get(c.ref_id) ?? new Map();
+        const entry =
+          perBatch.get(c.material_id) ?? {
+            name: c.raw_materials?.name ?? "—",
+            unit: c.raw_materials?.unit ?? "",
+            cost: Number(c.raw_materials?.cost) || 0,
+            qty: 0,
+          };
+        entry.qty += Number(c.qty) || 0;
+        perBatch.set(c.material_id, entry);
+        netMats.set(c.ref_id, perBatch);
+      }
+      const matsByBatch = new Map<string, Batch["materials"]>();
+      for (const [ref, perBatch] of netMats) {
+        const arr: Batch["materials"] = [];
+        for (const e of perBatch.values()) {
+          const qty = Math.abs(e.qty);
+          if (qty <= 1e-9) continue;
+          arr.push({ name: e.name, unit: e.unit, qty, cost: qty * e.cost });
+        }
+        matsByBatch.set(ref, arr);
       }
       const ohByBatch = new Map<string, number>();
       for (const o of overheads) {
@@ -232,7 +261,8 @@ function BatchHistoryPage() {
           createdAt: r.created_at,
           productId: r.product_id,
           productName: r.products?.name ?? "—",
-          qty: Number(r.qty) || 0,
+          qty: netQty.get(batchId) ?? (Number(r.qty) || 0),
+
           price: Number(r.products?.price) || 0,
           materials: mats,
           materialCost: mats.reduce((s, m) => s + m.cost, 0),
