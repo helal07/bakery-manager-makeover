@@ -53,7 +53,7 @@ import {
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string | string[] };
+type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string | string[]; superadminOnly?: boolean };
 type NavItem = {
   to: string;
   label: string;
@@ -196,6 +196,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
           { to: "/settings/showrooms", label: "Showrooms", icon: ShoppingBag, permission: "showrooms.view" },
           { to: "/settings/access", label: "Access Control", icon: ShieldCheck, permission: "settings.access" },
           { to: "/settings/landing", label: "Landing Page", icon: LayoutDashboard, permission: "settings.landing" },
+          { to: "/settings/audit-log", label: "Activity Log", icon: History, superadminOnly: true },
+
         ],
       },
     ],
@@ -274,7 +276,7 @@ export function AppShellFrame() {
             .map((it) => {
               if (!can(it.permission)) return null;
               if (!it.children) return it;
-              const kids = it.children.filter((c) => can(c.permission));
+              const kids = it.children.filter((c) => (c.superadminOnly ? isSuperadmin : can(c.permission)));
               if (kids.length === 0 && it.permission == null) return null;
               return { ...it, children: kids };
             })

@@ -50,6 +50,7 @@ import { Route as ApiPublicManifestRouteImport } from './routes/api/public/manif
 import { Route as AuthenticatedTransfersNewRouteImport } from './routes/_authenticated/transfers.new'
 import { Route as AuthenticatedSettingsShowroomsRouteImport } from './routes/_authenticated/settings.showrooms'
 import { Route as AuthenticatedSettingsLandingRouteImport } from './routes/_authenticated/settings.landing'
+import { Route as AuthenticatedSettingsAuditLogRouteImport } from './routes/_authenticated/settings.audit-log'
 import { Route as AuthenticatedSettingsAccessRouteImport } from './routes/_authenticated/settings.access'
 import { Route as AuthenticatedSalesReturnRouteImport } from './routes/_authenticated/sales.return'
 import { Route as AuthenticatedSalesPaymentsRouteImport } from './routes/_authenticated/sales.payments'
@@ -309,6 +310,12 @@ const AuthenticatedSettingsLandingRoute =
   AuthenticatedSettingsLandingRouteImport.update({
     id: '/settings/landing',
     path: '/settings/landing',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsAuditLogRoute =
+  AuthenticatedSettingsAuditLogRouteImport.update({
+    id: '/settings/audit-log',
+    path: '/settings/audit-log',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedSettingsAccessRoute =
@@ -639,6 +646,7 @@ export interface FileRoutesByFullPath {
   '/sales/payments': typeof AuthenticatedSalesPaymentsRoute
   '/sales/return': typeof AuthenticatedSalesReturnRoute
   '/settings/access': typeof AuthenticatedSettingsAccessRoute
+  '/settings/audit-log': typeof AuthenticatedSettingsAuditLogRoute
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
@@ -720,6 +728,7 @@ export interface FileRoutesByTo {
   '/sales/payments': typeof AuthenticatedSalesPaymentsRoute
   '/sales/return': typeof AuthenticatedSalesReturnRoute
   '/settings/access': typeof AuthenticatedSettingsAccessRoute
+  '/settings/audit-log': typeof AuthenticatedSettingsAuditLogRoute
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
@@ -808,6 +817,7 @@ export interface FileRoutesById {
   '/_authenticated/sales/payments': typeof AuthenticatedSalesPaymentsRoute
   '/_authenticated/sales/return': typeof AuthenticatedSalesReturnRoute
   '/_authenticated/settings/access': typeof AuthenticatedSettingsAccessRoute
+  '/_authenticated/settings/audit-log': typeof AuthenticatedSettingsAuditLogRoute
   '/_authenticated/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/_authenticated/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
   '/_authenticated/transfers/new': typeof AuthenticatedTransfersNewRoute
@@ -896,6 +906,7 @@ export interface FileRouteTypes {
     | '/sales/payments'
     | '/sales/return'
     | '/settings/access'
+    | '/settings/audit-log'
     | '/settings/landing'
     | '/settings/showrooms'
     | '/transfers/new'
@@ -977,6 +988,7 @@ export interface FileRouteTypes {
     | '/sales/payments'
     | '/sales/return'
     | '/settings/access'
+    | '/settings/audit-log'
     | '/settings/landing'
     | '/settings/showrooms'
     | '/transfers/new'
@@ -1064,6 +1076,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sales/payments'
     | '/_authenticated/sales/return'
     | '/_authenticated/settings/access'
+    | '/_authenticated/settings/audit-log'
     | '/_authenticated/settings/landing'
     | '/_authenticated/settings/showrooms'
     | '/_authenticated/transfers/new'
@@ -1384,6 +1397,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/landing'
       fullPath: '/settings/landing'
       preLoaderRoute: typeof AuthenticatedSettingsLandingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/audit-log': {
+      id: '/_authenticated/settings/audit-log'
+      path: '/settings/audit-log'
+      fullPath: '/settings/audit-log'
+      preLoaderRoute: typeof AuthenticatedSettingsAuditLogRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings/access': {
@@ -1911,6 +1931,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSubRecipesRoute: typeof AuthenticatedSubRecipesRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
   AuthenticatedSettingsAccessRoute: typeof AuthenticatedSettingsAccessRoute
+  AuthenticatedSettingsAuditLogRoute: typeof AuthenticatedSettingsAuditLogRoute
   AuthenticatedSettingsLandingRoute: typeof AuthenticatedSettingsLandingRoute
   AuthenticatedSettingsShowroomsRoute: typeof AuthenticatedSettingsShowroomsRoute
   AuthenticatedTransfersNewRoute: typeof AuthenticatedTransfersNewRoute
@@ -1945,6 +1966,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSubRecipesRoute: AuthenticatedSubRecipesRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
   AuthenticatedSettingsAccessRoute: AuthenticatedSettingsAccessRoute,
+  AuthenticatedSettingsAuditLogRoute: AuthenticatedSettingsAuditLogRoute,
   AuthenticatedSettingsLandingRoute: AuthenticatedSettingsLandingRoute,
   AuthenticatedSettingsShowroomsRoute: AuthenticatedSettingsShowroomsRoute,
   AuthenticatedTransfersNewRoute: AuthenticatedTransfersNewRoute,
@@ -1970,13 +1992,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
