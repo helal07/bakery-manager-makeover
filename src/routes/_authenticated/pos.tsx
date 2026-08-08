@@ -398,14 +398,23 @@ function PosPage() {
 
         const { data: items } = await sb.from("sale_items").select("*").eq("sale_id", row.id);
         const cartMap: Record<string, number> = {};
+        const editMap: Record<string, LineEdit> = {};
         const originals: Array<{ product_id: string; qty: number }> = [];
         for (const it of items ?? []) {
           if (!it.product_id) continue;
           cartMap[it.product_id] = (cartMap[it.product_id] || 0) + Number(it.qty);
           originals.push({ product_id: it.product_id, qty: Number(it.qty) });
+          // Stored unit_price is already net of any line discount.
+          editMap[it.product_id] = {
+            price: String(+Number(it.unit_price || 0).toFixed(2)),
+            discType: "fixed",
+            discAmt: "",
+            note: "",
+          };
         }
         if (cancelled) return;
         setCart(cartMap);
+        setLineEdits(editMap);
         setEditOriginalItems(originals);
         setEditOriginalPaid(Number(row.paid || 0));
         setEditShowroomId(row.showroom_id ?? null);
