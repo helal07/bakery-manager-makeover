@@ -62,7 +62,7 @@ export async function commitProduction(params: {
   batch: number;
   ingredients: Ingredient[];
   overheads?: ProductionOverheadInput[];
-}): Promise<void> {
+}): Promise<{ batchId: string | null; visible: boolean }> {
   const { productId, showroomId, batch, ingredients, overheads } = params;
   const cleanOverheads = (overheads ?? [])
     .filter((o) => o.categoryId && Number(o.amount) > 0)
@@ -74,7 +74,7 @@ export async function commitProduction(params: {
       subRecipeId: i.subRecipeId ?? null,
       qty: Number(i.qty),
     }));
-  const { error } = await sb.rpc("commit_production_batch", {
+  const { data, error } = await sb.rpc("commit_production_batch", {
     _product_id: productId,
     _showroom_id: showroomId,
     _batch: batch,
@@ -82,4 +82,17 @@ export async function commitProduction(params: {
     _overheads: cleanOverheads,
   });
   if (error) throw error;
+
+  // The RPC returns the created batch id. Read it back through the normal
+  // (RLS-filtered) path so we can tell the user honestly whether the batch
+  // they just saved is actually visible to their account.
+  const batchId: string | null =
+    typeof data === "string" ? data : (data?.batch_id ?? data?.id ?? null);
+  if (!batchId) return { batchId: null, visible: false };
+  const { data: check } = await sb
+    .from("stock_ledger")
+    .select("id")
+    .eq("ref_id", batchId)
+    .limit(1);
+  return { batchId, visible: !!(check && check.length) };
 }
