@@ -97,6 +97,56 @@ function BatchHistoryPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Batch CRUD
+  const { hasAny } = usePermissions();
+  const canEditBatch = hasAny("production.batches.edit");
+  const canDeleteBatch = hasAny("production.batches.delete");
+  const [toDelete, setToDelete] = useState<Batch | null>(null);
+  const [editing, setEditing] = useState<Batch | null>(null);
+  const [editQty, setEditQty] = useState("");
+  const [crudBusy, setCrudBusy] = useState(false);
+
+  const doDelete = async () => {
+    if (!toDelete) return;
+    setCrudBusy(true);
+    try {
+      await voidProductionBatch(toDelete.batchId, "Deleted from Batch History");
+      toast.success(`Batch #${toDelete.batchNo} deleted — materials returned to factory stock`);
+      setToDelete(null);
+      setReloadKey((k) => k + 1);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete batch");
+    } finally {
+      setCrudBusy(false);
+    }
+  };
+
+  const doEdit = async () => {
+    if (!editing) return;
+    const qty = Number(editQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      toast.error("Quantity must be greater than zero");
+      return;
+    }
+    setCrudBusy(true);
+    try {
+      const ingredients = await loadRecipeFor(editing.productId);
+      if (ingredients.length === 0) {
+        toast.error("This product has no saved recipe, so the batch cannot be recalculated.");
+        return;
+      }
+      await editProductionBatch({ batchId: editing.batchId, batch: qty, ingredients });
+      toast.success(`Batch #${editing.batchNo} corrected to ${qty}`);
+      setEditing(null);
+      setReloadKey((k) => k + 1);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to edit batch");
+    } finally {
+      setCrudBusy(false);
+    }
+  };
 
   useEffect(() => {
     getCompany().then(setCompany).catch(() => {});
