@@ -178,6 +178,50 @@ function ReceiveTransferPage() {
               <div className="text-sm italic text-muted-foreground mb-4">"{transfer.note}"</div>
             )}
 
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 print:hidden">
+              <div className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">Line Items</div>
+                <div className="text-lg font-semibold tabular-nums">{items.length}</div>
+              </div>
+              <div className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">Total Quantity</div>
+                <div className="text-lg font-semibold tabular-nums">{totalQty}</div>
+              </div>
+              <div className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">Direction</div>
+                <div className="text-sm font-medium truncate">
+                  {locName(transfer.source_showroom_id)} → {locName(transfer.dest_showroom_id)}
+                </div>
+              </div>
+              <div className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">Received At</div>
+                <div className="text-sm font-medium">
+                  {transfer.received_at ? new Date(transfer.received_at).toLocaleString() : "Pending"}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mb-4 print:hidden text-xs">
+              {(["draft", "sent", "received"] as const).map((s, i) => {
+                const order = ["draft", "sent", "received"];
+                const active = order.indexOf(transfer.status) >= i;
+                return (
+                  <div key={s} className="flex items-center gap-2">
+                    {i > 0 && <span className="h-px w-6 bg-border" />}
+                    <span
+                      className={
+                        "px-2 py-1 rounded-full border capitalize " +
+                        (active ? "bg-primary/10 text-primary border-primary/30" : "text-muted-foreground")
+                      }
+                    >
+                      {s}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+
             <div className="overflow-x-auto">
               <table className="w-full text-sm border">
                 <thead>
