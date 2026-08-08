@@ -261,7 +261,7 @@ function BatchHistoryPage() {
           createdAt: r.created_at,
           productId: r.product_id,
           productName: r.products?.name ?? "—",
-          qty: netQty.get(batchId) ?? Number(r.qty) || 0,
+          qty: netQty.get(batchId) ?? (Number(r.qty) || 0),
 
           price: Number(r.products?.price) || 0,
           materials: mats,
