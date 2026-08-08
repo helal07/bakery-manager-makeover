@@ -276,7 +276,7 @@ export function AppShellFrame() {
             .map((it) => {
               if (!can(it.permission)) return null;
               if (!it.children) return it;
-              const kids = it.children.filter((c) => can(c.permission));
+              const kids = it.children.filter((c) => (c.superadminOnly ? isSuperadmin : can(c.permission)));
               if (kids.length === 0 && it.permission == null) return null;
               return { ...it, children: kids };
             })
