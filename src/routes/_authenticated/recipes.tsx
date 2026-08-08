@@ -290,14 +290,21 @@ function Workbench() {
     if (!active || !canProduce) return;
     setBusy(true);
     try {
-      await commitProduction({
+      const res = await commitProduction({
         productId: active.product.id,
         showroomId: null, // Factory-only production model
         batch,
         ingredients: items,
         overheads: produceOverheads,
       });
-      toast.success(`✓ Produced ${batch} × ${active.product.name}`);
+      if (res.visible) {
+        toast.success(`✓ Produced ${batch} × ${active.product.name} — batch #${String(res.batchId).replace(/-/g, "").slice(0, 6).toUpperCase()}`);
+      } else {
+        toast.warning(
+          "Batch was saved, but your account cannot see Factory records — so it won't appear in Batch History. Ask an admin to assign you to the Factory location in Roles & Teams.",
+          { duration: 9000 },
+        );
+      }
       setConfirmOpen(false);
       setBatch(1);
       await refresh();
