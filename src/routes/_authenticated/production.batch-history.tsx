@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
-import { Printer, FileDown, ChevronRight, Boxes, Layers, Receipt, BarChart3, Search } from "lucide-react";
+import { Printer, FileDown, ChevronRight, Boxes, Layers, Receipt, BarChart3, Search, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeTo } from "@/lib/scope";
@@ -10,6 +10,16 @@ import { Input } from "@/components/ui/input";
 import { PermissionGate } from "@/components/permission-gate";
 import { printBatchHistoryReport, exportBatchHistoryXlsx, type BatchReportRow } from "@/lib/batch-history-report";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/use-permissions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { editProductionBatch, loadRecipeFor, voidProductionBatch } from "@/lib/recipe-store";
 
 const sb = supabase as any;
 
@@ -87,6 +97,56 @@ function BatchHistoryPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Batch CRUD
+  const { hasAny } = usePermissions();
+  const canEditBatch = hasAny("production.batches.edit");
+  const canDeleteBatch = hasAny("production.batches.delete");
+  const [toDelete, setToDelete] = useState<Batch | null>(null);
+  const [editing, setEditing] = useState<Batch | null>(null);
+  const [editQty, setEditQty] = useState("");
+  const [crudBusy, setCrudBusy] = useState(false);
+
+  const doDelete = async () => {
+    if (!toDelete) return;
+    setCrudBusy(true);
+    try {
+      await voidProductionBatch(toDelete.batchId, "Deleted from Batch History");
+      toast.success(`Batch #${toDelete.batchNo} deleted — materials returned to factory stock`);
+      setToDelete(null);
+      setReloadKey((k) => k + 1);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete batch");
+    } finally {
+      setCrudBusy(false);
+    }
+  };
+
+  const doEdit = async () => {
+    if (!editing) return;
+    const qty = Number(editQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      toast.error("Quantity must be greater than zero");
+      return;
+    }
+    setCrudBusy(true);
+    try {
+      const ingredients = await loadRecipeFor(editing.productId);
+      if (ingredients.length === 0) {
+        toast.error("This product has no saved recipe, so the batch cannot be recalculated.");
+        return;
+      }
+      await editProductionBatch({ batchId: editing.batchId, batch: qty, ingredients });
+      toast.success(`Batch #${editing.batchNo} corrected to ${qty}`);
+      setEditing(null);
+      setReloadKey((k) => k + 1);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to edit batch");
+    } finally {
+      setCrudBusy(false);
+    }
+  };
 
   useEffect(() => {
     getCompany().then(setCompany).catch(() => {});
@@ -191,7 +251,7 @@ function BatchHistoryPage() {
     return () => {
       cancel = true;
     };
-  }, [from, to]);
+  }, [from, to, reloadKey]);
 
   const products = useMemo(() => {
     const m = new Map<string, string>();
@@ -340,12 +400,15 @@ function BatchHistoryPage() {
                 <th className="text-right font-medium px-3 py-2">Cost</th>
                 <th className="text-right font-medium px-3 py-2">Overhead</th>
                 <th className="text-right font-medium px-3 py-2">Value</th>
+                {(canEditBatch || canDeleteBatch) && (
+                  <th className="text-right font-medium px-3 py-2">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-8 text-muted-foreground text-sm">
+                  <td colSpan={canEditBatch || canDeleteBatch ? 10 : 9} className="text-center py-8 text-muted-foreground text-sm">
                     {loading
                       ? "Loading…"
                       : denied
@@ -378,11 +441,40 @@ function BatchHistoryPage() {
                         <td className="px-3 py-2 text-right tabular-nums">{money(b.materialCost)}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{money(b.overhead)}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-medium text-primary">{money(b.qty * b.price)}</td>
+                        {(canEditBatch || canDeleteBatch) && (
+                          <td className="px-3 py-2 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="inline-flex gap-1">
+                              {canEditBatch && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2"
+                                  onClick={() => {
+                                    setEditing(b);
+                                    setEditQty(String(b.qty));
+                                  }}
+                                >
+                                  <Pencil className="size-3.5" />
+                                </Button>
+                              )}
+                              {canDeleteBatch && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2 text-destructive hover:text-destructive"
+                                  onClick={() => setToDelete(b)}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                       {isOpen && (
                         <tr key={`${b.batchId}-d`} className="bg-muted/20">
                           <td />
-                          <td colSpan={8} className="px-3 py-3">
+                          <td colSpan={canEditBatch || canDeleteBatch ? 9 : 8} className="px-3 py-3">
                             <div className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
                               Raw materials consumed
                             </div>
@@ -424,12 +516,62 @@ function BatchHistoryPage() {
                   <td className="px-3 py-2 text-right tabular-nums">{money(totals.cost)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{money(totals.overhead)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{money(totals.value)}</td>
+                  {(canEditBatch || canDeleteBatch) && <td />}
                 </tr>
               </tfoot>
             )}
           </table>
         </div>
       </Card>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title={`Delete batch #${toDelete?.batchNo ?? ""}?`}
+        description={
+          <>
+            This reverses the batch: <b>{fmt(toDelete?.qty ?? 0, 3)}</b> × <b>{toDelete?.productName}</b> will be
+            removed from finished stock, the consumed raw materials go back into factory stock, and this batch's
+            overheads are cleared. Reversal entries stay in the ledger for audit.
+          </>
+        }
+        confirmLabel="Delete batch"
+        destructive
+        busy={crudBusy}
+        onConfirm={doDelete}
+        onCancel={() => setToDelete(null)}
+      />
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Correct batch #{editing?.batchNo}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              {editing?.productName} — the old consumption is reversed and re-applied at the corrected quantity using
+              the product's current recipe. Batch number and date stay the same.
+            </p>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Produced quantity</label>
+              <Input
+                autoFocus
+                value={editQty}
+                onChange={(e) => setEditQty(e.target.value.replace(/[^\d.]/g, ""))}
+                inputMode="decimal"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={crudBusy}>
+              Cancel
+            </Button>
+            <Button onClick={doEdit} disabled={crudBusy}>
+              {crudBusy ? "Saving…" : "Save correction"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

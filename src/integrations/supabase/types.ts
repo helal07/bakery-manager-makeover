@@ -2802,6 +2802,7 @@ export type Database = {
         Args: { _showroom: string }
         Returns: undefined
       }
+      assert_permission: { Args: { _key: string }; Returns: undefined }
       commit_damaged_movement: {
         Args: {
           _kind: string
@@ -2877,6 +2878,15 @@ export type Database = {
         Args: { _transfer_id: string }
         Returns: undefined
       }
+      edit_production_batch: {
+        Args: {
+          _batch: number
+          _batch_id: string
+          _ingredients: Json
+          _overheads?: Json
+        }
+        Returns: string
+      }
       find_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_effective_invoice_settings: {
         Args: { _showroom_id: string }
@@ -2903,8 +2913,16 @@ export type Database = {
         }
         Returns: string
       }
+      reverse_production_batch_internal: {
+        Args: { _batch_id: string; _note: string }
+        Returns: undefined
+      }
       user_can_access_location: {
         Args: { _showroom: string; _user: string }
+        Returns: boolean
+      }
+      user_has_permission: {
+        Args: { _key: string; _user: string }
         Returns: boolean
       }
       user_has_showroom_access: {
@@ -2913,6 +2931,10 @@ export type Database = {
       }
       user_is_factory_user: { Args: { _user: string }; Returns: boolean }
       user_is_global_admin: { Args: { _user: string }; Returns: boolean }
+      void_production_batch: {
+        Args: { _batch_id: string; _note?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
