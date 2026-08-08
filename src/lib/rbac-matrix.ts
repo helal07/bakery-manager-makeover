@@ -234,6 +234,7 @@ export const ROLE_MATRIX: Record<string, string[]> = {
     "production.factory_stock.view",
     "production.reports.view",
     "production.reports.daily_register",
+    "production.reports.batch_history",
     "production.reports.cost",
     "production.reports.consumption",
     "production.reports.overhead",
