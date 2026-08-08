@@ -43,6 +43,7 @@ type PayMethod = "cash" | "card" | "mobile" | "bank" | "cheque" | "other";
 type Tender = { method: PayMethod; amount: number; reference?: string };
 type CustomerLite = { id: string; name: string; phone: string | null; selling_price_group_id: string | null };
 type GroupLite = { id: string; name: string };
+type LineEdit = { price: string; discType: "fixed" | "pct"; discAmt: string; note: string };
 
 const METHOD_LABEL: Record<PayMethod, string> = {
   cash: "Cash", card: "Card", mobile: "Mobile Banking",
@@ -332,14 +333,41 @@ function PosPage() {
 
   useEffect(() => { setCursor(0); }, [cat, query]);
 
+  // Per-line price override + discount (Ultimate POS style)
+  const [lineEdits, setLineEdits] = useState<Record<string, LineEdit>>({});
+  const [lineEditFor, setLineEditFor] = useState<string | null>(null);
+
+  /** Catalog / price-group price, before any manual override. */
   const priceFor = (p: Product) => {
     if (groupPrices[p.id] != null) return +groupPrices[p.id].toFixed(2);
     return +p.price.toFixed(2);
   };
+  /** Unit price actually charged before line discount. */
+  const unitPriceFor = (p: Product) => {
+    const e = lineEdits[p.id];
+    const v = e && e.price.trim() !== "" ? Number(e.price) : Number.NaN;
+    return Number.isFinite(v) && v >= 0 ? +v.toFixed(2) : priceFor(p);
+  };
+  /** Line discount expressed per unit, never more than the unit price. */
+  const lineDiscountPerUnit = (p: Product) => {
+    const e = lineEdits[p.id];
+    if (!e) return 0;
+    const amt = Number(e.discAmt) || 0;
+    if (amt <= 0) return 0;
+    const up = unitPriceFor(p);
+    const d = e.discType === "pct" ? (up * amt) / 100 : amt;
+    return +Math.min(up, Math.max(0, d)).toFixed(2);
+  };
+  /** Net unit price after line discount — what the sale line is stored with. */
+  const netPriceFor = (p: Product) => +(unitPriceFor(p) - lineDiscountPerUnit(p)).toFixed(2);
+
   const items = Object.entries(cart)
     .map(([id, qty]) => ({ p: products.find((x) => x.id === id)!, qty }))
     .filter((x) => x.p);
-  const subtotal = +items.reduce((s, { p, qty }) => s + priceFor(p) * qty, 0).toFixed(2);
+  const subtotal = +items.reduce((s, { p, qty }) => s + netPriceFor(p) * qty, 0).toFixed(2);
+  const lineDiscountTotal = +items
+    .reduce((s, { p, qty }) => s + lineDiscountPerUnit(p) * qty, 0)
+    .toFixed(2);
   const [discount, setDiscount] = useState(0);
   const [shipping, setShipping] = useState(0);
   const total = +(subtotal - discount + shipping).toFixed(2);
@@ -370,14 +398,23 @@ function PosPage() {
 
         const { data: items } = await sb.from("sale_items").select("*").eq("sale_id", row.id);
         const cartMap: Record<string, number> = {};
+        const editMap: Record<string, LineEdit> = {};
         const originals: Array<{ product_id: string; qty: number }> = [];
         for (const it of items ?? []) {
           if (!it.product_id) continue;
           cartMap[it.product_id] = (cartMap[it.product_id] || 0) + Number(it.qty);
           originals.push({ product_id: it.product_id, qty: Number(it.qty) });
+          // Stored unit_price is already net of any line discount.
+          editMap[it.product_id] = {
+            price: String(+Number(it.unit_price || 0).toFixed(2)),
+            discType: "fixed",
+            discAmt: "",
+            note: "",
+          };
         }
         if (cancelled) return;
         setCart(cartMap);
+        setLineEdits(editMap);
         setEditOriginalItems(originals);
         setEditOriginalPaid(Number(row.paid || 0));
         setEditShowroomId(row.showroom_id ?? null);
@@ -430,7 +467,7 @@ function PosPage() {
       if (next[id] === 0) delete next[id];
       return next;
     });
-  const clearCart = () => { setCart({}); setTenders([]); };
+  const clearCart = () => { setCart({}); setTenders([]); setLineEdits({}); };
 
   const scanCode = (raw: string) => {
     const code = raw.trim();
@@ -558,7 +595,7 @@ function PosPage() {
         const { error: delErr } = await sb.from("sale_items").delete().eq("sale_id", editingSaleId);
         if (delErr) throw delErr;
         const newLines = items.map(({ p, qty }) => {
-          const up = priceFor(p);
+          const up = netPriceFor(p);
           return {
             sale_id: editingSaleId, product_id: p.id, product_name: p.name, product_sku: p.sku,
             qty, unit_price: up, line_total: +(up * qty).toFixed(2),
@@ -616,7 +653,7 @@ function PosPage() {
       if (sErr || !sale) throw sErr ?? new Error("Insert failed");
 
       const lines = items.map(({ p, qty }) => {
-        const up = priceFor(p);
+        const up = netPriceFor(p);
         return {
           sale_id: sale.id, product_id: p.id, product_name: p.name, product_sku: p.sku,
           qty, unit_price: up, line_total: +(up * qty).toFixed(2),
@@ -670,7 +707,7 @@ function PosPage() {
           reference: externalRef,
           date: new Date().toISOString(),
           mode: paymentMode === "card" ? "cash" : (paymentMode as "cash" | "due" | "partial"),
-          items: items.map(({ p, qty }) => ({ name: p.name, sku: p.sku ?? "", price: priceFor(p), qty, discount: 0 })),
+          items: items.map(({ p, qty }) => ({ name: p.name, sku: p.sku ?? "", price: unitPriceFor(p), qty, discount: +(lineDiscountPerUnit(p) * qty).toFixed(2) })),
           subtotal, discount, tax: 0, shipping, total, paid, due,
           previousDue: customerDue,
           payments: payRows.map((r) => ({ method: r.method, amount: r.amount, reference: r.reference ?? null })),
@@ -917,7 +954,10 @@ function PosPage() {
               </div>
             ) : (
               items.map(({ p, qty }) => {
-                const shown = priceFor(p);
+                const gross = unitPriceFor(p);
+                const disc = lineDiscountPerUnit(p);
+                const shown = netPriceFor(p);
+                const edited = gross !== priceFor(p) || disc > 0;
                 return (
                   <div key={p.id} className="grid grid-cols-[1fr_130px_100px_32px] sm:grid-cols-[1fr_170px_130px_36px] items-center pl-8 pr-2 sm:pl-10 sm:pr-4 py-2 border-b border-border hover:bg-accent/30">
                     <div className="flex items-center gap-2 min-w-0">
@@ -925,9 +965,21 @@ function PosPage() {
                         {p.imageUrl ? <img src={p.imageUrl} alt="" className="size-full object-cover" /> : null}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs sm:text-sm font-bold text-sky-700 dark:text-sky-400 truncate">{p.name}</div>
+                        <button
+                          type="button"
+                          onClick={() => setLineEditFor(p.id)}
+                          title="Edit unit price / discount"
+                          className="flex items-center gap-1 text-xs sm:text-sm font-bold text-sky-700 dark:text-sky-400 truncate hover:underline"
+                        >
+                          <span className="truncate">{p.name}</span>
+                          <Pencil className="size-3 shrink-0 opacity-60" />
+                        </button>
                         <div className="text-[10px] font-semibold text-muted-foreground truncate">
-                          {p.sku} · {p.stock.toFixed(0)} in stock
+                          {p.sku} · {p.stock.toFixed(0)} in stock ·{" "}
+                          <span className={edited ? "text-primary font-bold" : ""}>৳{shown.toFixed(2)}</span>
+                          {disc > 0 && (
+                            <span className="text-destructive"> (−৳{disc.toFixed(2)} of ৳{gross.toFixed(2)})</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -944,7 +996,13 @@ function PosPage() {
                       <button onClick={() => add(p.id, 1)} className="size-7 grid place-items-center rounded-md bg-[color:var(--success)]/15 text-[color:var(--success)] hover:bg-[color:var(--success)]/25 font-bold"><Plus className="size-3" /></button>
                     </div>
                     <div className="text-right text-xs sm:text-sm font-extrabold tabular-nums text-slate-800 dark:text-slate-100">৳{(shown * qty).toFixed(2)}</div>
-                    <button onClick={() => setCart((c) => { const n = { ...c }; delete n[p.id]; return n; })} className="size-7 grid place-items-center rounded-md text-destructive hover:bg-destructive/10 justify-self-end">
+                    <button
+                      onClick={() => {
+                        setCart((c) => { const n = { ...c }; delete n[p.id]; return n; });
+                        setLineEdits((e) => { const n = { ...e }; delete n[p.id]; return n; });
+                      }}
+                      className="size-7 grid place-items-center rounded-md text-destructive hover:bg-destructive/10 justify-self-end"
+                    >
                       <Trash2 className="size-3.5" />
                     </button>
                   </div>
@@ -953,10 +1011,86 @@ function PosPage() {
             )}
           </div>
 
+          {/* Per-line price / discount editor (Ultimate POS style) */}
+          {lineEditFor && (() => {
+            const p = products.find((x) => x.id === lineEditFor);
+            if (!p) return null;
+            const e = lineEdits[p.id] ?? { price: "", discType: "fixed" as const, discAmt: "", note: "" };
+            const patch = (v: Partial<LineEdit>) =>
+              setLineEdits((prev) => ({ ...prev, [p.id]: { ...e, ...v } }));
+            const numOnly = (s: string) => s.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1");
+            return (
+              <div className="fixed inset-0 z-[120] bg-black/50 flex items-start justify-center p-4 overflow-y-auto" onClick={() => setLineEditFor(null)}>
+                <div className="w-full max-w-lg mt-10 rounded-lg bg-card border border-border shadow-2xl" onClick={(ev) => ev.stopPropagation()}>
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                    <h3 className="text-sm font-bold">{p.name} · {p.sku}</h3>
+                    <button onClick={() => setLineEditFor(null)} className="p-1 rounded hover:bg-accent text-muted-foreground"><X className="size-4" /></button>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Unit price</label>
+                      <input
+                        inputMode="decimal"
+                        value={e.price}
+                        placeholder={priceFor(p).toFixed(2)}
+                        onChange={(ev) => patch({ price: numOnly(ev.target.value) })}
+                        className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm font-semibold tabular-nums outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Discount type</label>
+                        <select
+                          value={e.discType}
+                          onChange={(ev) => patch({ discType: ev.target.value as LineEdit["discType"] })}
+                          className="mt-1 w-full h-9 px-2 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                        >
+                          <option value="fixed">Fixed (৳ per unit)</option>
+                          <option value="pct">Percentage (%)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Discount amount</label>
+                        <input
+                          inputMode="decimal"
+                          value={e.discAmt}
+                          placeholder="0.00"
+                          onChange={(ev) => patch({ discAmt: numOnly(ev.target.value) })}
+                          className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm font-semibold tabular-nums outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Description</label>
+                      <textarea
+                        value={e.note}
+                        onChange={(ev) => patch({ note: ev.target.value })}
+                        rows={2}
+                        className="mt-1 w-full px-2.5 py-1.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">Note for this line (serial, remark) — not stored on the sale.</p>
+                    </div>
+                    <div className="rounded-md bg-muted/50 border border-border px-3 py-2 text-xs font-semibold flex items-center justify-between">
+                      <span>Net unit price</span>
+                      <span className="tabular-nums text-primary">৳{netPriceFor(p).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <div className="px-4 py-3 border-t border-border flex justify-between gap-2">
+                    <button
+                      onClick={() => { setLineEdits((prev) => { const n = { ...prev }; delete n[p.id]; return n; }); setLineEditFor(null); }}
+                      className="h-9 px-3 rounded-md border border-border text-xs font-semibold hover:bg-accent"
+                    >Reset to default</button>
+                    <button onClick={() => setLineEditFor(null)} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-bold hover:opacity-90">Done</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Bottom stat bar */}
           <div className="grid grid-cols-5 border-t-2 border-border bg-card text-center">
             <Stat label="ITEMS" value={items.reduce((s, x) => s + x.qty, 0).toFixed(0)} />
-            <Stat label="SUBTOTAL" value={subtotal.toFixed(2)} />
+            <Stat label={lineDiscountTotal > 0 ? `SUBTOTAL (−${lineDiscountTotal.toFixed(2)} line disc.)` : "SUBTOTAL"} value={subtotal.toFixed(2)} />
             <StatInput label="DISCOUNT (-)" value={discount} onChange={setDiscount} tone="danger" />
             <StatInput label="SHIPPING (+)" value={shipping} onChange={setShipping} />
             <Stat label="TOTAL PAYABLE" value={total.toFixed(2)} big />
