@@ -39,6 +39,7 @@ export const PERMISSION_CATALOG = [
   "production.raw_materials.view",
   "production.recipes.manage",
   "production.recipes.view",
+  "production.reports.batch_history",
   "production.reports.consumption",
   "production.reports.cost",
   "production.reports.daily_register",
@@ -92,6 +93,11 @@ export const ROUTE_GUARDS: Record<string, string[]> = {
   // Production module + its reports
   "/production": ["production.reports.daily_register", "production.reports.view"],
   "/production/factory-stock": ["production.access", "inventory.view"],
+  "/production/batch-history": [
+    "production.reports.batch_history",
+    "production.reports.view",
+    "production.batches",
+  ],
   "/production/cost-report": ["production.reports.cost", "production.reports.view"],
   "/production/consumption-report": ["production.reports.consumption", "production.reports.view"],
   "/production/overhead-report": ["production.reports.overhead", "production.reports.view"],
@@ -228,6 +234,7 @@ export const ROLE_MATRIX: Record<string, string[]> = {
     "production.factory_stock.view",
     "production.reports.view",
     "production.reports.daily_register",
+    "production.reports.batch_history",
     "production.reports.cost",
     "production.reports.consumption",
     "production.reports.overhead",
