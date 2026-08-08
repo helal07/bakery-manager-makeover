@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChefHat, Loader2, Eye, EyeOff, Croissant, Wheat, Cookie, Sparkles } from "lucide-react";
 import bakeryBg from "@/assets/auth-bakery-bg.jpg";
 import { getCompany, pageTitle, getCompanyName } from "@/lib/company-settings";
+import { logLoginEvent } from "@/lib/audit-log-store";
+
 
 const searchSchema = z.object({ denied: z.coerce.number().optional() });
 
