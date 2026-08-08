@@ -467,7 +467,7 @@ function PosPage() {
       if (next[id] === 0) delete next[id];
       return next;
     });
-  const clearCart = () => { setCart({}); setTenders([]); };
+  const clearCart = () => { setCart({}); setTenders([]); setLineEdits({}); };
 
   const scanCode = (raw: string) => {
     const code = raw.trim();
@@ -595,7 +595,7 @@ function PosPage() {
         const { error: delErr } = await sb.from("sale_items").delete().eq("sale_id", editingSaleId);
         if (delErr) throw delErr;
         const newLines = items.map(({ p, qty }) => {
-          const up = priceFor(p);
+          const up = netPriceFor(p);
           return {
             sale_id: editingSaleId, product_id: p.id, product_name: p.name, product_sku: p.sku,
             qty, unit_price: up, line_total: +(up * qty).toFixed(2),
@@ -653,7 +653,7 @@ function PosPage() {
       if (sErr || !sale) throw sErr ?? new Error("Insert failed");
 
       const lines = items.map(({ p, qty }) => {
-        const up = priceFor(p);
+        const up = netPriceFor(p);
         return {
           sale_id: sale.id, product_id: p.id, product_name: p.name, product_sku: p.sku,
           qty, unit_price: up, line_total: +(up * qty).toFixed(2),
@@ -707,7 +707,7 @@ function PosPage() {
           reference: externalRef,
           date: new Date().toISOString(),
           mode: paymentMode === "card" ? "cash" : (paymentMode as "cash" | "due" | "partial"),
-          items: items.map(({ p, qty }) => ({ name: p.name, sku: p.sku ?? "", price: priceFor(p), qty, discount: 0 })),
+          items: items.map(({ p, qty }) => ({ name: p.name, sku: p.sku ?? "", price: unitPriceFor(p), qty, discount: +(lineDiscountPerUnit(p) * qty).toFixed(2) })),
           subtotal, discount, tax: 0, shipping, total, paid, due,
           previousDue: customerDue,
           payments: payRows.map((r) => ({ method: r.method, amount: r.amount, reference: r.reference ?? null })),
@@ -954,7 +954,7 @@ function PosPage() {
               </div>
             ) : (
               items.map(({ p, qty }) => {
-                const shown = priceFor(p);
+                const shown = netPriceFor(p);
                 return (
                   <div key={p.id} className="grid grid-cols-[1fr_130px_100px_32px] sm:grid-cols-[1fr_170px_130px_36px] items-center pl-8 pr-2 sm:pl-10 sm:pr-4 py-2 border-b border-border hover:bg-accent/30">
                     <div className="flex items-center gap-2 min-w-0">
