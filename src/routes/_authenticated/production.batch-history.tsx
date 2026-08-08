@@ -251,7 +251,7 @@ function BatchHistoryPage() {
     return () => {
       cancel = true;
     };
-  }, [from, to]);
+  }, [from, to, reloadKey]);
 
   const products = useMemo(() => {
     const m = new Map<string, string>();
