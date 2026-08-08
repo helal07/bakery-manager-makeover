@@ -130,30 +130,41 @@ function ProfitLossPage() {
       for (const s of (((srooms as any).data ?? []) as any[])) showroomName[s.id] = s.name;
 
 
-      // Materials
+      // Materials (consume rows are negative, reverse rows positive → net)
       const mMap: Record<string, MaterialRow> = {};
       for (const r of ((consume as any).data ?? []) as any[]) {
         const id = r.material_id as string;
         if (!mMap[id]) {
           mMap[id] = { id, name: r.raw_materials?.name ?? "—", unit: r.raw_materials?.unit ?? "", qty: 0, cost: 0 };
         }
-        const qty = Math.abs(Number(r.qty) || 0);
-        mMap[id].qty += qty;
-        mMap[id].cost += qty * (Number(r.raw_materials?.cost) || 0);
+        const signed = r.kind === "production_reverse" ? -Math.abs(Number(r.qty) || 0) : Math.abs(Number(r.qty) || 0);
+        mMap[id].qty += signed;
+        mMap[id].cost += signed * (Number(r.raw_materials?.cost) || 0);
       }
-      setMaterials(Object.values(mMap).sort((a, b) => b.cost - a.cost));
+      setMaterials(
+        Object.values(mMap)
+          .map((m) => ({ ...m, qty: Math.max(0, m.qty), cost: Math.max(0, m.cost) }))
+          .filter((m) => m.qty > 1e-9)
+          .sort((a, b) => b.cost - a.cost),
+      );
 
-      // Output
+      // Output — voided batches net to zero and drop out
       const oMap: Record<string, OutputRow> = {};
       for (const r of ((produce as any).data ?? []) as any[]) {
         const id = r.product_id as string;
         const price = Number(r.products?.price) || 0;
         if (!oMap[id]) oMap[id] = { id, name: r.products?.name ?? "—", qty: 0, unitPrice: price, value: 0 };
-        const qty = Math.abs(Number(r.qty) || 0);
+        const qty = r.kind === "production_void" ? -Math.abs(Number(r.qty) || 0) : Math.abs(Number(r.qty) || 0);
         oMap[id].qty += qty;
         oMap[id].value += qty * price;
       }
-      setOutputs(Object.values(oMap).sort((a, b) => b.value - a.value));
+      setOutputs(
+        Object.values(oMap)
+          .map((o) => ({ ...o, qty: Math.max(0, o.qty), value: Math.max(0, o.value) }))
+          .filter((o) => o.qty > 1e-9)
+          .sort((a, b) => b.value - a.value),
+      );
+
 
       // Transfers
       const tRows: TransferRow[] = [];
