@@ -43,6 +43,7 @@ type PayMethod = "cash" | "card" | "mobile" | "bank" | "cheque" | "other";
 type Tender = { method: PayMethod; amount: number; reference?: string };
 type CustomerLite = { id: string; name: string; phone: string | null; selling_price_group_id: string | null };
 type GroupLite = { id: string; name: string };
+type LineEdit = { price: string; discType: "fixed" | "pct"; discAmt: string; note: string };
 
 const METHOD_LABEL: Record<PayMethod, string> = {
   cash: "Cash", card: "Card", mobile: "Mobile Banking",
