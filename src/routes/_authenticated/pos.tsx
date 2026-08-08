@@ -1090,7 +1090,7 @@ function PosPage() {
           {/* Bottom stat bar */}
           <div className="grid grid-cols-5 border-t-2 border-border bg-card text-center">
             <Stat label="ITEMS" value={items.reduce((s, x) => s + x.qty, 0).toFixed(0)} />
-            <Stat label="SUBTOTAL" value={subtotal.toFixed(2)} />
+            <Stat label={lineDiscountTotal > 0 ? `SUBTOTAL (−${lineDiscountTotal.toFixed(2)} line disc.)` : "SUBTOTAL"} value={subtotal.toFixed(2)} />
             <StatInput label="DISCOUNT (-)" value={discount} onChange={setDiscount} tone="danger" />
             <StatInput label="SHIPPING (+)" value={shipping} onChange={setShipping} />
             <Stat label="TOTAL PAYABLE" value={total.toFixed(2)} big />
