@@ -114,6 +114,7 @@ function Workbench() {
   const [batch, setBatch] = useState(1);
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [dupWarn, setDupWarn] = useState<string | null>(null);
 
   // Recipe editor state (used in Edit Recipe tab and New Recipe dialog)
   const [editorOpen, setEditorOpen] = useState(false);
