@@ -954,7 +954,10 @@ function PosPage() {
               </div>
             ) : (
               items.map(({ p, qty }) => {
+                const gross = unitPriceFor(p);
+                const disc = lineDiscountPerUnit(p);
                 const shown = netPriceFor(p);
+                const edited = gross !== priceFor(p) || disc > 0;
                 return (
                   <div key={p.id} className="grid grid-cols-[1fr_130px_100px_32px] sm:grid-cols-[1fr_170px_130px_36px] items-center pl-8 pr-2 sm:pl-10 sm:pr-4 py-2 border-b border-border hover:bg-accent/30">
                     <div className="flex items-center gap-2 min-w-0">
@@ -962,9 +965,21 @@ function PosPage() {
                         {p.imageUrl ? <img src={p.imageUrl} alt="" className="size-full object-cover" /> : null}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs sm:text-sm font-bold text-sky-700 dark:text-sky-400 truncate">{p.name}</div>
+                        <button
+                          type="button"
+                          onClick={() => setLineEditFor(p.id)}
+                          title="Edit unit price / discount"
+                          className="flex items-center gap-1 text-xs sm:text-sm font-bold text-sky-700 dark:text-sky-400 truncate hover:underline"
+                        >
+                          <span className="truncate">{p.name}</span>
+                          <Pencil className="size-3 shrink-0 opacity-60" />
+                        </button>
                         <div className="text-[10px] font-semibold text-muted-foreground truncate">
-                          {p.sku} · {p.stock.toFixed(0)} in stock
+                          {p.sku} · {p.stock.toFixed(0)} in stock ·{" "}
+                          <span className={edited ? "text-primary font-bold" : ""}>৳{shown.toFixed(2)}</span>
+                          {disc > 0 && (
+                            <span className="text-destructive"> (−৳{disc.toFixed(2)} of ৳{gross.toFixed(2)})</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -981,7 +996,13 @@ function PosPage() {
                       <button onClick={() => add(p.id, 1)} className="size-7 grid place-items-center rounded-md bg-[color:var(--success)]/15 text-[color:var(--success)] hover:bg-[color:var(--success)]/25 font-bold"><Plus className="size-3" /></button>
                     </div>
                     <div className="text-right text-xs sm:text-sm font-extrabold tabular-nums text-slate-800 dark:text-slate-100">৳{(shown * qty).toFixed(2)}</div>
-                    <button onClick={() => setCart((c) => { const n = { ...c }; delete n[p.id]; return n; })} className="size-7 grid place-items-center rounded-md text-destructive hover:bg-destructive/10 justify-self-end">
+                    <button
+                      onClick={() => {
+                        setCart((c) => { const n = { ...c }; delete n[p.id]; return n; });
+                        setLineEdits((e) => { const n = { ...e }; delete n[p.id]; return n; });
+                      }}
+                      className="size-7 grid place-items-center rounded-md text-destructive hover:bg-destructive/10 justify-self-end"
+                    >
                       <Trash2 className="size-3.5" />
                     </button>
                   </div>
@@ -989,6 +1010,82 @@ function PosPage() {
               })
             )}
           </div>
+
+          {/* Per-line price / discount editor (Ultimate POS style) */}
+          {lineEditFor && (() => {
+            const p = products.find((x) => x.id === lineEditFor);
+            if (!p) return null;
+            const e = lineEdits[p.id] ?? { price: "", discType: "fixed" as const, discAmt: "", note: "" };
+            const patch = (v: Partial<LineEdit>) =>
+              setLineEdits((prev) => ({ ...prev, [p.id]: { ...e, ...v } }));
+            const numOnly = (s: string) => s.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1");
+            return (
+              <div className="fixed inset-0 z-[120] bg-black/50 flex items-start justify-center p-4 overflow-y-auto" onClick={() => setLineEditFor(null)}>
+                <div className="w-full max-w-lg mt-10 rounded-lg bg-card border border-border shadow-2xl" onClick={(ev) => ev.stopPropagation()}>
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                    <h3 className="text-sm font-bold">{p.name} · {p.sku}</h3>
+                    <button onClick={() => setLineEditFor(null)} className="p-1 rounded hover:bg-accent text-muted-foreground"><X className="size-4" /></button>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Unit price</label>
+                      <input
+                        inputMode="decimal"
+                        value={e.price}
+                        placeholder={priceFor(p).toFixed(2)}
+                        onChange={(ev) => patch({ price: numOnly(ev.target.value) })}
+                        className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm font-semibold tabular-nums outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Discount type</label>
+                        <select
+                          value={e.discType}
+                          onChange={(ev) => patch({ discType: ev.target.value as LineEdit["discType"] })}
+                          className="mt-1 w-full h-9 px-2 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                        >
+                          <option value="fixed">Fixed (৳ per unit)</option>
+                          <option value="pct">Percentage (%)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Discount amount</label>
+                        <input
+                          inputMode="decimal"
+                          value={e.discAmt}
+                          placeholder="0.00"
+                          onChange={(ev) => patch({ discAmt: numOnly(ev.target.value) })}
+                          className="mt-1 w-full h-9 px-2.5 rounded-md border border-border bg-background text-sm font-semibold tabular-nums outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Description</label>
+                      <textarea
+                        value={e.note}
+                        onChange={(ev) => patch({ note: ev.target.value })}
+                        rows={2}
+                        className="mt-1 w-full px-2.5 py-1.5 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">Note for this line (serial, remark) — not stored on the sale.</p>
+                    </div>
+                    <div className="rounded-md bg-muted/50 border border-border px-3 py-2 text-xs font-semibold flex items-center justify-between">
+                      <span>Net unit price</span>
+                      <span className="tabular-nums text-primary">৳{netPriceFor(p).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <div className="px-4 py-3 border-t border-border flex justify-between gap-2">
+                    <button
+                      onClick={() => { setLineEdits((prev) => { const n = { ...prev }; delete n[p.id]; return n; }); setLineEditFor(null); }}
+                      className="h-9 px-3 rounded-md border border-border text-xs font-semibold hover:bg-accent"
+                    >Reset to default</button>
+                    <button onClick={() => setLineEditFor(null)} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-bold hover:opacity-90">Done</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Bottom stat bar */}
           <div className="grid grid-cols-5 border-t-2 border-border bg-card text-center">
