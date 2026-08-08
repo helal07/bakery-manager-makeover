@@ -343,22 +343,26 @@ function AuditLogContent() {
 
       <ConfirmDialog
         open={purgeOpen}
-        onOpenChange={setPurgeOpen}
         title="Purge old activity"
-        description={`Permanently delete activity older than ${purgeMonths} month(s). This cannot be undone.`}
+        description={
+          <div className="space-y-3">
+            <p>Permanently delete activity older than the retention window below. This cannot be undone.</p>
+            <div className="space-y-1">
+              <Label className="text-xs">Keep the last (months)</Label>
+              <Input
+                value={purgeMonths}
+                onChange={(e) => setPurgeMonths(e.target.value.replace(/[^0-9]/g, ""))}
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+        }
         confirmLabel="Purge"
         destructive
         onConfirm={handlePurge}
-      >
-        <div className="space-y-1">
-          <Label className="text-xs">Keep the last (months)</Label>
-          <Input
-            value={purgeMonths}
-            onChange={(e) => setPurgeMonths(e.target.value.replace(/[^0-9]/g, ""))}
-            inputMode="numeric"
-          />
-        </div>
-      </ConfirmDialog>
+        onCancel={() => setPurgeOpen(false)}
+      />
+
     </AppShell>
   );
 }
