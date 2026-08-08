@@ -441,11 +441,40 @@ function BatchHistoryPage() {
                         <td className="px-3 py-2 text-right tabular-nums">{money(b.materialCost)}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{money(b.overhead)}</td>
                         <td className="px-3 py-2 text-right tabular-nums font-medium text-primary">{money(b.qty * b.price)}</td>
+                        {(canEditBatch || canDeleteBatch) && (
+                          <td className="px-3 py-2 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="inline-flex gap-1">
+                              {canEditBatch && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2"
+                                  onClick={() => {
+                                    setEditing(b);
+                                    setEditQty(String(b.qty));
+                                  }}
+                                >
+                                  <Pencil className="size-3.5" />
+                                </Button>
+                              )}
+                              {canDeleteBatch && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2 text-destructive hover:text-destructive"
+                                  onClick={() => setToDelete(b)}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                       {isOpen && (
                         <tr key={`${b.batchId}-d`} className="bg-muted/20">
                           <td />
-                          <td colSpan={8} className="px-3 py-3">
+                          <td colSpan={canEditBatch || canDeleteBatch ? 9 : 8} className="px-3 py-3">
                             <div className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
                               Raw materials consumed
                             </div>
