@@ -54,16 +54,34 @@ function CostReportPage() {
     try {
       let q = sb
         .from("stock_ledger")
-        .select("id,ref_id,product_id,qty,created_at,products(name)")
-        .eq("kind", "production")
+        .select("id,ref_id,product_id,qty,kind,created_at,products(name)")
+        .in("kind", ["production", "production_void"])
         .gte("created_at", `${from}T00:00:00Z`)
         .lte("created_at", `${to}T23:59:59Z`)
         .order("created_at", { ascending: false });
       q = scopeTo(q, currentShowroomId, "showroom_id");
-      const { data: batches, error } = await q;
+      const { data: allLedger, error } = await q;
       if (error) throw error;
 
-      const batchIds = ((batches ?? []) as any[]).map((b) => b.ref_id).filter(Boolean) as string[];
+      // Net out reversals so deleted batches vanish and edited ones show their
+      // latest effective quantity.
+      const netQty = new Map<string, number>();
+      for (const r of ((allLedger ?? []) as any[])) {
+        const key = r.ref_id ?? r.id;
+        netQty.set(key, (netQty.get(key) ?? 0) + (Number(r.qty) || 0));
+      }
+      const seen = new Set<string>();
+      const batches = ((allLedger ?? []) as any[]).filter((r) => {
+        const key = r.ref_id ?? r.id;
+        if (r.kind !== "production") return false;
+        if ((netQty.get(key) ?? 0) <= 1e-9) return false;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      const batchIds = (batches as any[]).map((b) => b.ref_id).filter(Boolean) as string[];
+
       const [recipes, materials, overheads] = await Promise.all([
         loadRecipes(),
         loadRawMaterials(currentShowroomId ?? null),
@@ -77,8 +95,9 @@ function CostReportPage() {
         (ohByBatch[o.batch_id] ??= []).push(o);
       }
 
-      const out: BatchRow[] = ((batches ?? []) as any[]).map((b) => {
-        const qty = Number(b.qty);
+      const out: BatchRow[] = (batches as any[]).map((b) => {
+        const qty = netQty.get(b.ref_id ?? b.id) ?? (Number(b.qty) || 0);
+
         const ing = recipes[b.product_id] ?? [];
         const unitMaterial = ing.reduce((s, it) => s + (costMap[it.materialId] ?? 0) * it.qty, 0);
         const materialCost = unitMaterial * qty;

@@ -42,7 +42,8 @@ function ConsumptionReportPage() {
       let q = sb
         .from("raw_stock_ledger")
         .select("material_id,qty,kind,raw_materials(name,unit)")
-        .in("kind", ["production_consume", "wastage"])
+        .in("kind", ["production_consume", "production_reverse", "wastage"])
+
         .gte("created_at", `${from}T00:00:00Z`)
         .lte("created_at", `${to}T23:59:59Z`);
       q = scopeTo(q, currentShowroomId, "showroom_id");
@@ -63,9 +64,17 @@ function ConsumptionReportPage() {
         }
         const abs = Math.abs(Number(r.qty));
         if (r.kind === "production_consume") map[id].consumed += abs;
+        // Deleted / corrected batches return material — net it out.
+        else if (r.kind === "production_reverse") map[id].consumed -= abs;
         else if (r.kind === "wastage") map[id].wasted += abs;
       }
-      setRows(Object.values(map).sort((a, b) => (b.consumed + b.wasted) - (a.consumed + a.wasted)));
+      setRows(
+        Object.values(map)
+          .map((r) => ({ ...r, consumed: Math.max(0, r.consumed) }))
+          .filter((r) => r.consumed > 1e-9 || r.wasted > 1e-9)
+          .sort((a, b) => (b.consumed + b.wasted) - (a.consumed + a.wasted)),
+      );
+
 
       const oh = await loadOverheadsInRange(`${from}T00:00:00Z`, `${to}T23:59:59Z`);
       setOverheads(oh);
