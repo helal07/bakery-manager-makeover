@@ -400,6 +400,9 @@ function BatchHistoryPage() {
                 <th className="text-right font-medium px-3 py-2">Cost</th>
                 <th className="text-right font-medium px-3 py-2">Overhead</th>
                 <th className="text-right font-medium px-3 py-2">Value</th>
+                {(canEditBatch || canDeleteBatch) && (
+                  <th className="text-right font-medium px-3 py-2">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
