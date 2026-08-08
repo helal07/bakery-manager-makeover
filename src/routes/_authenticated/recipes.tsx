@@ -659,7 +659,7 @@ function Workbench() {
       {confirmOpen && active && (
         <div
           className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4"
-          onClick={() => !busy && setConfirmOpen(false)}
+          onClick={() => !busy && (setConfirmOpen(false), setDupWarn(null))}
         >
           <div
             className="bg-card border border-border rounded-lg shadow-xl w-full max-w-md p-5"
@@ -676,9 +676,17 @@ function Workbench() {
                 </p>
               </div>
             </div>
+            {dupWarn && (
+              <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                {dupWarn}
+              </div>
+            )}
             <div className="flex items-center justify-end gap-2">
               <button
-                onClick={() => setConfirmOpen(false)}
+                onClick={() => {
+                  setConfirmOpen(false);
+                  setDupWarn(null);
+                }}
                 disabled={busy}
                 className="px-4 h-10 rounded-md border border-border text-sm hover:bg-accent disabled:opacity-50"
               >
