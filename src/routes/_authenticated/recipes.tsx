@@ -319,6 +319,7 @@ function Workbench() {
         );
       }
       setConfirmOpen(false);
+      setDupWarn(null);
       setBatch(1);
       await refresh();
       if (tab === "history") loadHistory(active.product.id);
