@@ -196,6 +196,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
           { to: "/settings/showrooms", label: "Showrooms", icon: ShoppingBag, permission: "showrooms.view" },
           { to: "/settings/access", label: "Access Control", icon: ShieldCheck, permission: "settings.access" },
           { to: "/settings/landing", label: "Landing Page", icon: LayoutDashboard, permission: "settings.landing" },
+          { to: "/settings/audit-log", label: "Activity Log", icon: History, superadminOnly: true },
+
         ],
       },
     ],
