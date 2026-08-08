@@ -53,7 +53,7 @@ import {
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string | string[] };
+type NavChild = { to: string; label: string; icon: any; hash?: string; permission?: string | string[]; superadminOnly?: boolean };
 type NavItem = {
   to: string;
   label: string;
