@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PermissionGate } from "@/components/permission-gate";
 
 import { AppShell, Card } from "@/components/app-shell";
-import { Plus } from "lucide-react";
+import { Plus, BookOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { addSupplier, loadSuppliers, type Supplier } from "@/lib/supplier-store";
 import {
@@ -84,6 +84,7 @@ function Suppliers() {
               <th className="text-left font-medium px-5 py-3">Email</th>
               <th className="text-left font-medium px-5 py-3">Phone</th>
               <th className="text-left font-medium px-5 py-3">Address</th>
+              <th className="text-right font-medium px-5 py-3">Ledger</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -93,10 +94,15 @@ function Suppliers() {
                 <td className="px-5 py-3">{s.email}</td>
                 <td className="px-5 py-3 text-muted-foreground">{s.phone}</td>
                 <td className="px-5 py-3 text-muted-foreground">{s.address}</td>
+                <td className="px-5 py-3 text-right">
+                  <Link to="/supplier-ledger/$id" params={{ id: s.id }} className="text-primary text-xs hover:underline inline-flex items-center gap-1">
+                    <BookOpen className="size-3.5" /> View ledger
+                  </Link>
+                </td>
               </tr>
             ))}
             {list.length === 0 && (
-              <tr><td colSpan={4} className="px-5 py-10 text-center text-muted-foreground">No suppliers yet.</td></tr>
+              <tr><td colSpan={5} className="px-5 py-10 text-center text-muted-foreground">No suppliers yet.</td></tr>
             )}
           </tbody>
         </table></div>

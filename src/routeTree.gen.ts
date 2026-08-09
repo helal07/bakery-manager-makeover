@@ -48,6 +48,7 @@ import { Route as AuthenticatedCrmIndexRouteImport } from './routes/_authenticat
 import { Route as ApiPublicSupabaseProxyRouteImport } from './routes/api/public/supabase-proxy'
 import { Route as ApiPublicManifestRouteImport } from './routes/api/public/manifest'
 import { Route as AuthenticatedTransfersNewRouteImport } from './routes/_authenticated/transfers.new'
+import { Route as AuthenticatedSupplierLedgerIdRouteImport } from './routes/_authenticated/supplier-ledger.$id'
 import { Route as AuthenticatedSettingsShowroomsRouteImport } from './routes/_authenticated/settings.showrooms'
 import { Route as AuthenticatedSettingsLandingRouteImport } from './routes/_authenticated/settings.landing'
 import { Route as AuthenticatedSettingsAuditLogRouteImport } from './routes/_authenticated/settings.audit-log'
@@ -299,6 +300,12 @@ const AuthenticatedTransfersNewRoute =
   AuthenticatedTransfersNewRouteImport.update({
     id: '/transfers/new',
     path: '/transfers/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSupplierLedgerIdRoute =
+  AuthenticatedSupplierLedgerIdRouteImport.update({
+    id: '/supplier-ledger/$id',
+    path: '/supplier-ledger/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedSettingsShowroomsRoute =
@@ -657,6 +664,7 @@ export interface FileRoutesByFullPath {
   '/settings/audit-log': typeof AuthenticatedSettingsAuditLogRoute
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
+  '/supplier-ledger/$id': typeof AuthenticatedSupplierLedgerIdRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
@@ -740,6 +748,7 @@ export interface FileRoutesByTo {
   '/settings/audit-log': typeof AuthenticatedSettingsAuditLogRoute
   '/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
+  '/supplier-ledger/$id': typeof AuthenticatedSupplierLedgerIdRoute
   '/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
@@ -830,6 +839,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/audit-log': typeof AuthenticatedSettingsAuditLogRoute
   '/_authenticated/settings/landing': typeof AuthenticatedSettingsLandingRoute
   '/_authenticated/settings/showrooms': typeof AuthenticatedSettingsShowroomsRoute
+  '/_authenticated/supplier-ledger/$id': typeof AuthenticatedSupplierLedgerIdRoute
   '/_authenticated/transfers/new': typeof AuthenticatedTransfersNewRoute
   '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/supabase-proxy': typeof ApiPublicSupabaseProxyRoute
@@ -920,6 +930,7 @@ export interface FileRouteTypes {
     | '/settings/audit-log'
     | '/settings/landing'
     | '/settings/showrooms'
+    | '/supplier-ledger/$id'
     | '/transfers/new'
     | '/api/public/manifest'
     | '/api/public/supabase-proxy'
@@ -1003,6 +1014,7 @@ export interface FileRouteTypes {
     | '/settings/audit-log'
     | '/settings/landing'
     | '/settings/showrooms'
+    | '/supplier-ledger/$id'
     | '/transfers/new'
     | '/api/public/manifest'
     | '/api/public/supabase-proxy'
@@ -1092,6 +1104,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/audit-log'
     | '/_authenticated/settings/landing'
     | '/_authenticated/settings/showrooms'
+    | '/_authenticated/supplier-ledger/$id'
     | '/_authenticated/transfers/new'
     | '/api/public/manifest'
     | '/api/public/supabase-proxy'
@@ -1396,6 +1409,13 @@ declare module '@tanstack/react-router' {
       path: '/transfers/new'
       fullPath: '/transfers/new'
       preLoaderRoute: typeof AuthenticatedTransfersNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/supplier-ledger/$id': {
+      id: '/_authenticated/supplier-ledger/$id'
+      path: '/supplier-ledger/$id'
+      fullPath: '/supplier-ledger/$id'
+      preLoaderRoute: typeof AuthenticatedSupplierLedgerIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings/showrooms': {
@@ -1955,6 +1975,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsAuditLogRoute: typeof AuthenticatedSettingsAuditLogRoute
   AuthenticatedSettingsLandingRoute: typeof AuthenticatedSettingsLandingRoute
   AuthenticatedSettingsShowroomsRoute: typeof AuthenticatedSettingsShowroomsRoute
+  AuthenticatedSupplierLedgerIdRoute: typeof AuthenticatedSupplierLedgerIdRoute
   AuthenticatedTransfersNewRoute: typeof AuthenticatedTransfersNewRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
   AuthenticatedTransfersIndexRoute: typeof AuthenticatedTransfersIndexRoute
@@ -1991,6 +2012,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsAuditLogRoute: AuthenticatedSettingsAuditLogRoute,
   AuthenticatedSettingsLandingRoute: AuthenticatedSettingsLandingRoute,
   AuthenticatedSettingsShowroomsRoute: AuthenticatedSettingsShowroomsRoute,
+  AuthenticatedSupplierLedgerIdRoute: AuthenticatedSupplierLedgerIdRoute,
   AuthenticatedTransfersNewRoute: AuthenticatedTransfersNewRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   AuthenticatedTransfersIndexRoute: AuthenticatedTransfersIndexRoute,
@@ -2014,13 +2036,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
