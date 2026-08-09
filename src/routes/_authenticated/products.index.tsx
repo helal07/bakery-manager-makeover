@@ -524,15 +524,54 @@ function Products() {
                 <Label htmlFor="lbl-qty">Quantity</Label>
                 <Input id="lbl-qty" type="number" min={1} value={labelQty} onChange={(e) => setLabelQty(Math.max(1, Number(e.target.value) || 1))} />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="lbl-mfg">MFG date</Label>
+                  <Input id="lbl-mfg" type="date" value={labelMfg} onChange={(e) => setLabelMfg(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="lbl-exp">Expiry date</Label>
+                  <Input id="lbl-exp" type="date" value={labelExp} onChange={(e) => setLabelExp(e.target.value)} />
+                </div>
+                <div className="col-span-2 text-[11px] text-muted-foreground">
+                  For print only — these dates are not saved to the product.
+                </div>
+              </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setLabelFor(null)}>Cancel</Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                if (!labelFor) return;
+                const p = labelFor;
+                setLabelFor(null);
+                navigate({
+                  to: "/labels/print",
+                  search: {
+                    productId: p.id,
+                    qty: labelQty,
+                    layout: labelSize.startsWith("A4") ? "a4" : "roll",
+                    ...(labelMfg ? { mfg: labelMfg } : {}),
+                    ...(labelExp ? { exp: labelExp } : {}),
+                  },
+                });
+              }}
+            >
+              Preview page
+            </Button>
             <Button
               onClick={() => {
                 if (!labelFor) return;
                 printLabels(
-                  { sku: labelFor.sku, name: labelFor.name, price: labelFor.price, mfgDate: labelFor.mfgDate, expiryDate: labelFor.expiryDate },
+                  {
+                    sku: labelFor.sku,
+                    name: labelFor.name,
+                    price: labelFor.price,
+                    mfgDate: labelMfg || labelFor.mfgDate,
+                    expiryDate: labelExp || labelFor.expiryDate,
+                  },
                   labelQty,
                   labelSize,
                 );
@@ -542,6 +581,7 @@ function Products() {
               Print
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
       <Dialog open={addCatOpen} onOpenChange={(o) => { setAddCatOpen(o); if (!o) setNewCatName(""); }}>
