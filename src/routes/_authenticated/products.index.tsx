@@ -425,7 +425,7 @@ function Products() {
                               >Duplicate</ActionItem>
                               <ActionItem
                                 icon={<QrCode className="size-3.5" />}
-                                onClick={() => { setActionOpen(null); setLabelFor(p); setLabelQty(1); }}
+                                onClick={() => { setActionOpen(null); openLabelDialog(p); setLabelQty(1); }}
                               >Labels</ActionItem>
                               <ActionItem
                                 icon={<Eye className="size-3.5" />}
