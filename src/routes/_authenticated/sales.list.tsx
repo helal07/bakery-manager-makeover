@@ -100,6 +100,8 @@ function SaleList() {
   }, [rows, q, addedBy, branch, from, to, payment]);
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
   const navigate = useNavigate();
   type ActionType = "View" | "Payment" | "Invoice" | "Return sale" | "Notify";
   const [action, setAction] = useState<{ type: ActionType; row: Row } | null>(null);
