@@ -549,7 +549,6 @@ function Products() {
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setLabelFor(null)}>Cancel</Button>
             <Button
-              variant="secondary"
               onClick={() => {
                 if (!labelFor) return;
                 const p = labelFor;
@@ -566,26 +565,7 @@ function Products() {
                 });
               }}
             >
-              Preview page
-            </Button>
-            <Button
-              onClick={() => {
-                if (!labelFor) return;
-                printLabels(
-                  {
-                    sku: labelFor.sku,
-                    name: labelFor.name,
-                    price: labelFor.price,
-                    mfgDate: labelMfg || labelFor.mfgDate,
-                    expiryDate: labelExp || labelFor.expiryDate,
-                  },
-                  labelQty,
-                  labelSize,
-                );
-                setLabelFor(null);
-              }}
-            >
-              Print
+              Preview & Print
             </Button>
           </DialogFooter>
 
