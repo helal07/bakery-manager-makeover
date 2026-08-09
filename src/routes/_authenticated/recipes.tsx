@@ -1032,6 +1032,17 @@ function ProduceTab({
     const free = overheadCats.find((c) => !used.has(c.id));
     setOverheads((prev) => [...prev, { categoryId: free?.id ?? overheadCats[0]?.id ?? "", amount: 0 }]);
   };
+  // Decimal-friendly batch input: keep a text draft so partial entries like
+  // "1." or "0.0" survive typing, and commit the parsed number upward.
+  const [batchDraft, setBatchDraft] = React.useState<string | null>(null);
+  const batchText = batchDraft ?? (batch === 0 ? "" : String(batch));
+  const stepBatch = (delta: number) => {
+    setBatchDraft(null);
+    setBatch((b) => {
+      const next = Math.round((Number(b || 0) + delta) * 10000) / 10000;
+      return next < 0.0001 ? 0.0001 : next;
+    });
+  };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
       <Card className="p-5 space-y-4 h-fit">
@@ -1041,7 +1052,7 @@ function ProduceTab({
           </label>
           <div className="mt-1.5 flex items-center rounded-md border border-border bg-background overflow-hidden">
             <button
-              onClick={() => setBatch((b) => Math.max(1, b - 1))}
+              onClick={() => stepBatch(-1)}
               className="size-11 grid place-items-center hover:bg-accent text-muted-foreground"
               aria-label="Decrease"
             >
@@ -1049,26 +1060,40 @@ function ProduceTab({
             </button>
             <input
               type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={batch === 0 ? "" : String(batch)}
+              inputMode="decimal"
+              value={batchText}
               onChange={(e) => {
-                const raw = e.target.value.replace(/[^0-9]/g, "");
-                if (raw === "") { setBatch(0); return; }
-                setBatch(parseInt(raw, 10));
+                // allow digits + a single decimal point (up to 4 decimals)
+                let raw = e.target.value.replace(/[^0-9.]/g, "");
+                const firstDot = raw.indexOf(".");
+                if (firstDot >= 0) {
+                  raw =
+                    raw.slice(0, firstDot + 1) +
+                    raw.slice(firstDot + 1).replace(/\./g, "").slice(0, 4);
+                }
+                setBatchDraft(raw);
+                const n = parseFloat(raw);
+                setBatch(Number.isFinite(n) ? n : 0);
               }}
-              onBlur={() => { if (!batch || batch < 1) setBatch(1); }}
+              onBlur={() => {
+                const n = parseFloat(batchDraft ?? String(batch));
+                const val = Number.isFinite(n) && n > 0 ? n : 1;
+                setBatch(val);
+                setBatchDraft(null);
+              }}
               className="flex-1 h-11 text-center text-base font-medium bg-transparent outline-none border-x border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <button
-              onClick={() => setBatch((b) => b + 1)}
+              onClick={() => stepBatch(1)}
               className="size-11 grid place-items-center hover:bg-accent text-muted-foreground"
               aria-label="Increase"
             >
               <Plus className="size-4" />
             </button>
           </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">দশমিক সাপোর্টেড — যেমন 1.2 বা 0.5</p>
         </div>
+
 
         <div className="grid grid-cols-2 gap-2">
           <MiniStat icon={<Package className="size-3.5" />} label="Ingredients" value={String(rows.length)} />
