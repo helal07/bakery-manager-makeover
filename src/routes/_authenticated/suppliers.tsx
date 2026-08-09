@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PermissionGate } from "@/components/permission-gate";
 
 import { AppShell, Card } from "@/components/app-shell";
-import { Plus } from "lucide-react";
+import { Plus, BookOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { addSupplier, loadSuppliers, type Supplier } from "@/lib/supplier-store";
 import {
