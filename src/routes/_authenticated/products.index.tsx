@@ -77,13 +77,13 @@ function Products() {
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [labelFor, setLabelFor] = useState<Product | null>(null);
-  const [labelSize, setLabelSize] = useState<LabelSize>("38x25");
+  const [labelSize, setLabelSize] = useState<LabelSize>("A4-38x25");
   const [labelQty, setLabelQty] = useState(1);
   const [labelMfg, setLabelMfg] = useState<string>("");
   const [labelExp, setLabelExp] = useState<string>("");
 
   const openLabelDialog = (p: Product) => {
-    setLabelMfg(p.mfgDate ?? new Date().toISOString().slice(0, 10));
+    setLabelMfg(new Date().toISOString().slice(0, 10));
     setLabelExp(p.expiryDate ?? "");
     setLabelFor(p);
   };
