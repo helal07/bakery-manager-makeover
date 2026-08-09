@@ -62,9 +62,10 @@ function CustomerLedger() {
       if (pRes.error) throw pRes.error;
       setCompany(comp);
 
-      const rooms: { id: string | null; name: string }[] = [{ id: null, name: "Factory" }].concat(
-        ((shRes.data ?? []) as any[]).map((r) => ({ id: r.id as string, name: r.name as string })),
-      );
+      const rooms: { id: string | null; name: string }[] = [
+        { id: null, name: "Factory" },
+        ...((shRes.data ?? []) as any[]).map((r) => ({ id: r.id as string, name: r.name as string })),
+      ];
       setLocations(rooms);
       const nameOf = (sid: string | null | undefined) => rooms.find((r) => r.id === (sid ?? null))?.name ?? "Factory";
 
