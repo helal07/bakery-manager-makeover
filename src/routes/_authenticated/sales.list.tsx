@@ -154,9 +154,10 @@ function SaleList() {
         </div>
       </Card>
 
-      <Card className="mt-4 overflow-hidden">
+      <Card className="mt-4">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
+
             <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-2.5 w-16">Action</th>
