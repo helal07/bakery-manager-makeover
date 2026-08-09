@@ -36,7 +36,7 @@ import {
   type Product,
 } from "@/lib/product-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
-import { printLabels, type LabelSize } from "@/lib/print-labels";
+type LabelSize = "38x25" | "A4-38x25";
 import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/products/")({
@@ -516,17 +516,15 @@ function Products() {
                 <div className="font-mono text-xs text-muted-foreground">{labelFor.sku}</div>
               </div>
               <div>
-                <Label htmlFor="lbl-size">Label size</Label>
+                <Label htmlFor="lbl-size">Label layout</Label>
                 <select
                   id="lbl-size"
                   value={labelSize}
                   onChange={(e) => setLabelSize(e.target.value as LabelSize)}
                   className="w-full h-9 px-2.5 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
                 >
-                  <option value="38x25">Single 38mm × 25mm</option>
-                  <option value="30x40">Single 30mm × 40mm</option>
                   <option value="A4-38x25">A4 sticker sheet · 38 × 25 mm</option>
-                  <option value="A4-30x40">A4 sticker sheet · 30 × 40 mm</option>
+                  <option value="38x25">38 × 25 mm roll</option>
                 </select>
               </div>
               <div>
