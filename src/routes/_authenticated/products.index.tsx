@@ -36,7 +36,7 @@ import {
   type Product,
 } from "@/lib/product-store";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
-import { printLabels, type LabelSize } from "@/lib/print-labels";
+type LabelSize = "38x25" | "A4-38x25";
 import { pageTitle } from "@/lib/company-settings";
 
 export const Route = createFileRoute("/_authenticated/products/")({
@@ -77,13 +77,13 @@ function Products() {
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [labelFor, setLabelFor] = useState<Product | null>(null);
-  const [labelSize, setLabelSize] = useState<LabelSize>("38x25");
+  const [labelSize, setLabelSize] = useState<LabelSize>("A4-38x25");
   const [labelQty, setLabelQty] = useState(1);
   const [labelMfg, setLabelMfg] = useState<string>("");
   const [labelExp, setLabelExp] = useState<string>("");
 
   const openLabelDialog = (p: Product) => {
-    setLabelMfg(p.mfgDate ?? new Date().toISOString().slice(0, 10));
+    setLabelMfg(new Date().toISOString().slice(0, 10));
     setLabelExp(p.expiryDate ?? "");
     setLabelFor(p);
   };
@@ -516,17 +516,15 @@ function Products() {
                 <div className="font-mono text-xs text-muted-foreground">{labelFor.sku}</div>
               </div>
               <div>
-                <Label htmlFor="lbl-size">Label size</Label>
+                <Label htmlFor="lbl-size">Label layout</Label>
                 <select
                   id="lbl-size"
                   value={labelSize}
                   onChange={(e) => setLabelSize(e.target.value as LabelSize)}
                   className="w-full h-9 px-2.5 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
                 >
-                  <option value="38x25">Single 38mm × 25mm</option>
-                  <option value="30x40">Single 30mm × 40mm</option>
                   <option value="A4-38x25">A4 sticker sheet · 38 × 25 mm</option>
-                  <option value="A4-30x40">A4 sticker sheet · 30 × 40 mm</option>
+                  <option value="38x25">38 × 25 mm roll</option>
                 </select>
               </div>
               <div>
@@ -551,7 +549,6 @@ function Products() {
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setLabelFor(null)}>Cancel</Button>
             <Button
-              variant="secondary"
               onClick={() => {
                 if (!labelFor) return;
                 const p = labelFor;
@@ -568,26 +565,7 @@ function Products() {
                 });
               }}
             >
-              Preview page
-            </Button>
-            <Button
-              onClick={() => {
-                if (!labelFor) return;
-                printLabels(
-                  {
-                    sku: labelFor.sku,
-                    name: labelFor.name,
-                    price: labelFor.price,
-                    mfgDate: labelMfg || labelFor.mfgDate,
-                    expiryDate: labelExp || labelFor.expiryDate,
-                  },
-                  labelQty,
-                  labelSize,
-                );
-                setLabelFor(null);
-              }}
-            >
-              Print
+              Preview & Print
             </Button>
           </DialogFooter>
 
