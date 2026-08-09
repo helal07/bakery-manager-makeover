@@ -1034,7 +1034,7 @@ function ProduceTab({
   };
   // Decimal-friendly batch input: keep a text draft so partial entries like
   // "1." or "0.0" survive typing, and commit the parsed number upward.
-  const [batchDraft, setBatchDraft] = React.useState<string | null>(null);
+  const [batchDraft, setBatchDraft] = useState<string | null>(null);
   const batchText = batchDraft ?? (batch === 0 ? "" : String(batch));
   const stepBatch = (delta: number) => {
     setBatchDraft(null);
