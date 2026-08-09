@@ -100,6 +100,8 @@ function SaleList() {
   }, [rows, q, addedBy, branch, from, to, payment]);
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
   const navigate = useNavigate();
   type ActionType = "View" | "Payment" | "Invoice" | "Return sale" | "Notify";
   const [action, setAction] = useState<{ type: ActionType; row: Row } | null>(null);
@@ -154,9 +156,10 @@ function SaleList() {
         </div>
       </Card>
 
-      <Card className="mt-4 overflow-hidden">
+      <Card className="mt-4">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
+
             <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-2.5 w-16">Action</th>
@@ -175,9 +178,16 @@ function SaleList() {
             <tbody className="divide-y divide-border">
               {filtered.map((r) => (
                 <tr key={r.id} className="hover:bg-accent/40">
-                  <td className="px-4 py-2.5 relative">
+                  <td className="px-4 py-2.5">
                     <button
-                      onClick={() => setOpenMenu(openMenu === r.id ? null : r.id)}
+                      onClick={(e) => {
+                        if (openMenu === r.id) { setOpenMenu(null); return; }
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        const height = 250;
+                        const top = rect.bottom + height > window.innerHeight ? Math.max(8, rect.top - height) : rect.bottom + 4;
+                        setMenuPos({ top, left: rect.left });
+                        setOpenMenu(r.id);
+                      }}
                       className="inline-flex items-center gap-2 pl-3 pr-2 py-1 rounded-md border border-sky-500 text-sky-600 bg-white hover:bg-sky-50 text-xs font-semibold shadow-sm"
                     >
                       Actions
@@ -185,8 +195,8 @@ function SaleList() {
                     </button>
                     {openMenu === r.id && (
                       <>
-                        <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
-                        <div className="absolute left-4 top-9 z-20 w-48 rounded-md border border-border bg-popover shadow-lg py-1 text-sm text-left">
+                        <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
+                        <div style={{ top: menuPos.top, left: menuPos.left }} className="fixed z-50 w-48 rounded-md border border-border bg-popover shadow-lg py-1 text-sm text-left">
                           <MenuItem icon={Eye} label="View" onClick={() => runAction("View", r)} />
                           <MenuItem icon={Pencil} label="Edit" onClick={() => { setOpenMenu(null); navigate({ to: "/pos", search: { edit: r.id } }); }} />
                           <MenuItem icon={CreditCard} label="Payment" disabled={r.status === "Paid"} onClick={() => runAction("Payment", r)} />
@@ -197,6 +207,7 @@ function SaleList() {
                         </div>
                       </>
                     )}
+
                   </td>
                   <td className="px-4 py-2.5 font-medium">#{r.id}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{r.date}</td>
