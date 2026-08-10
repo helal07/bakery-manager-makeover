@@ -281,7 +281,7 @@ function PurchaseList() {
                       toast.error(e?.message ?? "Failed to update payment");
                     }
                   }}
-                  className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+                  className="h-11 sm:h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
                 >
                   Save
                 </button>
