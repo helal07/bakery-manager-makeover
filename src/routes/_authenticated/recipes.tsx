@@ -1249,7 +1249,7 @@ function ProduceTab({
               </div>
             )}
             {overheads.map((o, idx) => (
-              <div key={idx} className="grid grid-cols-[1fr_120px_36px] gap-2 items-center">
+              <div key={idx} className="grid grid-cols-[minmax(0,1fr)_88px_36px] sm:grid-cols-[1fr_120px_36px] gap-2 items-center">
                 <select
                   value={o.categoryId}
                   onChange={(e) => {
