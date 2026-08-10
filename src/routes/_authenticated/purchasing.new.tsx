@@ -445,39 +445,53 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
               </div>
 
               {/* Mobile cards */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-2.5">
                 {items.map((it, idx) => (
-                  <div key={idx} className="rounded-md border border-border p-3 space-y-2">
-                    <div className="flex items-start gap-1.5">
-                      <MaterialCombo
-                        value={it.materialId}
-                        materials={rawMaterials}
-                        onChange={(id) => updateItem(idx, { materialId: id })}
-                      />
+                  <div key={idx} className="rounded-lg border border-border bg-card p-3">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-semibold tabular-nums">
+                          {idx + 1}
+                        </span>
+                        <MaterialCombo
+                          value={it.materialId}
+                          materials={rawMaterials}
+                          onChange={(id) => updateItem(idx, { materialId: id })}
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeItem(idx)}
-                        className="size-8 grid place-items-center rounded text-destructive hover:bg-destructive/10 shrink-0"
+                        aria-label="Remove item"
+                        className="size-10 shrink-0 grid place-items-center rounded-md border border-border text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="size-4" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-[11px] text-muted-foreground">Qty ({it.unit})</Label>
-                        <NumField value={it.qty} onChange={(v) => updateItem(idx, { qty: v })} className="h-9" />
+                    <div className="mt-2.5 grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                          Qty{it.unit ? ` (${it.unit})` : ""}
+                        </Label>
+                        <NumField value={it.qty} onChange={(v) => updateItem(idx, { qty: v })} className="h-11 text-base" />
                       </div>
-                      <div>
-                        <Label className="text-[11px] text-muted-foreground">Unit cost</Label>
-                        <NumField value={it.price} onChange={(v) => updateItem(idx, { price: v })} className="h-9" />
+                      <div className="space-y-1">
+                        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Unit cost</Label>
+                        <NumField value={it.price} onChange={(v) => updateItem(idx, { price: v })} className="h-11 text-base" />
                       </div>
                     </div>
-                    <div className="text-right text-sm font-medium tabular-nums">
-                      ৳{lineTotal(it).toFixed(2)}
+                    <div className="mt-2 flex items-center justify-between border-t border-dashed border-border pt-2 text-sm">
+                      <span className="text-xs text-muted-foreground">Subtotal</span>
+                      <span className="font-semibold tabular-nums">৳{lineTotal(it).toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
+                <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
+                  <span className="text-muted-foreground">Total qty <strong className="text-foreground tabular-nums">{totalQty}</strong></span>
+                  <span className="font-semibold tabular-nums">৳{total.toFixed(2)}</span>
+                </div>
               </div>
+
             </>
           )}
 
