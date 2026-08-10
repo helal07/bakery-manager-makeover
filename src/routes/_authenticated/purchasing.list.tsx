@@ -26,6 +26,8 @@ function PurchaseList() {
   const [payDraft, setPayDraft] = useState<{ payment: "Paid" | "Due" | "Partial"; paid: number }>({ payment: "Due", paid: 0 });
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [delTarget, setDelTarget] = useState<Purchase | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
   const [deleting, setDeleting] = useState(false);
 
   const confirmDelete = async () => {
