@@ -69,30 +69,64 @@ export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { void loadShowrooms(); }, [loadShowrooms]);
 
-  // Pick the current scope once showrooms + RBAC are known.
+  const optionCount = showrooms.length + (hasGlobalAccess ? 1 : 0);
+
+  const clearSelection = useCallback(() => {
+    setCurrentShowroomIdState(null);
+    setNeedsSelection(true);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(ASKED_KEY);
+      } catch { /* ignore */ }
+    }
+  }, []);
+
+  // Resolve the current scope once showrooms + RBAC are known.
   useEffect(() => {
     if (roomsLoading || rbacLoading) return;
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    const storedValid = stored && showrooms.some((s) => s.id === stored);
-    if (storedValid) {
-      setCurrentShowroomIdState(stored);
-    } else if (hasGlobalAccess) {
-      setCurrentShowroomIdState(null);
-    } else if (showrooms.length > 0) {
-      setCurrentShowroomIdState(showrooms[0].id);
-      if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, showrooms[0].id);
-    } else {
-      setCurrentShowroomIdState(null);
+    const asked = typeof window !== "undefined" ? sessionStorage.getItem(ASKED_KEY) === "1" : false;
+    const storedIsFactory = stored === FACTORY_VALUE && hasGlobalAccess;
+    const storedValid = !!stored && showrooms.some((s) => s.id === stored);
+
+    // Only one possible location — pick it silently, never ask.
+    if (optionCount <= 1) {
+      const only = hasGlobalAccess ? null : (showrooms[0]?.id ?? null);
+      setCurrentShowroomIdState(only);
+      setNeedsSelection(false);
+      if (typeof window !== "undefined") {
+        try {
+          if (only) localStorage.setItem(STORAGE_KEY, only);
+          else localStorage.setItem(STORAGE_KEY, FACTORY_VALUE);
+        } catch { /* ignore */ }
+      }
+      return;
     }
-  }, [roomsLoading, rbacLoading, showrooms, hasGlobalAccess]);
+
+    if (storedValid && asked) {
+      setCurrentShowroomIdState(stored);
+      setNeedsSelection(false);
+      return;
+    }
+    if (storedIsFactory && asked) {
+      setCurrentShowroomIdState(null);
+      setNeedsSelection(false);
+      return;
+    }
+    // No valid remembered choice for this session — ask.
+    setCurrentShowroomIdState(storedValid ? stored : null);
+    setNeedsSelection(true);
+  }, [roomsLoading, rbacLoading, showrooms, hasGlobalAccess, optionCount]);
 
   const loading = roomsLoading || rbacLoading;
 
   return (
-    <Ctx.Provider value={{ loading, showrooms, assignedShowroomIds, hasGlobalAccess, currentShowroomId, setCurrentShowroomId, refresh }}>
+    <Ctx.Provider value={{ loading, showrooms, assignedShowroomIds, hasGlobalAccess, currentShowroomId, setCurrentShowroomId, needsSelection, optionCount, clearSelection, refresh }}>
       {children}
     </Ctx.Provider>
   );
+
 
 }
 
