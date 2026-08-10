@@ -16,11 +16,19 @@ type ScopeState = {
   hasGlobalAccess: boolean;           // superadmin / global assignment
   currentShowroomId: string | null;   // null = factory / all (global users only)
   setCurrentShowroomId: (id: string | null) => void;
+  /** True when the user must explicitly pick a location before working. */
+  needsSelection: boolean;
+  /** Number of locations the user may choose from (factory counts as one). */
+  optionCount: number;
+  /** Forget the current choice so the picker reopens. */
+  clearSelection: () => void;
   refresh: () => Promise<void>;
 };
 
 const Ctx = createContext<ScopeState | null>(null);
 const STORAGE_KEY = "mf.currentShowroomId";
+const ASKED_KEY = "mf.locationAsked";
+
 
 export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
   // RBAC (roles + assignments) comes from the shared cached fetch.
