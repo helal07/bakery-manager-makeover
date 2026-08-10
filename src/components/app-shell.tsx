@@ -547,6 +547,7 @@ function TopBarUser() {
       localStorage.removeItem("user-profile-cache-v1");
       localStorage.removeItem("user-email-cache-v1");
       localStorage.removeItem("user-role-cache-v1");
+      sessionStorage.removeItem("mf.locationAsked");
     } catch { /* ignore */ }
 
     await supabase.auth.signOut();
@@ -860,6 +861,7 @@ function UserMenu() {
       localStorage.removeItem("user-profile-cache-v1");
       localStorage.removeItem("user-email-cache-v1");
       localStorage.removeItem("user-role-cache-v1");
+      sessionStorage.removeItem("mf.locationAsked");
     } catch { /* ignore */ }
 
     userMenuLoadedOnce = false;
