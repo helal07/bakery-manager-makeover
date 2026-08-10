@@ -378,7 +378,9 @@ export function AppShellFrame() {
               </button>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+              <SwitchLocationNav pathname={pathname} />
               {visibleGroups.map((g) => (
+
                 <div key={g.label}>
                   <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
                     {g.label}
