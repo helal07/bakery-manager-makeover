@@ -26,6 +26,8 @@ function PurchaseList() {
   const [payDraft, setPayDraft] = useState<{ payment: "Paid" | "Due" | "Partial"; paid: number }>({ payment: "Due", paid: 0 });
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [delTarget, setDelTarget] = useState<Purchase | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
   const [deleting, setDeleting] = useState(false);
 
   const confirmDelete = async () => {
@@ -80,36 +82,88 @@ function PurchaseList() {
 
   return (
     <AppShell title="Purchase List" subtitle="All supplier purchase orders">
-      <Card className="p-4 mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-          <div className="relative sm:col-span-2 lg:col-span-6 xl:col-span-2">
-            <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search PO, supplier, category, item, date…"
-              className="w-full h-10 pl-8 pr-3 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <select value={payment} onChange={(e) => setPayment(e.target.value as any)} className="w-full h-10 px-2.5 rounded-md border border-border bg-background text-sm lg:col-span-2 xl:col-span-1">
+      <Card className="p-3 sm:p-4 mb-4">
+        <div className="relative">
+          <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search PO, supplier, item, date…"
+            className="w-full h-11 sm:h-10 pl-8 pr-3 rounded-md border border-border bg-background text-base sm:text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowFilters((v) => !v)}
+          className="mt-2 sm:hidden inline-flex items-center gap-1.5 text-xs font-medium text-primary"
+        >
+          {showFilters ? "Hide filters" : "More filters"}
+          <ChevronDown className={`size-3.5 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+        </button>
+        <div className={`${showFilters ? "grid" : "hidden"} sm:grid mt-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3`}>
+          <select value={payment} onChange={(e) => setPayment(e.target.value as any)} className="w-full h-11 sm:h-10 px-2.5 rounded-md border border-border bg-background text-sm">
             <option value="All">All payments</option>
             <option value="Paid">Paid</option>
             <option value="Partial">Partial</option>
             <option value="Due">Due</option>
           </select>
-          <select value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-full h-10 px-2.5 rounded-md border border-border bg-background text-sm truncate lg:col-span-2 xl:col-span-1">
+          <select value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-full h-11 sm:h-10 px-2.5 rounded-md border border-border bg-background text-sm truncate">
             <option value="All">All suppliers</option>
             {suppliers.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          <input type="date" aria-label="From date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full h-10 min-w-0 px-2.5 rounded-md border border-border bg-background text-sm lg:col-span-2 xl:col-span-1" />
-          <input type="date" aria-label="To date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full h-10 min-w-0 px-2.5 rounded-md border border-border bg-background text-sm lg:col-span-2 xl:col-span-1" />
+          <input type="date" aria-label="From date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full h-11 sm:h-10 min-w-0 px-2.5 rounded-md border border-border bg-background text-sm" />
+          <input type="date" aria-label="To date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full h-11 sm:h-10 min-w-0 px-2.5 rounded-md border border-border bg-background text-sm" />
         </div>
         <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
           <span>{filtered.length} of {list.length} purchases</span>
           <button onClick={resetFilters} className="px-2 py-1 rounded hover:bg-muted">Reset filters</button>
         </div>
       </Card>
-      <Card className="overflow-hidden">
+
+      {/* Mobile list */}
+      <div className="md:hidden space-y-2.5">
+        {filtered.map((p) => {
+          const pay = p.payment ?? (p.status === "Received" ? "Paid" : "Due");
+          const tone = pay === "Paid" ? "success" : pay === "Partial" ? "warning" : "danger";
+          return (
+            <Card key={p.id} className="p-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">{p.supplier}</div>
+                  <div className="mt-0.5 text-[11px] font-mono text-muted-foreground">{p.id}</div>
+                </div>
+                <Badge tone={tone}>{pay}</Badge>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{p.date}</span>
+                <span>{p.items && p.items.length > 0 ? `${p.items.length} item(s)` : (p.category ?? "—")}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2 border-t border-dashed border-border pt-2">
+                <div className="text-base font-semibold tabular-nums">৳{p.total.toLocaleString()}</div>
+                <ActionsMenu
+                  open={openMenu === p.id}
+                  onToggle={() => setOpenMenu(openMenu === p.id ? null : p.id)}
+                  onClose={() => setOpenMenu(null)}
+                  onView={() => setModal({ mode: "view", p })}
+                  canPay={pay !== "Paid"}
+                  onPayment={() => {
+                    setPayDraft({ payment: p.payment ?? "Due", paid: p.paid ?? 0 });
+                    setModal({ mode: "payment", p });
+                  }}
+                  onInvoice={() => setModal({ mode: "invoice", p })}
+                  onDelete={() => setDelTarget(p)}
+                  editId={p.uuid}
+                />
+              </div>
+            </Card>
+          );
+        })}
+        {filtered.length === 0 && (
+          <Card className="p-6 text-center text-sm text-muted-foreground">No purchases found.</Card>
+        )}
+      </div>
+
+      <Card className="hidden md:block overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm">
           <thead className="text-xs text-muted-foreground bg-muted/40">
@@ -168,6 +222,7 @@ function PurchaseList() {
         </table>
         </div>
       </Card>
+
       {modal && (
         <Modal onClose={() => setModal(null)} title={modal.mode === "view" ? `Purchase ${modal.p.id}` : modal.mode === "payment" ? "Update Payment" : `Invoice ${modal.p.id}`}>
           {modal.mode === "view" && <ViewBody p={modal.p} />}
@@ -183,33 +238,36 @@ function PurchaseList() {
           )}
           {modal.mode === "payment" && (
             <div className="space-y-3">
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {(["Paid", "Partial", "Due"] as const).map((opt) => (
                   <button
                     key={opt}
                     onClick={() => setPayDraft((d) => ({ ...d, payment: opt, paid: opt === "Paid" ? modal.p.total : opt === "Due" ? 0 : d.paid }))}
-                    className={`px-3 py-1.5 rounded-md text-sm border ${payDraft.payment === opt ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
+                    className={`h-11 rounded-md text-sm font-medium border ${payDraft.payment === opt ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
                   >
                     {opt}
                   </button>
                 ))}
               </div>
               {payDraft.payment === "Partial" && (
-                <div>
+                <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Paid amount (৳)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={payDraft.paid}
-                    onChange={(e) => setPayDraft((d) => ({ ...d, paid: Number(e.target.value) || 0 }))}
-                    className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                    onChange={(e) => setPayDraft((d) => ({ ...d, paid: Number(e.target.value.replace(/[^0-9.]/g, "")) || 0 }))}
+                    className="w-full h-11 px-3 rounded-md border border-border bg-background text-base sm:text-sm tabular-nums outline-none focus:border-primary"
                   />
                 </div>
               )}
+
               <div className="text-sm text-muted-foreground">
                 Total ৳{modal.p.total.toLocaleString()} · Due ৳{(modal.p.total - (payDraft.payment === "Paid" ? modal.p.total : payDraft.payment === "Due" ? 0 : payDraft.paid)).toLocaleString()}
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setModal(null)} className="px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted">Cancel</button>
+              <div className="grid grid-cols-2 gap-2 pt-2 sm:flex sm:justify-end">
+                <button onClick={() => setModal(null)} className="h-11 sm:h-9 px-4 rounded-md border border-border text-sm hover:bg-muted">Cancel</button>
+
                 <button
                   onClick={async () => {
                     const paid = payDraft.payment === "Paid" ? modal.p.total : payDraft.payment === "Due" ? 0 : payDraft.paid;
@@ -223,7 +281,7 @@ function PurchaseList() {
                       toast.error(e?.message ?? "Failed to update payment");
                     }
                   }}
-                  className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+                  className="h-11 sm:h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
                 >
                   Save
                 </button>
@@ -333,13 +391,17 @@ function ActionsMenu({
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="bg-background border border-border rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-          <div className="font-medium">{title}</div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4" onClick={onClose}>
+      <div
+        className="bg-background border border-border rounded-t-2xl sm:rounded-lg shadow-lg w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-background px-4 sm:px-5 py-3 border-b border-border">
+          <div className="min-w-0 truncate font-medium">{title}</div>
+          <button onClick={onClose} aria-label="Close" className="size-9 shrink-0 grid place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-4" /></button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-4 sm:p-5">{children}</div>
+
       </div>
     </div>
   );

@@ -288,7 +288,7 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
           </span>
         </div>
       ) : null}
-      <form onSubmit={submit} className="pb-28">
+      <form onSubmit={submit} className="pb-40 sm:pb-28">
         {/* ---- Header details ---- */}
         <Card className="p-4 sm:p-5 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -445,39 +445,53 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
               </div>
 
               {/* Mobile cards */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-2.5">
                 {items.map((it, idx) => (
-                  <div key={idx} className="rounded-md border border-border p-3 space-y-2">
-                    <div className="flex items-start gap-1.5">
-                      <MaterialCombo
-                        value={it.materialId}
-                        materials={rawMaterials}
-                        onChange={(id) => updateItem(idx, { materialId: id })}
-                      />
+                  <div key={idx} className="rounded-lg border border-border bg-card p-3">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-semibold tabular-nums">
+                          {idx + 1}
+                        </span>
+                        <MaterialCombo
+                          value={it.materialId}
+                          materials={rawMaterials}
+                          onChange={(id) => updateItem(idx, { materialId: id })}
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeItem(idx)}
-                        className="size-8 grid place-items-center rounded text-destructive hover:bg-destructive/10 shrink-0"
+                        aria-label="Remove item"
+                        className="size-10 shrink-0 grid place-items-center rounded-md border border-border text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="size-4" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-[11px] text-muted-foreground">Qty ({it.unit})</Label>
-                        <NumField value={it.qty} onChange={(v) => updateItem(idx, { qty: v })} className="h-9" />
+                    <div className="mt-2.5 grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                          Qty{it.unit ? ` (${it.unit})` : ""}
+                        </Label>
+                        <NumField value={it.qty} onChange={(v) => updateItem(idx, { qty: v })} className="h-11 text-base" />
                       </div>
-                      <div>
-                        <Label className="text-[11px] text-muted-foreground">Unit cost</Label>
-                        <NumField value={it.price} onChange={(v) => updateItem(idx, { price: v })} className="h-9" />
+                      <div className="space-y-1">
+                        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Unit cost</Label>
+                        <NumField value={it.price} onChange={(v) => updateItem(idx, { price: v })} className="h-11 text-base" />
                       </div>
                     </div>
-                    <div className="text-right text-sm font-medium tabular-nums">
-                      ৳{lineTotal(it).toFixed(2)}
+                    <div className="mt-2 flex items-center justify-between border-t border-dashed border-border pt-2 text-sm">
+                      <span className="text-xs text-muted-foreground">Subtotal</span>
+                      <span className="font-semibold tabular-nums">৳{lineTotal(it).toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
+                <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
+                  <span className="text-muted-foreground">Total qty <strong className="text-foreground tabular-nums">{totalQty}</strong></span>
+                  <span className="font-semibold tabular-nums">৳{total.toFixed(2)}</span>
+                </div>
               </div>
+
             </>
           )}
 
@@ -485,13 +499,13 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
           <div className="mt-6 pt-4 border-t border-border grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div>
               <Label>Bill payment</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="mt-2 grid grid-cols-3 gap-2">
                 {(["Paid", "Due", "Partial"] as const).map((opt) => (
                   <button
                     key={opt}
                     type="button"
                     onClick={() => setPayment(opt)}
-                    className={`px-4 py-2 rounded-md border text-sm font-medium ${
+                    className={`h-11 rounded-md border text-sm font-medium ${
                       payment === opt
                         ? "bg-primary text-primary-foreground border-primary"
                         : "border-border hover:bg-accent"
@@ -502,13 +516,13 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
                 ))}
               </div>
               {payment === "Partial" && (
-                <div className="mt-3 max-w-xs">
+                <div className="mt-3 sm:max-w-xs space-y-1">
                   <Label htmlFor="pu-paid">Paid amount (৳)</Label>
-                  <NumField id="pu-paid" value={paid} onChange={setPaid} className="h-10" placeholder="0.00" />
+                  <NumField id="pu-paid" value={paid} onChange={setPaid} className="h-11 text-base" placeholder="0.00" />
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-3 gap-3 text-sm self-end">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 text-sm self-end">
               <Stat label="Total" value={`৳${total.toFixed(2)}`} />
               <Stat label="Paid" value={`৳${paidAmount.toFixed(2)}`} tone="success" />
               <Stat label="Due" value={`৳${dueAmount.toFixed(2)}`} tone={dueAmount > 0 ? "danger" : undefined} />
@@ -517,19 +531,19 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
         </Card>
 
         {/* ---- Sticky action bar ---- */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur px-4 py-3">
-          <div className="mx-auto flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur px-3 py-2.5 sm:px-4 sm:py-3 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <div className="flex items-center justify-between gap-3 text-xs sm:text-sm text-muted-foreground">
               <span>Items: <strong className="text-foreground">{items.length}</strong></span>
               <span className="hidden sm:inline">Qty: <strong className="text-foreground tabular-nums">{totalQty}</strong></span>
               <span>Net: <strong className="text-foreground tabular-nums">৳{total.toFixed(2)}</strong></span>
-              <span className="hidden sm:inline">Due: <strong className="text-foreground tabular-nums">৳{dueAmount.toFixed(2)}</strong></span>
+              <span>Due: <strong className="text-foreground tabular-nums">৳{dueAmount.toFixed(2)}</strong></span>
             </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => nav({ to: "/purchasing/list" })}>
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 sm:flex sm:shrink-0">
+              <Button type="button" variant="outline" className="h-11 sm:h-9" onClick={() => nav({ to: "/purchasing/list" })}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={!!currentShowroomId || saving || loadingPurchase} className="font-semibold">
+              <Button type="submit" disabled={!!currentShowroomId || saving || loadingPurchase} className="h-11 sm:h-9 font-semibold">
                 {currentShowroomId
                   ? "Factory only"
                   : loadingPurchase
@@ -543,6 +557,7 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
             </div>
           </div>
         </div>
+
       </form>
 
 
@@ -675,7 +690,7 @@ function MultiMaterialPicker({
           onFocus={() => setOpen(true)}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           placeholder="Search raw materials to add…"
-          className="h-9 pl-8 text-sm"
+          className="h-11 pl-8 text-base sm:h-9 sm:text-sm"
         />
       </div>
       {open && (
@@ -690,16 +705,18 @@ function MultiMaterialPicker({
                 return (
                   <li key={m.id}>
                     <label
-                      className={`w-full text-left px-3 py-1.5 text-sm hover:bg-accent flex items-center gap-2 cursor-pointer ${
+                      className={`w-full text-left px-3 py-2.5 md:py-1.5 text-sm hover:bg-accent flex items-center gap-2.5 cursor-pointer ${
                         inList ? "opacity-60" : ""
                       }`}
                     >
                       <input
                         type="checkbox"
+                        className="size-4 shrink-0"
                         checked={checked || inList}
                         disabled={inList}
                         onChange={() => toggle(m.id)}
                       />
+
                       <span className="truncate flex-1">{m.name}</span>
                       <span className="text-xs text-muted-foreground shrink-0">
                         {inList ? "added" : m.unit}
@@ -762,12 +779,13 @@ function MaterialCombo({
       <button
         type="button"
         onClick={() => { setOpen((o) => !o); setQuery(""); }}
-        className="w-full h-8 px-2 rounded-md border border-input bg-background text-sm text-left outline-none focus:border-primary truncate"
+        className="w-full h-10 md:h-8 px-2 rounded-md border border-input bg-background text-sm text-left outline-none focus:border-primary truncate"
       >
         {selected ? selected.name : <span className="text-muted-foreground">Select material…</span>}
       </button>
       {open && (
-        <div className="absolute z-20 mt-1 w-72 rounded-md border border-border bg-popover shadow-md">
+        <div className="absolute z-20 mt-1 w-[min(18rem,calc(100vw-3rem))] rounded-md border border-border bg-popover shadow-md">
+
           <div className="p-1.5 border-b border-border relative">
             <Search className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
