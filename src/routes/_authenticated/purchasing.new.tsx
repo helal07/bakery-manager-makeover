@@ -690,7 +690,7 @@ function MultiMaterialPicker({
           onFocus={() => setOpen(true)}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           placeholder="Search raw materials to add…"
-          className="h-9 pl-8 text-sm"
+          className="h-11 pl-8 text-base sm:h-9 sm:text-sm"
         />
       </div>
       {open && (
