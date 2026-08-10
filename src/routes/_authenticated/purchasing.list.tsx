@@ -388,13 +388,17 @@ function ActionsMenu({
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="bg-background border border-border rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-          <div className="font-medium">{title}</div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4" onClick={onClose}>
+      <div
+        className="bg-background border border-border rounded-t-2xl sm:rounded-lg shadow-lg w-full max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-background px-4 sm:px-5 py-3 border-b border-border">
+          <div className="min-w-0 truncate font-medium">{title}</div>
+          <button onClick={onClose} aria-label="Close" className="size-9 shrink-0 grid place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-4" /></button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-4 sm:p-5">{children}</div>
+
       </div>
     </div>
   );
