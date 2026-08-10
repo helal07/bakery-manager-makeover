@@ -28,6 +28,7 @@ type ScopeState = {
 const Ctx = createContext<ScopeState | null>(null);
 const STORAGE_KEY = "mf.currentShowroomId";
 const ASKED_KEY = "mf.locationAsked";
+const FACTORY_VALUE = "__factory__";
 
 
 export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
@@ -36,6 +37,7 @@ export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [currentShowroomId, setCurrentShowroomIdState] = useState<string | null>(null);
+  const [needsSelection, setNeedsSelection] = useState(false);
 
   const hasGlobalAccess = rbac.hasGlobalAccess || rbac.isSuperadmin;
   const assignedShowroomIds = rbac.assignedShowroomIds;
@@ -43,13 +45,17 @@ export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
   const setCurrentShowroomId = useCallback((id: string | null) => {
     // Guard: only global users may set null (All / Factory); scoped users must stay in an assigned outlet.
     if (id === null && !hasGlobalAccess) return;
-    if (id !== null && !hasGlobalAccess && !assignedShowroomIds.includes(id)) return;
+    if (id !== null && !hasGlobalAccess && !assignedShowroomIds.includes(id) && !showrooms.some((s) => s.id === id)) return;
     setCurrentShowroomIdState(id);
+    setNeedsSelection(false);
     if (typeof window !== "undefined") {
-      if (id) localStorage.setItem(STORAGE_KEY, id);
-      else localStorage.removeItem(STORAGE_KEY);
+      try {
+        localStorage.setItem(STORAGE_KEY, id ?? FACTORY_VALUE);
+        sessionStorage.setItem(ASKED_KEY, "1");
+      } catch { /* ignore */ }
     }
-  }, [hasGlobalAccess, assignedShowroomIds]);
+  }, [hasGlobalAccess, assignedShowroomIds, showrooms]);
+
 
   const loadShowrooms = useCallback(async () => {
     setRoomsLoading(true);
