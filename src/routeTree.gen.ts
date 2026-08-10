@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
+import { Route as AuthenticatedSwitchLocationRouteImport } from './routes/_authenticated/switch-location'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedSubRecipesRouteImport } from './routes/_authenticated/sub-recipes'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
@@ -127,6 +128,12 @@ const InvoiceIdRoute = InvoiceIdRouteImport.update({
   path: '/invoice/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSwitchLocationRoute =
+  AuthenticatedSwitchLocationRouteImport.update({
+    id: '/switch-location',
+    path: '/switch-location',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
   id: '/suppliers',
   path: '/suppliers',
@@ -623,6 +630,7 @@ export interface FileRoutesByFullPath {
   '/sales': typeof AuthenticatedSalesRouteWithChildren
   '/sub-recipes': typeof AuthenticatedSubRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
+  '/switch-location': typeof AuthenticatedSwitchLocationRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
@@ -707,6 +715,7 @@ export interface FileRoutesByTo {
   '/sales': typeof AuthenticatedSalesRouteWithChildren
   '/sub-recipes': typeof AuthenticatedSubRecipesRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
+  '/switch-location': typeof AuthenticatedSwitchLocationRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
@@ -798,6 +807,7 @@ export interface FileRoutesById {
   '/_authenticated/sales': typeof AuthenticatedSalesRouteWithChildren
   '/_authenticated/sub-recipes': typeof AuthenticatedSubRecipesRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
+  '/_authenticated/switch-location': typeof AuthenticatedSwitchLocationRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/_authenticated/employees/new': typeof AuthenticatedEmployeesNewRoute
   '/_authenticated/expenses/categories': typeof AuthenticatedExpensesCategoriesRoute
@@ -889,6 +899,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/sub-recipes'
     | '/suppliers'
+    | '/switch-location'
     | '/invoice/$id'
     | '/employees/new'
     | '/expenses/categories'
@@ -973,6 +984,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/sub-recipes'
     | '/suppliers'
+    | '/switch-location'
     | '/invoice/$id'
     | '/employees/new'
     | '/expenses/categories'
@@ -1063,6 +1075,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sales'
     | '/_authenticated/sub-recipes'
     | '/_authenticated/suppliers'
+    | '/_authenticated/switch-location'
     | '/invoice/$id'
     | '/_authenticated/employees/new'
     | '/_authenticated/expenses/categories'
@@ -1179,6 +1192,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/invoice/$id'
       preLoaderRoute: typeof InvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/switch-location': {
+      id: '/_authenticated/switch-location'
+      path: '/switch-location'
+      fullPath: '/switch-location'
+      preLoaderRoute: typeof AuthenticatedSwitchLocationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/suppliers': {
       id: '/_authenticated/suppliers'
@@ -1970,6 +1990,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRouteWithChildren
   AuthenticatedSubRecipesRoute: typeof AuthenticatedSubRecipesRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
+  AuthenticatedSwitchLocationRoute: typeof AuthenticatedSwitchLocationRoute
   AuthenticatedLabelsPrintRoute: typeof AuthenticatedLabelsPrintRoute
   AuthenticatedSettingsAccessRoute: typeof AuthenticatedSettingsAccessRoute
   AuthenticatedSettingsAuditLogRoute: typeof AuthenticatedSettingsAuditLogRoute
@@ -2007,6 +2028,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSalesRoute: AuthenticatedSalesRouteWithChildren,
   AuthenticatedSubRecipesRoute: AuthenticatedSubRecipesRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
+  AuthenticatedSwitchLocationRoute: AuthenticatedSwitchLocationRoute,
   AuthenticatedLabelsPrintRoute: AuthenticatedLabelsPrintRoute,
   AuthenticatedSettingsAccessRoute: AuthenticatedSettingsAccessRoute,
   AuthenticatedSettingsAuditLogRoute: AuthenticatedSettingsAuditLogRoute,
@@ -2036,13 +2058,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
