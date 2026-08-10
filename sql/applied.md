@@ -26,3 +26,5 @@
 
 
 - 25_strict_tenant_isolation.sql — strict factory/showroom isolation (RLS + RPC location asserts + indexes)
+
+- `34_batch_edit_keep_date.sql` — edited batches keep their original production date in all reports.
