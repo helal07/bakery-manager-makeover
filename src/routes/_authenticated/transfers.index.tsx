@@ -55,6 +55,34 @@ function TransfersPage() {
   const [loading, setLoading] = useState(true);
   const [openView, setOpenView] = useState<TransferRow | null>(null);
   const [viewItems, setViewItems] = useState<TransferItem[]>([]);
+  const [company, setCompany] = useState<CompanySettings>(defaultCompany);
+
+  useEffect(() => { getCompany().then(setCompany).catch(() => {}); }, []);
+
+  const printSheet = async (row: TransferRow) => {
+    const { data } = await sb.from("transfer_items").select("*").eq("transfer_id", row.id);
+    const list = (data ?? []) as TransferItem[];
+    if (list.length === 0) { toast.error("No items in this transfer"); return; }
+    const ok = printTransferSheet({
+      company,
+      code: row.code ?? row.id.slice(0, 8),
+      status: row.status,
+      kind: row.kind,
+      from: locName(row.source_showroom_id, showrooms),
+      to: locName(row.dest_showroom_id, showrooms),
+      note: row.note,
+      createdAt: row.created_at,
+      sentAt: row.sent_at,
+      receivedAt: row.received_at,
+      lines: list.map((it) => {
+        const p = products.find((x) => x.id === it.product_id);
+        return { name: p?.name ?? it.product_id, sku: p?.sku ?? "", qty: Number(it.qty), unit: p?.unit ?? "" };
+      }),
+    });
+    if (!ok) toast.error("Allow pop-ups to print");
+  };
+
+
 
   const load = useCallback(async () => {
     setLoading(true);
