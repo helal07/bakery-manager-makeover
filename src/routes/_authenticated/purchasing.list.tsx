@@ -238,28 +238,30 @@ function PurchaseList() {
           )}
           {modal.mode === "payment" && (
             <div className="space-y-3">
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {(["Paid", "Partial", "Due"] as const).map((opt) => (
                   <button
                     key={opt}
                     onClick={() => setPayDraft((d) => ({ ...d, payment: opt, paid: opt === "Paid" ? modal.p.total : opt === "Due" ? 0 : d.paid }))}
-                    className={`px-3 py-1.5 rounded-md text-sm border ${payDraft.payment === opt ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
+                    className={`h-11 rounded-md text-sm font-medium border ${payDraft.payment === opt ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
                   >
                     {opt}
                   </button>
                 ))}
               </div>
               {payDraft.payment === "Partial" && (
-                <div>
+                <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Paid amount (৳)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={payDraft.paid}
-                    onChange={(e) => setPayDraft((d) => ({ ...d, paid: Number(e.target.value) || 0 }))}
-                    className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
+                    onChange={(e) => setPayDraft((d) => ({ ...d, paid: Number(e.target.value.replace(/[^0-9.]/g, "")) || 0 }))}
+                    className="w-full h-11 px-3 rounded-md border border-border bg-background text-base sm:text-sm tabular-nums outline-none focus:border-primary"
                   />
                 </div>
               )}
+
               <div className="text-sm text-muted-foreground">
                 Total ৳{modal.p.total.toLocaleString()} · Due ৳{(modal.p.total - (payDraft.payment === "Paid" ? modal.p.total : payDraft.payment === "Due" ? 0 : payDraft.paid)).toLocaleString()}
               </div>
