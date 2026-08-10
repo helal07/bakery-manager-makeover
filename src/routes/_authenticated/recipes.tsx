@@ -1044,13 +1044,14 @@ function ProduceTab({
     });
   };
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
-      <Card className="p-5 space-y-4 h-fit">
+    <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-3 sm:gap-4">
+      <Card className="p-3 sm:p-5 space-y-3 sm:space-y-4 h-fit">
         <div>
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <label className="text-[11px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Batch quantity
           </label>
           <div className="mt-1.5 flex items-center rounded-md border border-border bg-background overflow-hidden">
+
             <button
               onClick={() => stepBatch(-1)}
               className="size-11 grid place-items-center hover:bg-accent text-muted-foreground"
@@ -1140,7 +1141,7 @@ function ProduceTab({
         <button
           onClick={onProduce}
           disabled={!canProduce}
-          className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-md bg-primary text-primary-foreground text-base font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full inline-flex items-center justify-center gap-2 h-11 sm:h-12 rounded-md bg-primary text-primary-foreground text-sm sm:text-base font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Play className="size-4" /> Produce Now
         </button>
@@ -1149,18 +1150,40 @@ function ProduceTab({
         </div>
       </Card>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <Card className="overflow-hidden">
-          <div className="p-5 border-b border-border bg-muted/30">
+          <div className="p-3 sm:p-5 border-b border-border bg-muted/30">
             <div className="flex items-center gap-2">
               <Factory className="size-4 text-primary" />
               <h3 className="text-sm font-semibold">Raw material preview</h3>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
               {batch} × {productName} বানাতে যা লাগবে
             </p>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Mobile: compact rows */}
+          <div className="sm:hidden divide-y divide-border">
+            {rows.map((r) => (
+              <div key={`m-${r.it.materialId}`} className="px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="min-w-0 truncate text-sm font-medium">{r.raw?.name ?? r.it.materialId}</span>
+                  <span className="shrink-0 flex items-center gap-2">
+                    <span className="text-xs tabular-nums">৳{r.lineCost.toFixed(2)}</span>
+                    <Badge tone={r.ok ? "success" : "danger"}>{r.ok ? "OK" : "Short"}</Badge>
+                  </span>
+                </div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+                  Need {r.need} {r.raw?.unit} · Stock {r.have} {r.raw?.unit}
+                </div>
+              </div>
+            ))}
+            {rows.length === 0 && (
+              <div className="px-3 py-6 text-center text-xs text-muted-foreground">কোনো ingredient নেই</div>
+            )}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground bg-muted/20">
                 <tr>
@@ -1200,32 +1223,33 @@ function ProduceTab({
         </Card>
 
         <Card className="overflow-hidden">
-          <div className="p-5 border-b border-border bg-muted/30 flex items-center justify-between gap-2">
-            <div>
+          <div className="p-3 sm:p-5 border-b border-border bg-muted/30 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <CircleDollarSign className="size-4 text-primary" />
-                <h3 className="text-sm font-semibold">Production overheads</h3>
+                <CircleDollarSign className="size-4 shrink-0 text-primary" />
+                <h3 className="truncate text-sm font-semibold">Production overheads</h3>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                 Gas, electricity, labor ইত্যাদি — এই ব্যাচের total খরচ
               </p>
             </div>
             <button
               onClick={addOverhead}
               disabled={overheadCats.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-background text-xs font-medium hover:bg-accent disabled:opacity-50"
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-background text-xs font-medium hover:bg-accent disabled:opacity-50"
             >
               <Plus className="size-3.5" /> Add
             </button>
           </div>
-          <div className="p-4 space-y-2">
+          <div className="p-3 sm:p-4 space-y-2">
+
             {overheads.length === 0 && (
               <div className="text-xs text-muted-foreground text-center py-4">
                 কোনো overhead নেই। Recipe-এ default set করলে এখানে auto-fill হবে।
               </div>
             )}
             {overheads.map((o, idx) => (
-              <div key={idx} className="grid grid-cols-[1fr_120px_36px] gap-2 items-center">
+              <div key={idx} className="grid grid-cols-[minmax(0,1fr)_88px_36px] sm:grid-cols-[1fr_120px_36px] gap-2 items-center">
                 <select
                   value={o.categoryId}
                   onChange={(e) => {
