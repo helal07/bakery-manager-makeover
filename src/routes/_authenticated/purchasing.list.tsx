@@ -80,36 +80,88 @@ function PurchaseList() {
 
   return (
     <AppShell title="Purchase List" subtitle="All supplier purchase orders">
-      <Card className="p-4 mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-          <div className="relative sm:col-span-2 lg:col-span-6 xl:col-span-2">
-            <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search PO, supplier, category, item, date…"
-              className="w-full h-10 pl-8 pr-3 rounded-md border border-border bg-background text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <select value={payment} onChange={(e) => setPayment(e.target.value as any)} className="w-full h-10 px-2.5 rounded-md border border-border bg-background text-sm lg:col-span-2 xl:col-span-1">
+      <Card className="p-3 sm:p-4 mb-4">
+        <div className="relative">
+          <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search PO, supplier, item, date…"
+            className="w-full h-11 sm:h-10 pl-8 pr-3 rounded-md border border-border bg-background text-base sm:text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowFilters((v) => !v)}
+          className="mt-2 sm:hidden inline-flex items-center gap-1.5 text-xs font-medium text-primary"
+        >
+          {showFilters ? "Hide filters" : "More filters"}
+          <ChevronDown className={`size-3.5 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+        </button>
+        <div className={`${showFilters ? "grid" : "hidden"} sm:grid mt-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3`}>
+          <select value={payment} onChange={(e) => setPayment(e.target.value as any)} className="w-full h-11 sm:h-10 px-2.5 rounded-md border border-border bg-background text-sm">
             <option value="All">All payments</option>
             <option value="Paid">Paid</option>
             <option value="Partial">Partial</option>
             <option value="Due">Due</option>
           </select>
-          <select value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-full h-10 px-2.5 rounded-md border border-border bg-background text-sm truncate lg:col-span-2 xl:col-span-1">
+          <select value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-full h-11 sm:h-10 px-2.5 rounded-md border border-border bg-background text-sm truncate">
             <option value="All">All suppliers</option>
             {suppliers.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          <input type="date" aria-label="From date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full h-10 min-w-0 px-2.5 rounded-md border border-border bg-background text-sm lg:col-span-2 xl:col-span-1" />
-          <input type="date" aria-label="To date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full h-10 min-w-0 px-2.5 rounded-md border border-border bg-background text-sm lg:col-span-2 xl:col-span-1" />
+          <input type="date" aria-label="From date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full h-11 sm:h-10 min-w-0 px-2.5 rounded-md border border-border bg-background text-sm" />
+          <input type="date" aria-label="To date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full h-11 sm:h-10 min-w-0 px-2.5 rounded-md border border-border bg-background text-sm" />
         </div>
         <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
           <span>{filtered.length} of {list.length} purchases</span>
           <button onClick={resetFilters} className="px-2 py-1 rounded hover:bg-muted">Reset filters</button>
         </div>
       </Card>
-      <Card className="overflow-hidden">
+
+      {/* Mobile list */}
+      <div className="md:hidden space-y-2.5">
+        {filtered.map((p) => {
+          const pay = p.payment ?? (p.status === "Received" ? "Paid" : "Due");
+          const tone = pay === "Paid" ? "success" : pay === "Partial" ? "warning" : "danger";
+          return (
+            <Card key={p.id} className="p-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">{p.supplier}</div>
+                  <div className="mt-0.5 text-[11px] font-mono text-muted-foreground">{p.id}</div>
+                </div>
+                <Badge tone={tone}>{pay}</Badge>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{p.date}</span>
+                <span>{p.items && p.items.length > 0 ? `${p.items.length} item(s)` : (p.category ?? "—")}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2 border-t border-dashed border-border pt-2">
+                <div className="text-base font-semibold tabular-nums">৳{p.total.toLocaleString()}</div>
+                <ActionsMenu
+                  open={openMenu === p.id}
+                  onToggle={() => setOpenMenu(openMenu === p.id ? null : p.id)}
+                  onClose={() => setOpenMenu(null)}
+                  onView={() => setModal({ mode: "view", p })}
+                  canPay={pay !== "Paid"}
+                  onPayment={() => {
+                    setPayDraft({ payment: p.payment ?? "Due", paid: p.paid ?? 0 });
+                    setModal({ mode: "payment", p });
+                  }}
+                  onInvoice={() => setModal({ mode: "invoice", p })}
+                  onDelete={() => setDelTarget(p)}
+                  editId={p.uuid}
+                />
+              </div>
+            </Card>
+          );
+        })}
+        {filtered.length === 0 && (
+          <Card className="p-6 text-center text-sm text-muted-foreground">No purchases found.</Card>
+        )}
+      </div>
+
+      <Card className="hidden md:block overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm">
           <thead className="text-xs text-muted-foreground bg-muted/40">
@@ -168,6 +220,7 @@ function PurchaseList() {
         </table>
         </div>
       </Card>
+
       {modal && (
         <Modal onClose={() => setModal(null)} title={modal.mode === "view" ? `Purchase ${modal.p.id}` : modal.mode === "payment" ? "Update Payment" : `Invoice ${modal.p.id}`}>
           {modal.mode === "view" && <ViewBody p={modal.p} />}
