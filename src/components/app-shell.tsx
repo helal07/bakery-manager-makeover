@@ -753,33 +753,25 @@ export function Card({ className, children }: { className?: string; children: Re
 }
 
 function ShowroomSwitcher() {
-  const { loading, showrooms, hasGlobalAccess, currentShowroomId, setCurrentShowroomId } = useShowroomScope();
+  const { loading, showrooms, hasGlobalAccess, currentShowroomId, optionCount } = useShowroomScope();
   if (loading) return null;
-  if (!hasGlobalAccess && showrooms.length <= 1) return null;
-  const value = currentShowroomId ?? "__all__";
+  const active = currentShowroomId ? showrooms.find((s) => s.id === currentShowroomId) : null;
+  const label = currentShowroomId ? (active?.name ?? "Showroom") : "Factory / All";
+  const badge = (
+    <span className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted/40 text-sm max-w-[16rem]">
+      {currentShowroomId ? <Store className="size-3.5 shrink-0 text-primary" /> : <Factory className="size-3.5 shrink-0 text-primary" />}
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Working in</span>
+      <span className="font-medium truncate">{label}</span>
+    </span>
+  );
+  if (optionCount <= 1) return badge;
   return (
-    <Select
-      value={value}
-      onValueChange={(v) => setCurrentShowroomId(v === "__all__" ? null : v)}
-    >
-      <SelectTrigger className="h-9 w-52">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {hasGlobalAccess && (
-          <SelectItem value="__all__">
-            <span className="inline-flex items-center gap-2"><Factory className="size-3.5" /> All / Factory</span>
-          </SelectItem>
-        )}
-        {showrooms.map((s) => (
-          <SelectItem key={s.id} value={s.id}>
-            <span className="inline-flex items-center gap-2"><Store className="size-3.5" /> {s.name}</span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Link to="/switch-location" className="hover:opacity-90" title="Switch location">
+      {badge}
+    </Link>
   );
 }
+
 
 let userMenuLoadedOnce = false;
 function UserMenu() {
