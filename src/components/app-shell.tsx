@@ -756,6 +756,44 @@ export function Card({ className, children }: { className?: string; children: Re
   );
 }
 
+/** Blocking chooser shown once per sign-in when more than one location is available. */
+function LocationGate() {
+  const { needsSelection, loading, optionCount } = useShowroomScope();
+  if (loading || !needsSelection || optionCount <= 1) return null;
+  return <LocationPickerOverlay />;
+}
+
+/** Sidebar entry linking to the location chooser (hidden when only one option). */
+function SwitchLocationNav({ pathname }: { pathname: string }) {
+  const { loading, showrooms, hasGlobalAccess, currentShowroomId, optionCount } = useShowroomScope();
+  if (loading || optionCount <= 1) return null;
+  const active = currentShowroomId ? showrooms.find((s) => s.id === currentShowroomId)?.name : "Factory / All";
+  const isActive = pathname.startsWith("/switch-location");
+  return (
+    <div>
+      <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
+        Location
+      </div>
+      <Link
+        to="/switch-location"
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition",
+          isActive
+            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+        )}
+      >
+        {currentShowroomId ? <Store className="size-4 shrink-0" /> : <Factory className="size-4 shrink-0" />}
+        <span className="min-w-0 flex-1">
+          <span className="block leading-tight">Showrooms</span>
+          <span className="block text-[11px] text-sidebar-foreground/50 truncate">{active ?? "Select"}</span>
+        </span>
+      </Link>
+    </div>
+  );
+}
+
+
 function ShowroomSwitcher() {
   const { loading, showrooms, hasGlobalAccess, currentShowroomId, optionCount } = useShowroomScope();
   if (loading) return null;
