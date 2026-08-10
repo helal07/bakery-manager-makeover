@@ -249,13 +249,18 @@ function TransfersPage() {
                       {new Date(r.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-2 px-2 text-right">
-                      {r.status === "draft" ? (
-                        <Button size="sm" variant="outline" onClick={() => openTransfer(r)}>Open</Button>
-                      ) : (
-                        <Button size="sm" variant="outline" asChild>
-                          <Link to="/transfers/receive/$id" params={{ id: r.id }}>Open</Link>
+                      <div className="flex justify-end gap-1.5">
+                        <Button size="sm" variant="ghost" onClick={() => printSheet(r)} title="Print transfer sheet">
+                          <Printer className="w-4 h-4" />
                         </Button>
-                      )}
+                        {r.status === "draft" ? (
+                          <Button size="sm" variant="outline" onClick={() => openTransfer(r)}>Open</Button>
+                        ) : (
+                          <Button size="sm" variant="outline" asChild>
+                            <Link to="/transfers/receive/$id" params={{ id: r.id }}>Open</Link>
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -267,61 +272,98 @@ function TransfersPage() {
 
       {openView && (
         <Dialog open onOpenChange={() => setOpenView(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                Transfer {openView.code ?? openView.id.slice(0, 8)}
+          <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-3xl max-h-[88vh] overflow-y-auto p-0 gap-0">
+            <DialogHeader className="px-5 py-4 border-b bg-muted/40 text-left space-y-1">
+              <DialogTitle className="flex flex-wrap items-center gap-2 text-base">
+                <span className="font-mono">{openView.code ?? openView.id.slice(0, 8)}</span>
+                <Badge className={statusColor(openView.status)}>{openView.status}</Badge>
+                {openView.kind === "damaged_return" && <Badge variant="outline">damaged return</Badge>}
               </DialogTitle>
+              <p className="text-xs text-muted-foreground">
+                Created {new Date(openView.created_at).toLocaleString()}
+              </p>
             </DialogHeader>
-            <div className="space-y-3 text-sm">
-              <div className="flex gap-6">
-                <div><span className="text-muted-foreground">From:</span> {locName(openView.source_showroom_id, showrooms)}</div>
-                <div><span className="text-muted-foreground">To:</span> {locName(openView.dest_showroom_id, showrooms)}</div>
-                <div><Badge className={statusColor(openView.status)}>{openView.status}</Badge></div>
+
+            <div className="p-5 space-y-4 text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: "From", value: locName(openView.source_showroom_id, showrooms) },
+                  { label: "To", value: locName(openView.dest_showroom_id, showrooms) },
+                  { label: "Line items", value: String(viewItems.length) },
+                  {
+                    label: "Total qty",
+                    value: String(viewItems.reduce((s, i) => s + Number(i.qty || 0), 0)),
+                  },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-lg border bg-card px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.label}</p>
+                    <p className="font-semibold truncate">{s.value}</p>
+                  </div>
+                ))}
               </div>
-              {openView.note && <p className="text-muted-foreground">{openView.note}</p>}
-              <div className="overflow-x-auto"><table className="w-full min-w-[640px]">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="py-2">Product</th>
-                    <th className="py-2 text-right">Qty</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {viewItems.map((it) => {
-                    const p = products.find((x) => x.id === it.product_id);
-                    return (
-                      <tr key={it.id} className="border-b">
-                        <td className="py-2">{p?.name ?? it.product_id}</td>
-                        <td className="py-2 text-right">{it.qty} {p?.unit}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table></div>
+
+              {openView.note && (
+                <div className="rounded-lg border bg-muted/40 px-3 py-2 text-muted-foreground">
+                  <span className="font-medium text-foreground">Note: </span>{openView.note}
+                </div>
+              )}
+
+              <div className="rounded-lg border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/60">
+                    <tr className="text-left">
+                      <th className="py-2 px-3 font-medium">Product</th>
+                      <th className="py-2 px-3 font-medium hidden sm:table-cell">SKU</th>
+                      <th className="py-2 px-3 font-medium text-right">Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {viewItems.map((it) => {
+                      const p = products.find((x) => x.id === it.product_id);
+                      return (
+                        <tr key={it.id} className="border-t">
+                          <td className="py-2 px-3">{p?.name ?? it.product_id}</td>
+                          <td className="py-2 px-3 text-muted-foreground hidden sm:table-cell">{p?.sku ?? "—"}</td>
+                          <td className="py-2 px-3 text-right tabular-nums">{it.qty} {p?.unit}</td>
+                        </tr>
+                      );
+                    })}
+                    {viewItems.length === 0 && (
+                      <tr><td colSpan={3} className="py-6 px-3 text-center text-muted-foreground">No items yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <DialogFooter className="gap-2">
-              {openView.status === "draft" && (
-                <>
-                  <Button variant="outline" onClick={() => cancelTransfer(openView)}>
-                    <X className="w-4 h-4 mr-2" /> Cancel
+
+            <DialogFooter className="px-5 py-4 border-t bg-muted/30 gap-2 sm:justify-between">
+              <Button variant="outline" onClick={() => printSheet(openView)}>
+                <Printer className="w-4 h-4 mr-2" /> Print sheet
+              </Button>
+              <div className="flex gap-2">
+                {openView.status === "draft" && (
+                  <>
+                    <Button variant="outline" onClick={() => cancelTransfer(openView)}>
+                      <X className="w-4 h-4 mr-2" /> Cancel
+                    </Button>
+                    <Button onClick={() => sendTransfer(openView)}>
+                      <Send className="w-4 h-4 mr-2" /> Send
+                    </Button>
+                  </>
+                )}
+                {openView.status === "sent" && (
+                  <Button asChild>
+                    <Link to="/transfers/receive/$id" params={{ id: openView.id }}>
+                      <PackageCheck className="w-4 h-4 mr-2" /> Open to Receive
+                    </Link>
                   </Button>
-                  <Button onClick={() => sendTransfer(openView)}>
-                    <Send className="w-4 h-4 mr-2" /> Send
-                  </Button>
-                </>
-              )}
-              {openView.status === "sent" && (
-                <Button asChild>
-                  <Link to="/transfers/receive/$id" params={{ id: openView.id }}>
-                    <PackageCheck className="w-4 h-4 mr-2" /> Open to Receive
-                  </Link>
-                </Button>
-              )}
+                )}
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
+
     </AppShell>
   );
 }
