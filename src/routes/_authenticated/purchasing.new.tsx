@@ -705,16 +705,18 @@ function MultiMaterialPicker({
                 return (
                   <li key={m.id}>
                     <label
-                      className={`w-full text-left px-3 py-1.5 text-sm hover:bg-accent flex items-center gap-2 cursor-pointer ${
+                      className={`w-full text-left px-3 py-2.5 md:py-1.5 text-sm hover:bg-accent flex items-center gap-2.5 cursor-pointer ${
                         inList ? "opacity-60" : ""
                       }`}
                     >
                       <input
                         type="checkbox"
+                        className="size-4 shrink-0"
                         checked={checked || inList}
                         disabled={inList}
                         onChange={() => toggle(m.id)}
                       />
+
                       <span className="truncate flex-1">{m.name}</span>
                       <span className="text-xs text-muted-foreground shrink-0">
                         {inList ? "added" : m.unit}
