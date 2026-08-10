@@ -344,9 +344,11 @@ export function AppShellFrame() {
 
   return (
     <PageMetaContext.Provider value={metaCtx}>
+      <LocationGate />
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         {/* Sticky global top bar */}
         <TopBar onOpenMobile={() => setMobileOpen(true)} company={company} adminBarColor={software.adminBarColor} />
+
 
         <div className="flex flex-1 min-h-0">
           {/* Mobile overlay */}
