@@ -288,7 +288,7 @@ export function PurchaseFormPage({ editId }: { editId?: string }) {
           </span>
         </div>
       ) : null}
-      <form onSubmit={submit} className="pb-28">
+      <form onSubmit={submit} className="pb-40 sm:pb-28">
         {/* ---- Header details ---- */}
         <Card className="p-4 sm:p-5 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
