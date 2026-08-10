@@ -1044,13 +1044,14 @@ function ProduceTab({
     });
   };
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
-      <Card className="p-5 space-y-4 h-fit">
+    <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-3 sm:gap-4">
+      <Card className="p-3 sm:p-5 space-y-3 sm:space-y-4 h-fit">
         <div>
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <label className="text-[11px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Batch quantity
           </label>
           <div className="mt-1.5 flex items-center rounded-md border border-border bg-background overflow-hidden">
+
             <button
               onClick={() => stepBatch(-1)}
               className="size-11 grid place-items-center hover:bg-accent text-muted-foreground"
