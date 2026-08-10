@@ -6,6 +6,8 @@ import { countIncomingTransfers } from "@/lib/inbox-store";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { LocationPickerOverlay } from "@/components/location-picker";
+
 import { usePermissions } from "@/hooks/use-permissions";
 import { clearRbacSnapshots } from "@/lib/rbac-cache";
 
@@ -344,9 +346,11 @@ export function AppShellFrame() {
 
   return (
     <PageMetaContext.Provider value={metaCtx}>
+      <LocationGate />
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         {/* Sticky global top bar */}
         <TopBar onOpenMobile={() => setMobileOpen(true)} company={company} adminBarColor={software.adminBarColor} />
+
 
         <div className="flex flex-1 min-h-0">
           {/* Mobile overlay */}
@@ -378,7 +382,9 @@ export function AppShellFrame() {
               </button>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+              <SwitchLocationNav pathname={pathname} />
               {visibleGroups.map((g) => (
+
                 <div key={g.label}>
                   <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
                     {g.label}
@@ -541,6 +547,7 @@ function TopBarUser() {
       localStorage.removeItem("user-profile-cache-v1");
       localStorage.removeItem("user-email-cache-v1");
       localStorage.removeItem("user-role-cache-v1");
+      sessionStorage.removeItem("mf.locationAsked");
     } catch { /* ignore */ }
 
     await supabase.auth.signOut();
@@ -752,34 +759,64 @@ export function Card({ className, children }: { className?: string; children: Re
   );
 }
 
-function ShowroomSwitcher() {
-  const { loading, showrooms, hasGlobalAccess, currentShowroomId, setCurrentShowroomId } = useShowroomScope();
-  if (loading) return null;
-  if (!hasGlobalAccess && showrooms.length <= 1) return null;
-  const value = currentShowroomId ?? "__all__";
+/** Blocking chooser shown once per sign-in when more than one location is available. */
+function LocationGate() {
+  const { needsSelection, loading, optionCount } = useShowroomScope();
+  if (loading || !needsSelection || optionCount <= 1) return null;
+  return <LocationPickerOverlay />;
+}
+
+/** Sidebar entry linking to the location chooser (hidden when only one option). */
+function SwitchLocationNav({ pathname }: { pathname: string }) {
+  const { loading, showrooms, hasGlobalAccess, currentShowroomId, optionCount } = useShowroomScope();
+  if (loading || optionCount <= 1) return null;
+  const active = currentShowroomId ? showrooms.find((s) => s.id === currentShowroomId)?.name : "Factory / All";
+  const isActive = pathname.startsWith("/switch-location");
   return (
-    <Select
-      value={value}
-      onValueChange={(v) => setCurrentShowroomId(v === "__all__" ? null : v)}
-    >
-      <SelectTrigger className="h-9 w-52">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {hasGlobalAccess && (
-          <SelectItem value="__all__">
-            <span className="inline-flex items-center gap-2"><Factory className="size-3.5" /> All / Factory</span>
-          </SelectItem>
+    <div>
+      <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-sidebar-foreground/45 font-semibold">
+        Location
+      </div>
+      <Link
+        to="/switch-location"
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition",
+          isActive
+            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
         )}
-        {showrooms.map((s) => (
-          <SelectItem key={s.id} value={s.id}>
-            <span className="inline-flex items-center gap-2"><Store className="size-3.5" /> {s.name}</span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      >
+        {currentShowroomId ? <Store className="size-4 shrink-0" /> : <Factory className="size-4 shrink-0" />}
+        <span className="min-w-0 flex-1">
+          <span className="block leading-tight">Showrooms</span>
+          <span className="block text-[11px] text-sidebar-foreground/50 truncate">{active ?? "Select"}</span>
+        </span>
+      </Link>
+    </div>
   );
 }
+
+
+function ShowroomSwitcher() {
+  const { loading, showrooms, hasGlobalAccess, currentShowroomId, optionCount } = useShowroomScope();
+  if (loading) return null;
+  const active = currentShowroomId ? showrooms.find((s) => s.id === currentShowroomId) : null;
+  const label = currentShowroomId ? (active?.name ?? "Showroom") : "Factory / All";
+  const badge = (
+    <span className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted/40 text-sm max-w-[16rem]">
+      {currentShowroomId ? <Store className="size-3.5 shrink-0 text-primary" /> : <Factory className="size-3.5 shrink-0 text-primary" />}
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Working in</span>
+      <span className="font-medium truncate">{label}</span>
+    </span>
+  );
+  if (optionCount <= 1) return badge;
+  return (
+    <Link to="/switch-location" className="hover:opacity-90" title="Switch location">
+      {badge}
+    </Link>
+  );
+}
+
 
 let userMenuLoadedOnce = false;
 function UserMenu() {
@@ -824,6 +861,7 @@ function UserMenu() {
       localStorage.removeItem("user-profile-cache-v1");
       localStorage.removeItem("user-email-cache-v1");
       localStorage.removeItem("user-role-cache-v1");
+      sessionStorage.removeItem("mf.locationAsked");
     } catch { /* ignore */ }
 
     userMenuLoadedOnce = false;
