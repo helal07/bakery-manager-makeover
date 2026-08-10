@@ -7,10 +7,13 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Send, PackageCheck, X, Undo2 } from "lucide-react";
+import { Plus, Send, PackageCheck, X, Undo2, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { PermissionGate } from "@/components/permission-gate";
+import { getCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
+import { printTransferSheet } from "@/lib/transfer-sheet";
+
 
 export const Route = createFileRoute("/_authenticated/transfers/")({
   head: () => ({ meta: [{ title: "Transfers · Muzahid Food" }] }),
