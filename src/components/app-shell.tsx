@@ -6,6 +6,8 @@ import { countIncomingTransfers } from "@/lib/inbox-store";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { LocationPickerOverlay } from "@/components/location-picker";
+
 import { usePermissions } from "@/hooks/use-permissions";
 import { clearRbacSnapshots } from "@/lib/rbac-cache";
 
