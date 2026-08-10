@@ -777,12 +777,13 @@ function MaterialCombo({
       <button
         type="button"
         onClick={() => { setOpen((o) => !o); setQuery(""); }}
-        className="w-full h-8 px-2 rounded-md border border-input bg-background text-sm text-left outline-none focus:border-primary truncate"
+        className="w-full h-10 md:h-8 px-2 rounded-md border border-input bg-background text-sm text-left outline-none focus:border-primary truncate"
       >
         {selected ? selected.name : <span className="text-muted-foreground">Select material…</span>}
       </button>
       {open && (
-        <div className="absolute z-20 mt-1 w-72 rounded-md border border-border bg-popover shadow-md">
+        <div className="absolute z-20 mt-1 w-[min(18rem,calc(100vw-3rem))] rounded-md border border-border bg-popover shadow-md">
+
           <div className="p-1.5 border-b border-border relative">
             <Search className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
