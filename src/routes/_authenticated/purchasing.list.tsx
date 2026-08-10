@@ -265,8 +265,9 @@ function PurchaseList() {
               <div className="text-sm text-muted-foreground">
                 Total ৳{modal.p.total.toLocaleString()} · Due ৳{(modal.p.total - (payDraft.payment === "Paid" ? modal.p.total : payDraft.payment === "Due" ? 0 : payDraft.paid)).toLocaleString()}
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setModal(null)} className="px-3 py-1.5 rounded-md border border-border text-sm hover:bg-muted">Cancel</button>
+              <div className="grid grid-cols-2 gap-2 pt-2 sm:flex sm:justify-end">
+                <button onClick={() => setModal(null)} className="h-11 sm:h-9 px-4 rounded-md border border-border text-sm hover:bg-muted">Cancel</button>
+
                 <button
                   onClick={async () => {
                     const paid = payDraft.payment === "Paid" ? modal.p.total : payDraft.payment === "Due" ? 0 : payDraft.paid;
