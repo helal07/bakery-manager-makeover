@@ -90,7 +90,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
     })
     .join("");
 
-  const blanks = Array.from({ length: Math.max(0, 4 - rows.length) })
+  const blanks = Array.from({ length: Math.max(0, 2 - rows.length) })
     .map(
       () =>
         `<tr class="bl"><td></td><td></td><td></td><td></td>${cols.map(() => `<td></td><td class="ac"></td>`).join("")}</tr>`,
@@ -105,19 +105,20 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>Daily Production Report</title>
 <style>
-  @page { size: A4 landscape; margin: 8mm; }
+  @page { size: A4 landscape; margin: 6mm; }
   * { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:#111; margin:0; }
-  .top { display:flex; align-items:stretch; gap:6mm; border-bottom:2px solid #111; padding-bottom:6px; margin-bottom:8px; }
+  #pg { transform-origin: top left; }
+  .top { display:flex; align-items:stretch; gap:4mm; border-bottom:1.5px solid #111; padding-bottom:4px; margin-bottom:5px; }
   .hd { flex:1; text-align:center; }
-  .co { font-size:19px; font-weight:800; }
-  .ad { font-size:11px; color:#444; margin-top:2px; }
-  .ti { font-size:13.5px; font-weight:700; margin-top:6px; }
-  .dt { font-size:10px; color:#555; margin-top:2px; }
-  .sum { width:78mm; }
-  .sum .st { text-align:center; font-size:15px; font-weight:800; margin-bottom:4px; }
+  .co { font-size:16px; font-weight:800; }
+  .ad { font-size:9.5px; color:#444; margin-top:1px; }
+  .ti { font-size:12px; font-weight:700; margin-top:3px; }
+  .dt { font-size:9px; color:#555; margin-top:1px; }
+  .sum { width:70mm; }
+  .sum .st { text-align:center; font-size:12px; font-weight:800; margin-bottom:2px; }
   .sum table { width:100%; }
-  .sum td { padding:3px 6px; font-size:10.5px; }
+  .sum td { padding:1px 5px; font-size:9.5px; border:none; }
   .sum td.k { font-weight:600; }
   .sum td.v { text-align:right; width:34%; }
   table { border-collapse:collapse; width:100%; font-size:9px; table-layout:fixed; }
