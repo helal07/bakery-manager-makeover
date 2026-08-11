@@ -83,7 +83,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
       return `<tr>
         <td class="mono">#${esc(r.batchNo)}</td>
         <td>${esc(r.dateTime)}</td>
-        <td>${esc(r.productName)}</td>
+        <td class="pr">${esc(r.productName)}</td>
         <td class="r">${num(r.qty, 3)}</td>
         ${cells}
       </tr>`;
@@ -120,14 +120,19 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   .sum td { padding:3px 6px; font-size:10.5px; }
   .sum td.k { font-weight:600; }
   .sum td.v { text-align:right; width:34%; }
-  table { border-collapse:collapse; width:100%; font-size:10px; }
-  th, td { border:1px solid #b9b9b9; padding:3px 5px; }
-  thead th { background:#dbe5f1; font-weight:700; text-align:center; }
+  table { border-collapse:collapse; width:100%; font-size:9px; table-layout:fixed; }
+  th, td { border:1px solid #b9b9b9; padding:1.5px 3px; word-wrap:break-word; }
+  thead th { background:#dbe5f1; font-weight:700; text-align:center; line-height:1.15; }
   th.grp { background:#cfdcee; }
   tfoot th { background:#eef2f7; }
-  tbody tr.bl td { height:16px; }
+  tbody tr.bl td { height:12px; }
   .r { text-align:right; }
-  .ac { width:14mm; background:#fff; }
+  .ac { width:11mm; background:#fff; }
+  th.cb { width:16mm; }
+  th.cd { width:26mm; }
+  th.cp { width:52mm; }
+  th.cq { width:14mm; }
+  td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   tr { page-break-inside: avoid; }
   .sg { margin-top:12px; display:flex; justify-content:space-between; font-size:10px; }
@@ -156,8 +161,8 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   <table>
     <thead>
       <tr>
-        <th rowspan="2">Batch</th><th rowspan="2">Date &amp; time</th>
-        <th rowspan="2">Product</th><th rowspan="2">Quantity</th>
+        <th rowspan="2" class="cb">Batch</th><th rowspan="2" class="cd">Date &amp; time</th>
+        <th rowspan="2" class="cp">Product</th><th rowspan="2" class="cq">Qty</th>
         ${groupHead}
       </tr>
       <tr>${subHead}</tr>
