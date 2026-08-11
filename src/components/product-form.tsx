@@ -332,6 +332,45 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
     [expandedPerUnit],
   );
 
+  // Returns true when the SKU is free (or blank → will be auto-generated).
+  const checkSku = async (raw: string): Promise<boolean> => {
+    const s = raw.trim();
+    if (!s) {
+      setSkuError(null);
+      return true;
+    }
+    setSkuChecking(true);
+    try {
+      const hit = await findProductBySku(s, editId);
+      if (hit) {
+        setSkuError(`Already used by "${hit.name}"`);
+        return false;
+      }
+      setSkuError(null);
+      return true;
+    } catch {
+      // Network/permission hiccup — let the DB unique index be the final judge.
+      setSkuError(null);
+      return true;
+    } finally {
+      setSkuChecking(false);
+    }
+  };
+
+  // Pick a free auto SKU (retry a few times in case of a random collision).
+  const autoSku = async (): Promise<string> => {
+    for (let i = 0; i < 5; i++) {
+      const candidate = genSku(form.category, form.name);
+      try {
+        if (!(await findProductBySku(candidate))) return candidate;
+      } catch {
+        return candidate;
+      }
+    }
+    return genSku(form.category, form.name);
+  };
+
+
   const doSave = async (opts?: { navigateAfter?: boolean }): Promise<boolean> => {
     const navigateAfter = opts?.navigateAfter !== false;
     // Already persisted once (e.g. guard dialog after a successful save) —
