@@ -197,8 +197,8 @@ function PurchaseList() {
                 <td className="px-5 py-3">
                   <div className="flex justify-end">
                     <ActionsMenu
-                      open={openMenu === p.id}
-                      onToggle={() => setOpenMenu(openMenu === p.id ? null : p.id)}
+                      open={openMenu === `d:${p.id}`}
+                      onToggle={() => setOpenMenu(openMenu === `d:${p.id}` ? null : `d:${p.id}`)}
                       onClose={() => setOpenMenu(null)}
                       onView={() => setModal({ mode: "view", p })}
                       canPay={(p.payment ?? (p.status === "Received" ? "Paid" : "Due")) !== "Paid"}
