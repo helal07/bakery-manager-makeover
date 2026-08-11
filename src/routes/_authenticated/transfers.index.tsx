@@ -193,9 +193,12 @@ function TransfersPage() {
   };
 
   const cancelTransfer = async (row: TransferRow) => {
+    setCancelBusy(true);
     const { error } = await sb.from("transfers").update({ status: "cancelled" }).eq("id", row.id);
+    setCancelBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Cancelled");
+    setConfirmCancel(null);
     setOpenView(null); load();
   };
 
