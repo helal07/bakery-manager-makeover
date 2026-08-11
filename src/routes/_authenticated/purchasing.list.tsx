@@ -332,7 +332,10 @@ function ActionsMenu({
   useEffect(() => {
     if (!open) return;
     const rect = btnRef.current?.getBoundingClientRect();
-    if (rect) {
+    // A hidden instance (e.g. the mobile list on desktop) reports a zero rect —
+    // never open it, otherwise its outside-click handler closes the visible menu.
+    if (!rect || rect.width === 0) return;
+    {
       const width = 160;
       setPos({ top: rect.bottom + 4, left: Math.max(8, rect.right - width) });
     }
