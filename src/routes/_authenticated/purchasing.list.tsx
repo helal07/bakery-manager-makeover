@@ -144,7 +144,7 @@ function PurchaseList() {
                   open={openMenu === `m:${p.id}`}
                   onToggle={() => setOpenMenu(openMenu === `m:${p.id}` ? null : `m:${p.id}`)}
                   onClose={() => setOpenMenu(null)}
-                  onView={() => setModal({ mode: "view", p })}
+                  viewId={p.uuid}
                   canPay={pay !== "Paid"}
                   onPayment={() => {
                     setPayDraft({ payment: p.payment ?? "Due", paid: p.paid ?? 0 });
@@ -200,7 +200,7 @@ function PurchaseList() {
                       open={openMenu === `d:${p.id}`}
                       onToggle={() => setOpenMenu(openMenu === `d:${p.id}` ? null : `d:${p.id}`)}
                       onClose={() => setOpenMenu(null)}
-                      onView={() => setModal({ mode: "view", p })}
+                      viewId={p.uuid}
                       canPay={(p.payment ?? (p.status === "Received" ? "Paid" : "Due")) !== "Paid"}
                       onPayment={() => {
                         setPayDraft({ payment: p.payment ?? "Due", paid: p.paid ?? 0 });
@@ -308,7 +308,7 @@ function ActionsMenu({
   open,
   onToggle,
   onClose,
-  onView,
+  viewId,
   canPay,
   onPayment,
   onInvoice,
@@ -318,7 +318,7 @@ function ActionsMenu({
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
-  onView: () => void;
+  viewId?: string;
   canPay: boolean;
   onPayment: () => void;
   onInvoice: () => void;
@@ -371,7 +371,15 @@ function ActionsMenu({
           style={{ position: "fixed", top: pos.top, left: pos.left, width: 160 }}
           className="z-50 rounded-md border border-border bg-background shadow-lg py-1"
         >
-          <button className={item} onClick={run(onView)}><Eye className="size-4" /> View</button>
+          {viewId ? (
+            <button
+              type="button"
+              className={item}
+              onClick={() => { onClose(); nav({ to: "/purchasing/view/$id", params: { id: viewId } }); }}
+            >
+              <Eye className="size-4" /> View
+            </button>
+          ) : null}
           {editId ? (
             <button
               type="button"
