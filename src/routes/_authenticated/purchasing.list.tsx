@@ -141,8 +141,8 @@ function PurchaseList() {
               <div className="mt-2 flex items-center justify-between gap-2 border-t border-dashed border-border pt-2">
                 <div className="text-base font-semibold tabular-nums">৳{p.total.toLocaleString()}</div>
                 <ActionsMenu
-                  open={openMenu === p.id}
-                  onToggle={() => setOpenMenu(openMenu === p.id ? null : p.id)}
+                  open={openMenu === `m:${p.id}`}
+                  onToggle={() => setOpenMenu(openMenu === `m:${p.id}` ? null : `m:${p.id}`)}
                   onClose={() => setOpenMenu(null)}
                   onView={() => setModal({ mode: "view", p })}
                   canPay={pay !== "Paid"}
