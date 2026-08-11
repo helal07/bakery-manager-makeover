@@ -178,7 +178,15 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   </table>
   <div class="sg"><div>Artisan</div><div>Production Manager</div><div>Owner / Accounts</div></div>
   <div class="ft"><span>"Actual" columns are filled in by hand — quantity actually taken by the artisan.</span><span>${esc(company.name)}</span></div>
-<script>window.onload=function(){setTimeout(function(){window.print()},150)}</script>
+</div>
+<script>window.onload=function(){
+  var pg=document.getElementById('pg');
+  // A4 landscape printable area at 96dpi minus 6mm margins
+  var W=(297-12)/25.4*96, H=(210-12)/25.4*96;
+  var s=Math.min(1, W/pg.scrollWidth, H/pg.scrollHeight);
+  if(s<1){ pg.style.transform='scale('+s+')'; pg.style.width=(100/s)+'%'; }
+  setTimeout(function(){window.print()},200);
+}</script>
 </body></html>`;
 }
 
