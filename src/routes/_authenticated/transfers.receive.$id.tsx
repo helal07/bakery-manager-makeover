@@ -38,6 +38,7 @@ function ReceiveTransferPage() {
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState<"receive" | "cancel" | null>(null);
   const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
 
   useEffect(() => { getCompany().then(setCompany).catch(() => {}); }, []);
