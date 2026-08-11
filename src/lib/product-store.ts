@@ -53,6 +53,30 @@ function mapRow(r: any, stockMap: Map<string, { qty: number; min: number }>): Pr
     isActive: r.is_active ?? true,
   };
 }
+/** Find a product using this SKU (case-insensitive). Optionally ignore one id. */
+export async function findProductBySku(
+  sku: string,
+  excludeId?: string,
+): Promise<{ id: string; name: string; sku: string } | null> {
+  const s = sku.trim();
+  if (!s) return null;
+  let q = sb.from("products").select("id,name,sku").ilike("sku", s).limit(1);
+  if (excludeId) q = q.neq("id", excludeId);
+  const { data, error } = await q;
+  if (error) throw error;
+  const row = (data ?? [])[0];
+  return row ? { id: row.id, name: row.name, sku: row.sku ?? "" } : null;
+}
+
+function friendlySkuError(error: any, sku: string) {
+  const code = error?.code ?? "";
+  const msg = String(error?.message ?? "");
+  if (code === "23505" || msg.includes("products_sku_key")) {
+    return new Error(`SKU "${sku}" is already used by another product`);
+  }
+  return error;
+}
+
 
 export async function loadProducts(
   showroomId?: string | null,
