@@ -141,8 +141,8 @@ function PurchaseList() {
               <div className="mt-2 flex items-center justify-between gap-2 border-t border-dashed border-border pt-2">
                 <div className="text-base font-semibold tabular-nums">৳{p.total.toLocaleString()}</div>
                 <ActionsMenu
-                  open={openMenu === p.id}
-                  onToggle={() => setOpenMenu(openMenu === p.id ? null : p.id)}
+                  open={openMenu === `m:${p.id}`}
+                  onToggle={() => setOpenMenu(openMenu === `m:${p.id}` ? null : `m:${p.id}`)}
                   onClose={() => setOpenMenu(null)}
                   onView={() => setModal({ mode: "view", p })}
                   canPay={pay !== "Paid"}
@@ -197,8 +197,8 @@ function PurchaseList() {
                 <td className="px-5 py-3">
                   <div className="flex justify-end">
                     <ActionsMenu
-                      open={openMenu === p.id}
-                      onToggle={() => setOpenMenu(openMenu === p.id ? null : p.id)}
+                      open={openMenu === `d:${p.id}`}
+                      onToggle={() => setOpenMenu(openMenu === `d:${p.id}` ? null : `d:${p.id}`)}
                       onClose={() => setOpenMenu(null)}
                       onView={() => setModal({ mode: "view", p })}
                       canPay={(p.payment ?? (p.status === "Received" ? "Paid" : "Due")) !== "Paid"}
@@ -332,7 +332,10 @@ function ActionsMenu({
   useEffect(() => {
     if (!open) return;
     const rect = btnRef.current?.getBoundingClientRect();
-    if (rect) {
+    // A hidden instance (e.g. the mobile list on desktop) reports a zero rect —
+    // never open it, otherwise its outside-click handler closes the visible menu.
+    if (!rect || rect.width === 0) return;
+    {
       const width = 160;
       setPos({ top: rect.bottom + 4, left: Math.max(8, rect.right - width) });
     }
