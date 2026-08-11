@@ -513,15 +513,39 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                 </div>
               </div>
               <div>
-                <Label htmlFor="p-sku">SKU</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="p-sku">SKU <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSkuTouched(false);
+                      setSkuError(null);
+                      setForm((f) => ({ ...f, sku: genSku(f.category, f.name) }));
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Regenerate
+                  </button>
+                </div>
                 <Input
                   id="p-sku"
                   value={form.sku}
-                  readOnly
-                  placeholder="Auto-generated on save"
-                  className="font-mono bg-muted/40 cursor-not-allowed"
+                  onChange={(e) => {
+                    setSkuTouched(true);
+                    setSkuError(null);
+                    setForm((f) => ({ ...f, sku: e.target.value }));
+                  }}
+                  onBlur={() => void checkSku(form.sku)}
+                  placeholder="Leave blank to auto-generate"
+                  className={`font-mono ${skuError ? "border-destructive" : ""}`}
                 />
+                {skuError ? (
+                  <p className="mt-1 text-xs text-destructive">{skuError}</p>
+                ) : skuChecking ? (
+                  <p className="mt-1 text-xs text-muted-foreground">Checking availability…</p>
+                ) : null}
               </div>
+
             </div>
           </Card>
 
