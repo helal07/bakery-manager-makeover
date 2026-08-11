@@ -53,6 +53,30 @@ function mapRow(r: any, stockMap: Map<string, { qty: number; min: number }>): Pr
     isActive: r.is_active ?? true,
   };
 }
+/** Find a product using this SKU (case-insensitive). Optionally ignore one id. */
+export async function findProductBySku(
+  sku: string,
+  excludeId?: string,
+): Promise<{ id: string; name: string; sku: string } | null> {
+  const s = sku.trim();
+  if (!s) return null;
+  let q = sb.from("products").select("id,name,sku").ilike("sku", s).limit(1);
+  if (excludeId) q = q.neq("id", excludeId);
+  const { data, error } = await q;
+  if (error) throw error;
+  const row = (data ?? [])[0];
+  return row ? { id: row.id, name: row.name, sku: row.sku ?? "" } : null;
+}
+
+function friendlySkuError(error: any, sku: string) {
+  const code = error?.code ?? "";
+  const msg = String(error?.message ?? "");
+  if (code === "23505" || msg.includes("products_sku_key")) {
+    return new Error(`SKU "${sku}" is already used by another product`);
+  }
+  return error;
+}
+
 
 export async function loadProducts(
   showroomId?: string | null,
@@ -116,7 +140,7 @@ export async function addProduct(
     })
     .select("id,sku,name,category,unit,price,cost,mfg_date,expiry_date,shelf_life_days,image_url")
     .single();
-  if (error) throw error;
+  if (error) throw friendlySkuError(error, p.sku);
 
   const threshold = p.threshold ?? 0;
   const opening = opts?.openingStock ?? 0;
@@ -170,7 +194,7 @@ export async function updateProduct(
   if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl || null;
   if (Object.keys(row).length > 0) {
     const { error } = await sb.from("products").update(row).eq("id", id);
-    if (error) throw error;
+    if (error) throw friendlySkuError(error, patch.sku ?? "");
   }
   if (patch.threshold !== undefined) {
     const { error } = await sb.from("product_stock").upsert(

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { addProduct, updateProduct, loadProducts, type Product } from "@/lib/product-store";
+import { addProduct, updateProduct, loadProducts, findProductBySku, type Product } from "@/lib/product-store";
 import { addRawMaterial, loadRawMaterials, type RawMaterial } from "@/lib/raw-material-store";
 import { loadUnits, type Unit } from "@/lib/unit-store";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -90,6 +90,9 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   const [copyBusy, setCopyBusy] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [skuTouched, setSkuTouched] = useState(false);
+  const [skuError, setSkuError] = useState<string | null>(null);
+  const [skuChecking, setSkuChecking] = useState(false);
   const [loading, setLoading] = useState(isEdit || !!from);
   const [showExpanded, setShowExpanded] = useState(false);
   const [baseline, setBaseline] = useState<string | null>(null);
@@ -329,6 +332,45 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
     [expandedPerUnit],
   );
 
+  // Returns true when the SKU is free (or blank → will be auto-generated).
+  const checkSku = async (raw: string): Promise<boolean> => {
+    const s = raw.trim();
+    if (!s) {
+      setSkuError(null);
+      return true;
+    }
+    setSkuChecking(true);
+    try {
+      const hit = await findProductBySku(s, editId);
+      if (hit) {
+        setSkuError(`Already used by "${hit.name}"`);
+        return false;
+      }
+      setSkuError(null);
+      return true;
+    } catch {
+      // Network/permission hiccup — let the DB unique index be the final judge.
+      setSkuError(null);
+      return true;
+    } finally {
+      setSkuChecking(false);
+    }
+  };
+
+  // Pick a free auto SKU (retry a few times in case of a random collision).
+  const autoSku = async (): Promise<string> => {
+    for (let i = 0; i < 5; i++) {
+      const candidate = genSku(form.category, form.name);
+      try {
+        if (!(await findProductBySku(candidate))) return candidate;
+      } catch {
+        return candidate;
+      }
+    }
+    return genSku(form.category, form.name);
+  };
+
+
   const doSave = async (opts?: { navigateAfter?: boolean }): Promise<boolean> => {
     const navigateAfter = opts?.navigateAfter !== false;
     // Already persisted once (e.g. guard dialog after a successful save) —
@@ -352,11 +394,18 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
       toast.error("Max validity must be a positive number of days");
       return false;
     }
+    const typedSku = form.sku.trim();
+
+    if (typedSku && !(await checkSku(typedSku))) {
+      toast.error(`SKU "${typedSku}" is already used by another product`);
+      return false;
+    }
     setSaving(true);
     suppressGuardRef.current = true;
 
     try {
-      const sku = form.sku.trim() || genSku(form.category, form.name);
+      const sku = typedSku || (await autoSku());
+
       const payload = {
         sku,
         name: form.name.trim(),
@@ -481,7 +530,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   value={form.name}
                   onChange={(e) => {
                     const name = e.target.value;
-                    setForm((f) => ({ ...f, name, sku: isEdit ? f.sku : genSku(f.category, name) }));
+                    setForm((f) => ({ ...f, name, sku: isEdit || skuTouched ? f.sku : genSku(f.category, name) }));
                   }}
                   placeholder="Chocolate Truffle 1kg"
                 />
@@ -494,7 +543,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                     value={form.category}
                     onChange={(e) => {
                       const category = e.target.value;
-                      setForm((f) => ({ ...f, category, sku: isEdit ? f.sku : genSku(category, f.name) }));
+                      setForm((f) => ({ ...f, category, sku: isEdit || skuTouched ? f.sku : genSku(category, f.name) }));
                     }}
                     className="flex-1 h-9 px-2.5 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
                   >
@@ -513,15 +562,39 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                 </div>
               </div>
               <div>
-                <Label htmlFor="p-sku">SKU</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="p-sku">SKU <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSkuTouched(false);
+                      setSkuError(null);
+                      setForm((f) => ({ ...f, sku: genSku(f.category, f.name) }));
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Regenerate
+                  </button>
+                </div>
                 <Input
                   id="p-sku"
                   value={form.sku}
-                  readOnly
-                  placeholder="Auto-generated on save"
-                  className="font-mono bg-muted/40 cursor-not-allowed"
+                  onChange={(e) => {
+                    setSkuTouched(true);
+                    setSkuError(null);
+                    setForm((f) => ({ ...f, sku: e.target.value }));
+                  }}
+                  onBlur={() => void checkSku(form.sku)}
+                  placeholder="Leave blank to auto-generate"
+                  className={`font-mono ${skuError ? "border-destructive" : ""}`}
                 />
+                {skuError ? (
+                  <p className="mt-1 text-xs text-destructive">{skuError}</p>
+                ) : skuChecking ? (
+                  <p className="mt-1 text-xs text-muted-foreground">Checking availability…</p>
+                ) : null}
               </div>
+
             </div>
           </Card>
 
