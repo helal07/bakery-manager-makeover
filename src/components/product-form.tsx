@@ -389,16 +389,17 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
       toast.error("Please select a category");
       return false;
     }
-    const shelf = form.shelfLifeDays.trim() ? Number(form.shelfLifeDays) : undefined;
-    if (shelf !== undefined && (!Number.isFinite(shelf) || shelf < 0)) {
-      toast.error("Max validity must be a positive number of days");
+    const typedSku = form.sku.trim();
+    if (typedSku && !(await checkSku(typedSku))) {
+      toast.error(`SKU "${typedSku}" is already used by another product`);
       return false;
     }
     setSaving(true);
     suppressGuardRef.current = true;
 
     try {
-      const sku = form.sku.trim() || genSku(form.category, form.name);
+      const sku = typedSku || (await autoSku());
+
       const payload = {
         sku,
         name: form.name.trim(),
