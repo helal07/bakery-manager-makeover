@@ -343,7 +343,7 @@ function TransfersPage() {
               <div className="flex gap-2">
                 {openView.status === "draft" && (
                   <>
-                    <Button variant="outline" onClick={() => cancelTransfer(openView)}>
+                    <Button variant="outline" onClick={() => setConfirmCancel(openView)}>
                       <X className="w-4 h-4 mr-2" /> Cancel
                     </Button>
                     <Button onClick={() => sendTransfer(openView)}>
