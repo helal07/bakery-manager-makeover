@@ -14,6 +14,7 @@ import {
 } from "@/lib/inbox-store";
 import { getCompany, getCachedCompany, defaultCompany, pageTitle, type CompanySettings } from "@/lib/company-settings";
 import { PermissionGate } from "@/components/permission-gate";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 export const Route = createFileRoute("/_authenticated/transfers/receive/$id")({
   head: () => ({ meta: [{ title: pageTitle("Receive Transfer") }] }),
