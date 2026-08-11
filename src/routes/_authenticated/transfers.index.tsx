@@ -13,6 +13,7 @@ import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { PermissionGate } from "@/components/permission-gate";
 import { getCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
 import { printTransferSheet } from "@/lib/transfer-sheet";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 
 export const Route = createFileRoute("/_authenticated/transfers/")({
@@ -54,6 +55,8 @@ function TransfersPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [openView, setOpenView] = useState<TransferRow | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<TransferRow | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [viewItems, setViewItems] = useState<TransferItem[]>([]);
   const [company, setCompany] = useState<CompanySettings>(defaultCompany);
 
@@ -191,9 +194,12 @@ function TransfersPage() {
   };
 
   const cancelTransfer = async (row: TransferRow) => {
+    setCancelBusy(true);
     const { error } = await sb.from("transfers").update({ status: "cancelled" }).eq("id", row.id);
+    setCancelBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Cancelled");
+    setConfirmCancel(null);
     setOpenView(null); load();
   };
 
@@ -343,7 +349,7 @@ function TransfersPage() {
               <div className="flex gap-2">
                 {openView.status === "draft" && (
                   <>
-                    <Button variant="outline" onClick={() => cancelTransfer(openView)}>
+                    <Button variant="outline" onClick={() => setConfirmCancel(openView)}>
                       <X className="w-4 h-4 mr-2" /> Cancel
                     </Button>
                     <Button onClick={() => sendTransfer(openView)}>
@@ -363,6 +369,22 @@ function TransfersPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      <ConfirmDialog
+        open={!!confirmCancel}
+        title="Cancel this transfer?"
+        description={
+          confirmCancel
+            ? `Transfer ${confirmCancel.code ?? confirmCancel.id.slice(0, 8)} will be marked cancelled. This cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Yes, cancel transfer"
+        cancelLabel="Keep it"
+        destructive
+        busy={cancelBusy}
+        onConfirm={() => { if (confirmCancel) void cancelTransfer(confirmCancel); }}
+        onCancel={() => setConfirmCancel(null)}
+      />
 
     </AppShell>
   );

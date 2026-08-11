@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, PackageCheck, Printer } from "lucide-react";
+import { ArrowLeft, PackageCheck, Printer, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/lib/inbox-store";
 import { getCompany, getCachedCompany, defaultCompany, pageTitle, type CompanySettings } from "@/lib/company-settings";
 import { PermissionGate } from "@/components/permission-gate";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 export const Route = createFileRoute("/_authenticated/transfers/receive/$id")({
   head: () => ({ meta: [{ title: pageTitle("Receive Transfer") }] }),
@@ -38,6 +39,7 @@ function ReceiveTransferPage() {
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState<"receive" | "cancel" | null>(null);
   const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
 
   useEffect(() => { getCompany().then(setCompany).catch(() => {}); }, []);
@@ -78,9 +80,26 @@ function ReceiveTransferPage() {
     try {
       await receiveTransfer(transfer);
       toast.success("Received and added to stock");
+      setConfirm(null);
       load();
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to receive");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doCancel = async () => {
+    if (!transfer) return;
+    setBusy(true);
+    try {
+      const { error } = await sb.from("transfers").update({ status: "cancelled" }).eq("id", transfer.id);
+      if (error) throw error;
+      toast.success("Transfer cancelled");
+      setConfirm(null);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to cancel");
     } finally {
       setBusy(false);
     }
@@ -95,7 +114,7 @@ function ReceiveTransferPage() {
       title="Receive Transfer"
       subtitle={transfer?.code ?? id.slice(0, 8)}
       actions={
-        <div className="flex gap-2 print:hidden">
+        <div className="flex flex-wrap gap-2 print:hidden">
           <Button variant="outline" size="sm" asChild>
             <Link to="/transfers"><ArrowLeft className="w-4 h-4 mr-2" /> Back</Link>
           </Button>
@@ -103,10 +122,15 @@ function ReceiveTransferPage() {
             <Printer className="w-4 h-4 mr-2" /> Print
           </Button>
           {transfer?.status === "sent" && (
-            <Button size="sm" onClick={doReceive} disabled={busy}>
-              <PackageCheck className="w-4 h-4 mr-2" />
-              {busy ? "Receiving…" : "Receive"}
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={() => setConfirm("cancel")} disabled={busy}>
+                <X className="w-4 h-4 mr-2" /> Cancel
+              </Button>
+              <Button size="sm" onClick={() => setConfirm("receive")} disabled={busy}>
+                <PackageCheck className="w-4 h-4 mr-2" />
+                {busy ? "Working…" : "Receive"}
+              </Button>
+            </>
           )}
         </div>
       }
@@ -271,6 +295,22 @@ function ReceiveTransferPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirm !== null}
+        title={confirm === "cancel" ? "Cancel this transfer?" : "Receive this transfer?"}
+        description={
+          confirm === "cancel"
+            ? `Transfer ${transfer?.code ?? id.slice(0, 8)} will be marked cancelled and no stock will be added. This cannot be undone.`
+            : `${items.length} item(s) totalling ${totalQty} units will be added to ${locName(transfer?.dest_showroom_id ?? null)} stock.`
+        }
+        confirmLabel={confirm === "cancel" ? "Yes, cancel transfer" : "Yes, receive"}
+        cancelLabel="Go back"
+        destructive={confirm === "cancel"}
+        busy={busy}
+        onConfirm={() => { if (confirm === "cancel") void doCancel(); else void doReceive(); }}
+        onCancel={() => setConfirm(null)}
+      />
     </AppShell>
   );
 }
