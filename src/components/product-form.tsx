@@ -530,7 +530,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                   value={form.name}
                   onChange={(e) => {
                     const name = e.target.value;
-                    setForm((f) => ({ ...f, name, sku: isEdit ? f.sku : genSku(f.category, name) }));
+                    setForm((f) => ({ ...f, name, sku: isEdit || skuTouched ? f.sku : genSku(f.category, name) }));
                   }}
                   placeholder="Chocolate Truffle 1kg"
                 />
