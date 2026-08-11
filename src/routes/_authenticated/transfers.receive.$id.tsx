@@ -294,6 +294,22 @@ function ReceiveTransferPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirm !== null}
+        title={confirm === "cancel" ? "Cancel this transfer?" : "Receive this transfer?"}
+        description={
+          confirm === "cancel"
+            ? `Transfer ${transfer?.code ?? id.slice(0, 8)} will be marked cancelled and no stock will be added. This cannot be undone.`
+            : `${items.length} item(s) totalling ${totalQty} units will be added to ${locName(transfer?.dest_showroom_id ?? null)} stock.`
+        }
+        confirmLabel={confirm === "cancel" ? "Yes, cancel transfer" : "Yes, receive"}
+        cancelLabel="Go back"
+        destructive={confirm === "cancel"}
+        busy={busy}
+        onConfirm={() => { if (confirm === "cancel") void doCancel(); else void doReceive(); }}
+        onCancel={() => setConfirm(null)}
+      />
     </AppShell>
   );
 }
