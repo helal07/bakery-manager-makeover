@@ -140,7 +140,7 @@ export async function addProduct(
     })
     .select("id,sku,name,category,unit,price,cost,mfg_date,expiry_date,shelf_life_days,image_url")
     .single();
-  if (error) throw error;
+  if (error) throw friendlySkuError(error, p.sku);
 
   const threshold = p.threshold ?? 0;
   const opening = opts?.openingStock ?? 0;
