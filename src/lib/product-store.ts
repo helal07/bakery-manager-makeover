@@ -194,7 +194,7 @@ export async function updateProduct(
   if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl || null;
   if (Object.keys(row).length > 0) {
     const { error } = await sb.from("products").update(row).eq("id", id);
-    if (error) throw error;
+    if (error) throw friendlySkuError(error, patch.sku ?? "");
   }
   if (patch.threshold !== undefined) {
     const { error } = await sb.from("product_stock").upsert(
