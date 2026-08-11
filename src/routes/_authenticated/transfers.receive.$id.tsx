@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, PackageCheck, Printer } from "lucide-react";
+import { ArrowLeft, PackageCheck, Printer, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import {
