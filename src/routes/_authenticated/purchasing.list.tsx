@@ -325,6 +325,7 @@ function ActionsMenu({
   onDelete: () => void;
   editId?: string;
 }) {
+  const nav = useNavigate();
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
