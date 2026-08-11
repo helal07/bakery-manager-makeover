@@ -543,7 +543,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                     value={form.category}
                     onChange={(e) => {
                       const category = e.target.value;
-                      setForm((f) => ({ ...f, category, sku: isEdit ? f.sku : genSku(category, f.name) }));
+                      setForm((f) => ({ ...f, category, sku: isEdit || skuTouched ? f.sku : genSku(category, f.name) }));
                     }}
                     className="flex-1 h-9 px-2.5 rounded-md border border-input bg-background text-sm outline-none focus:border-primary"
                   >
