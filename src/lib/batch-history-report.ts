@@ -136,10 +136,11 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   tr { page-break-inside: avoid; }
-  .sg { margin-top:12px; display:flex; justify-content:space-between; font-size:10px; }
-  .sg div { border-top:1px solid #555; padding-top:4px; width:60mm; text-align:center; }
-  .ft { margin-top:6px; font-size:9.5px; color:#666; display:flex; justify-content:space-between; }
+  .sg { margin-top:8px; display:flex; justify-content:space-between; font-size:9px; }
+  .sg div { border-top:1px solid #555; padding-top:3px; width:56mm; text-align:center; }
+  .ft { margin-top:4px; font-size:8.5px; color:#666; display:flex; justify-content:space-between; }
 </style></head><body>
+<div id="pg">
   <div class="top">
     <div class="hd">
       <div class="co">${esc(company.name)}</div>
