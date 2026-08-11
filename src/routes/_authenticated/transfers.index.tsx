@@ -13,6 +13,7 @@ import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { PermissionGate } from "@/components/permission-gate";
 import { getCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
 import { printTransferSheet } from "@/lib/transfer-sheet";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 
 export const Route = createFileRoute("/_authenticated/transfers/")({
