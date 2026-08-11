@@ -369,6 +369,22 @@ function TransfersPage() {
         </Dialog>
       )}
 
+      <ConfirmDialog
+        open={!!confirmCancel}
+        title="Cancel this transfer?"
+        description={
+          confirmCancel
+            ? `Transfer ${confirmCancel.code ?? confirmCancel.id.slice(0, 8)} will be marked cancelled. This cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Yes, cancel transfer"
+        cancelLabel="Keep it"
+        destructive
+        busy={cancelBusy}
+        onConfirm={() => { if (confirmCancel) void cancelTransfer(confirmCancel); }}
+        onCancel={() => setConfirmCancel(null)}
+      />
+
     </AppShell>
   );
 }
