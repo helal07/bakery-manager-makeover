@@ -39,9 +39,9 @@ export function LocationPicker({
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <div className="text-center mb-6">
-        <h2 className="text-xl md:text-2xl font-semibold tracking-tight">{title}</h2>
-        <p className="text-sm text-muted-foreground mt-1.5">{subtitle}</p>
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">{title}</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1.5">{subtitle}</p>
       </div>
 
       {noneAvailable ? (
@@ -49,11 +49,11 @@ export function LocationPicker({
           No location has been assigned to your account. Please ask the owner or an admin to assign you a showroom.
         </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
           {hasGlobalAccess && (
             <Tile
               active={currentShowroomId === null}
-              icon={<Factory className="size-5" />}
+              icon={<Factory className="size-4 sm:size-5" />}
               name="Factory / All locations"
               meta="Production, raw materials & company-wide reports"
               onClick={() => pick(null)}
@@ -63,7 +63,7 @@ export function LocationPicker({
             <Tile
               key={s.id}
               active={currentShowroomId === s.id}
-              icon={<Store className="size-5" />}
+              icon={<Store className="size-4 sm:size-5" />}
               name={s.name}
               meta={[s.code, s.city].filter(Boolean).join(" · ") || "Showroom"}
               onClick={() => pick(s.id)}
@@ -85,18 +85,19 @@ function Tile({
       type="button"
       onClick={onClick}
       className={cn(
-        "group text-left rounded-xl border bg-card p-4 flex items-start gap-3 transition hover:border-primary hover:shadow-md",
+        "group w-full text-left rounded-xl border bg-card p-3 sm:p-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 transition hover:border-primary hover:shadow-md active:scale-[0.99]",
         active ? "border-primary ring-1 ring-primary/30" : "border-border",
       )}
     >
-      <span className="size-10 shrink-0 grid place-items-center rounded-lg bg-primary/10 text-primary">{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5 font-medium truncate">
-          {name}
+      <span className="size-9 sm:size-10 shrink-0 grid place-items-center rounded-lg bg-primary/10 text-primary">{icon}</span>
+      <span className="min-w-0">
+        <span className="flex items-center gap-1.5 text-sm sm:text-base font-medium">
+          <span className="truncate">{name}</span>
           {active && <Check className="size-3.5 text-primary shrink-0" />}
         </span>
-        <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground truncate">
-          <MapPin className="size-3 shrink-0" /> {meta}
+        <span className="mt-0.5 flex items-center gap-1 text-[11px] sm:text-xs text-muted-foreground">
+          <MapPin className="size-3 shrink-0" />
+          <span className="truncate">{meta}</span>
         </span>
       </span>
     </button>
@@ -106,12 +107,13 @@ function Tile({
 /** Full-screen blocking version shown right after sign-in. */
 export function LocationPickerOverlay() {
   return (
-    <div className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto">
-      <div className="min-h-full flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full rounded-2xl border border-border bg-card shadow-xl p-5 sm:p-8">
+    <div className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto overscroll-contain">
+      <div className="min-h-full flex items-start sm:items-center justify-center p-3 sm:p-8">
+        <div className="w-full max-w-3xl rounded-2xl border border-border bg-card shadow-xl p-4 sm:p-8">
           <LocationPicker />
         </div>
       </div>
     </div>
   );
 }
+
