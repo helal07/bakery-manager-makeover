@@ -54,6 +54,8 @@ function TransfersPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [openView, setOpenView] = useState<TransferRow | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<TransferRow | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [viewItems, setViewItems] = useState<TransferItem[]>([]);
   const [company, setCompany] = useState<CompanySettings>(defaultCompany);
 
