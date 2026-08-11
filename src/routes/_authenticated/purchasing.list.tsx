@@ -369,9 +369,13 @@ function ActionsMenu({
         >
           <button className={item} onClick={run(onView)}><Eye className="size-4" /> View</button>
           {editId ? (
-            <Link to="/purchasing/edit/$id" params={{ id: editId }} className={item} onClick={onClose}>
+            <button
+              type="button"
+              className={item}
+              onClick={() => { onClose(); nav({ to: "/purchasing/edit/$id", params: { id: editId } }); }}
+            >
               <Pencil className="size-4" /> Edit
-            </Link>
+            </button>
           ) : null}
           {canPay && (
             <button className={item} onClick={run(onPayment)}><Wallet className="size-4" /> Payment</button>
