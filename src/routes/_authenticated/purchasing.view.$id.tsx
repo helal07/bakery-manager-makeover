@@ -33,7 +33,7 @@ function PurchaseViewPage() {
   const tone = pay === "Paid" ? "success" : pay === "Partial" ? "warning" : "danger";
 
   return (
-    <AppShell>
+    <AppShell title="Purchase Details">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2 min-w-0">
           <Link
