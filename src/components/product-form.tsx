@@ -389,7 +389,13 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
       toast.error("Please select a category");
       return false;
     }
+    const shelf = form.shelfLifeDays.trim() ? Number(form.shelfLifeDays) : undefined;
+    if (shelf !== undefined && (!Number.isFinite(shelf) || shelf < 0)) {
+      toast.error("Max validity must be a positive number of days");
+      return false;
+    }
     const typedSku = form.sku.trim();
+
     if (typedSku && !(await checkSku(typedSku))) {
       toast.error(`SKU "${typedSku}" is already used by another product`);
       return false;
