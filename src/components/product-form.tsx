@@ -90,6 +90,9 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
   const [copyBusy, setCopyBusy] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [skuTouched, setSkuTouched] = useState(false);
+  const [skuError, setSkuError] = useState<string | null>(null);
+  const [skuChecking, setSkuChecking] = useState(false);
   const [loading, setLoading] = useState(isEdit || !!from);
   const [showExpanded, setShowExpanded] = useState(false);
   const [baseline, setBaseline] = useState<string | null>(null);
