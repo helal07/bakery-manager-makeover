@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card, Badge } from "@/components/app-shell";
 import { FileText, Search, Eye, Pencil, Wallet, Printer, X, ChevronDown, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -325,6 +325,7 @@ function ActionsMenu({
   onDelete: () => void;
   editId?: string;
 }) {
+  const nav = useNavigate();
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -369,9 +370,13 @@ function ActionsMenu({
         >
           <button className={item} onClick={run(onView)}><Eye className="size-4" /> View</button>
           {editId ? (
-            <Link to="/purchasing/edit/$id" params={{ id: editId }} className={item} onClick={onClose}>
+            <button
+              type="button"
+              className={item}
+              onClick={() => { onClose(); nav({ to: "/purchasing/edit/$id", params: { id: editId } }); }}
+            >
               <Pencil className="size-4" /> Edit
-            </Link>
+            </button>
           ) : null}
           {canPay && (
             <button className={item} onClick={run(onPayment)}><Wallet className="size-4" /> Payment</button>
