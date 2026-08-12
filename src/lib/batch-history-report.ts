@@ -179,14 +179,21 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
     var pg=document.getElementById('pg');
     // A4 landscape printable area at 96dpi minus 5mm margins
     var W=(297-10)/25.4*96, H=(210-10)/25.4*96;
-    // Scale to fill the sheet: shrink if too big, enlarge if there is empty space
-    var s=Math.min(W/pg.scrollWidth, H/pg.scrollHeight);
-    s=Math.max(0.6, Math.min(2.2, s));
-    if(Math.abs(s-1)>0.01){ pg.style.transform='scale('+s+')'; pg.style.width=(100/s)+'%'; }
-    setTimeout(function(){window.print()},200);
+    var apply=function(s){ pg.style.transform='scale('+s+')'; pg.style.width=(W/s)+'px'; };
+    // Binary search the largest scale whose laid-out content still fits the sheet height.
+    var lo=0.6, hi=2.2, best=0.6;
+    for(var i=0;i<18;i++){
+      var mid=(lo+hi)/2;
+      apply(mid);
+      // measure real height at this width
+      if(pg.scrollHeight*mid<=H && pg.scrollWidth*mid<=W+1){ best=mid; lo=mid; } else { hi=mid; }
+    }
+    apply(best);
+    setTimeout(function(){window.print()},250);
   };
   if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); } else { fit(); }
 }</script>
+
 </body></html>`;
 }
 
