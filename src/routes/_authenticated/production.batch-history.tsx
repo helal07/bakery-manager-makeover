@@ -321,9 +321,10 @@ function BatchHistoryPage() {
 
   const reportRows: BatchReportRow[] = filtered.map((b) => ({
     batchNo: b.batchNo,
+    // Short date for compact printing: dd/mm HH:mm (year is in the period line)
     dateTime: new Date(b.createdAt).toLocaleString("en-GB", {
-      day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-    }),
+      day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+    }).replace(",", ""),
     productName: b.productName,
     qty: b.qty,
     cost: b.materialCost,
@@ -331,6 +332,7 @@ function BatchHistoryPage() {
     value: b.qty * b.price,
     materials: b.materials,
   }));
+
 
   const doPrint = () => {
     const ok = printBatchHistoryReport({ company, rangeLabel, rows: reportRows });
