@@ -111,31 +111,31 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   * { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:#111; margin:0; }
   #pg { transform-origin: top left; }
-  .top { border-bottom:1.2px solid #111; padding-bottom:2px; margin-bottom:3px; text-align:center; }
-  .co { font-size:13px; font-weight:800; line-height:1.15; }
-  .ad { font-size:8px; color:#444; }
-  .ti { font-size:10px; font-weight:700; }
-  .dt { font-size:7.5px; color:#555; }
-  .sum { display:flex; flex-wrap:wrap; justify-content:center; gap:2px 10px; font-size:8px; margin:0 0 3px; }
-  .sum span b { font-weight:700; }
-  table { border-collapse:collapse; width:100%; font-size:7.5px; table-layout:fixed; }
-  th, td { border:0.6px solid #b9b9b9; padding:1px 2px; line-height:1.1; word-wrap:break-word; }
-  thead th { background:#dbe5f1; font-weight:700; text-align:center; }
-  th.grp { background:#cfdcee; font-size:7px; }
-  tfoot th { background:#eef2f7; }
+  .top { border-bottom:1.6px solid #000; padding-bottom:3px; margin-bottom:4px; text-align:center; }
+  .co { font-size:19px; font-weight:800; line-height:1.15; }
+  .ad { font-size:11px; color:#333; }
+  .ti { font-size:14px; font-weight:800; }
+  .dt { font-size:10px; color:#444; }
+  .sum { display:flex; flex-wrap:wrap; justify-content:center; gap:2px 14px; font-size:11px; font-weight:600; margin:0 0 5px; }
+  .sum span b { font-weight:800; }
+  table { border-collapse:collapse; width:100%; font-size:11px; table-layout:fixed; }
+  th, td { border:0.8px solid #777; padding:3px 3px; line-height:1.25; word-wrap:break-word; font-weight:600; }
+  thead th { background:#dbe5f1; font-weight:800; text-align:center; color:#000; }
+  th.grp { background:#cfdcee; font-size:10.5px; }
+  tfoot th { background:#eef2f7; font-weight:800; }
   .r { text-align:right; }
-  .ac { width:8mm; background:#fff; }
-  th.cb { width:12mm; }
-  th.cd { width:16mm; }
-  th.cp { width:48mm; }
-  th.cq { width:12mm; }
+  .ac { width:9mm; background:#fff; }
+  th.cb { width:14mm; }
+  th.cd { width:18mm; }
+  th.cp { width:34mm; }
+  th.cq { width:13mm; }
   td.nw { white-space:nowrap; }
   td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   tr { page-break-inside: avoid; }
-  .sg { margin-top:5px; display:flex; justify-content:space-between; font-size:7.5px; }
-  .sg div { border-top:0.8px solid #555; padding-top:2px; width:52mm; text-align:center; }
-  .ft { margin-top:2px; font-size:7px; color:#666; display:flex; justify-content:space-between; }
+  .sg { margin-top:10px; display:flex; justify-content:space-between; font-size:11px; font-weight:600; }
+  .sg div { border-top:1px solid #333; padding-top:3px; width:58mm; text-align:center; }
+  .ft { margin-top:4px; font-size:9px; color:#555; display:flex; justify-content:space-between; }
 </style></head><body>
 <div id="pg">
   <div class="top">
