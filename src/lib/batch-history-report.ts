@@ -217,13 +217,14 @@ export function exportBatchHistoryXlsx(opts: BatchReportOptions & { fileName: st
     [],
   ];
 
-  const group: (string | number)[] = ["Batch", "Date & time", "Product", "Quantity"];
+  const group: (string | number)[] = ["Batch", "Date", "Product", "Quantity"];
   const sub: (string | number)[] = ["", "", "", ""];
   for (const c of cols) {
-    group.push(`${c.name}${c.unit ? ` (${c.unit})` : ""}`, "");
+    group.push(colLabel(c), "");
     sub.push("Estimated", "Actual");
   }
   aoa.push(group, sub);
+
 
   for (const r of rows) {
     const line: (string | number)[] = [`#${r.batchNo}`, r.dateTime, r.productName, r.qty];
