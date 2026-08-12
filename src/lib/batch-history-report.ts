@@ -51,10 +51,19 @@ const cellFor = (r: BatchReportRow, c: MatCol) => {
   return hit.reduce((a, m) => a + m.qty, 0);
 };
 
+/** Trim trailing zeros: 1.5000 -> 1.5, 0.2500 -> 0.25 */
+const qty = (n: number) => {
+  const v = Number(n) || 0;
+  return String(Number(v.toFixed(3)));
+};
+
+const colLabel = (c: MatCol) => `${c.name}${c.unit ? ` (${c.unit})` : ""}`;
+
 /**
  * A4 landscape matrix production report: one row per batch, one column group per
  * raw material with an "Estimated" (system deducted) and a blank "Actual" column
  * the production manager fills in by hand so the owner can compare.
+ * Layout is tuned to fit everything on a single sheet.
  */
 export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchReportOptions) {
   const cols = materialColumns(rows);
@@ -69,20 +78,20 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   );
   const colTotals = cols.map((c) => rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
 
-  const groupHead = cols.map((c) => `<th class="grp" colspan="2">${esc(c.name)}</th>`).join("");
-  const subHead = cols.map(() => `<th class="r">Estimated</th><th class="ac">Actual</th>`).join("");
+  const groupHead = cols.map((c) => `<th class="grp" colspan="2">${esc(colLabel(c))}</th>`).join("");
+  const subHead = cols.map(() => `<th class="r">Est.</th><th class="ac">Act.</th>`).join("");
 
   const body = rows
     .map((r) => {
       const cells = cols
         .map((c) => {
           const v = cellFor(r, c);
-          return `<td class="r">${v === null ? "" : `${num(v, 4)}${esc(c.unit)}`}</td><td class="ac"></td>`;
+          return `<td class="r">${v === null ? "" : qty(v)}</td><td class="ac"></td>`;
         })
         .join("");
       return `<tr>
         <td class="mono">#${esc(r.batchNo)}</td>
-        <td>${esc(r.dateTime)}</td>
+        <td class="nw">${esc(r.dateTime)}</td>
         <td class="pr">${esc(r.productName)}</td>
         <td class="r">${num(r.qty, 3)}</td>
         ${cells}
@@ -90,86 +99,72 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
     })
     .join("");
 
-  const blanks = Array.from({ length: Math.max(0, 2 - rows.length) })
-    .map(
-      () =>
-        `<tr class="bl"><td></td><td></td><td></td><td></td>${cols.map(() => `<td></td><td class="ac"></td>`).join("")}</tr>`,
-    )
-    .join("");
-
   const footCells = colTotals
-    .map((t, i) => `<th class="r">${t ? `${num(t, 4)}${esc(cols[i].unit)}` : ""}</th><th class="ac"></th>`)
+    .map((t) => `<th class="r">${t ? qty(t) : ""}</th><th class="ac"></th>`)
     .join("");
 
   const span = 4 + cols.length * 2;
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>Daily Production Report</title>
 <style>
-  @page { size: A4 landscape; margin: 6mm; }
+  @page { size: A4 landscape; margin: 5mm; }
   * { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:#111; margin:0; }
   #pg { transform-origin: top left; }
-  .top { display:flex; align-items:stretch; gap:4mm; border-bottom:1.5px solid #111; padding-bottom:4px; margin-bottom:5px; }
-  .hd { flex:1; text-align:center; }
-  .co { font-size:16px; font-weight:800; }
-  .ad { font-size:9.5px; color:#444; margin-top:1px; }
-  .ti { font-size:12px; font-weight:700; margin-top:3px; }
-  .dt { font-size:9px; color:#555; margin-top:1px; }
-  .sum { width:70mm; }
-  .sum .st { text-align:center; font-size:12px; font-weight:800; margin-bottom:2px; }
-  .sum table { width:100%; }
-  .sum td { padding:1px 5px; font-size:9.5px; border:none; }
-  .sum td.k { font-weight:600; }
-  .sum td.v { text-align:right; width:34%; }
-  table { border-collapse:collapse; width:100%; font-size:9px; table-layout:fixed; }
-  th, td { border:1px solid #b9b9b9; padding:1.5px 3px; word-wrap:break-word; }
-  thead th { background:#dbe5f1; font-weight:700; text-align:center; line-height:1.15; }
-  th.grp { background:#cfdcee; }
+  .top { border-bottom:1.2px solid #111; padding-bottom:2px; margin-bottom:3px; text-align:center; }
+  .co { font-size:13px; font-weight:800; line-height:1.15; }
+  .ad { font-size:8px; color:#444; }
+  .ti { font-size:10px; font-weight:700; }
+  .dt { font-size:7.5px; color:#555; }
+  .sum { display:flex; flex-wrap:wrap; justify-content:center; gap:2px 10px; font-size:8px; margin:0 0 3px; }
+  .sum span b { font-weight:700; }
+  table { border-collapse:collapse; width:100%; font-size:7.5px; table-layout:fixed; }
+  th, td { border:0.6px solid #b9b9b9; padding:1px 2px; line-height:1.1; word-wrap:break-word; }
+  thead th { background:#dbe5f1; font-weight:700; text-align:center; }
+  th.grp { background:#cfdcee; font-size:7px; }
   tfoot th { background:#eef2f7; }
-  tbody tr.bl td { height:12px; }
   .r { text-align:right; }
-  .ac { width:11mm; background:#fff; }
-  th.cb { width:16mm; }
-  th.cd { width:26mm; }
-  th.cp { width:52mm; }
-  th.cq { width:14mm; }
+  .ac { width:8mm; background:#fff; }
+  th.cb { width:12mm; }
+  th.cd { width:16mm; }
+  th.cp { width:48mm; }
+  th.cq { width:12mm; }
+  td.nw { white-space:nowrap; }
   td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   tr { page-break-inside: avoid; }
-  .sg { margin-top:8px; display:flex; justify-content:space-between; font-size:9px; }
-  .sg div { border-top:1px solid #555; padding-top:3px; width:56mm; text-align:center; }
-  .ft { margin-top:4px; font-size:8.5px; color:#666; display:flex; justify-content:space-between; }
+  .sg { margin-top:5px; display:flex; justify-content:space-between; font-size:7.5px; }
+  .sg div { border-top:0.8px solid #555; padding-top:2px; width:52mm; text-align:center; }
+  .ft { margin-top:2px; font-size:7px; color:#666; display:flex; justify-content:space-between; }
 </style></head><body>
 <div id="pg">
   <div class="top">
-    <div class="hd">
-      <div class="co">${esc(company.name)}</div>
-      ${company.address ? `<div class="ad">${esc(company.address)}</div>` : ""}
-      ${company.phone || company.email ? `<div class="ad">${esc([company.phone, company.email].filter(Boolean).join(" · "))}</div>` : ""}
-      <div class="ti">Daily Production Report — Batch wise</div>
-      <div class="dt">Period: ${esc(rangeLabel)} &nbsp;·&nbsp; Printed: ${esc(new Date().toLocaleString("en-GB"))}</div>
-    </div>
-    <div class="sum">
-      <div class="st">Summary</div>
-      <table>
-        <tr><td class="k">Total Batches</td><td class="v">${rows.length}</td></tr>
-        <tr><td class="k">Total Produced Qty</td><td class="v">${num(totals.qty, 3)}</td></tr>
-        <tr><td class="k">Total Raw Materials Cost</td><td class="v">${num(totals.cost)}</td></tr>
-        <tr><td class="k">Total Overhead Cost</td><td class="v">${num(totals.overhead)}</td></tr>
-        <tr><td class="k">Total Production Value</td><td class="v">${num(totals.value)}</td></tr>
-      </table>
-    </div>
+    <div class="co">${esc(company.name)}</div>
+    ${
+      company.address || company.phone || company.email
+        ? `<div class="ad">${esc([company.address, company.phone, company.email].filter(Boolean).join(" · "))}</div>`
+        : ""
+    }
+    <div class="ti">Daily Production Report — Batch wise</div>
+    <div class="dt">Period: ${esc(rangeLabel)} · Printed: ${esc(new Date().toLocaleString("en-GB"))}</div>
+  </div>
+  <div class="sum">
+    <span><b>Batches:</b> ${rows.length}</span>
+    <span><b>Produced Qty:</b> ${num(totals.qty, 3)}</span>
+    <span><b>Raw Materials Cost:</b> ${num(totals.cost)}</span>
+    <span><b>Overhead:</b> ${num(totals.overhead)}</span>
+    <span><b>Production Value:</b> ${num(totals.value)}</span>
   </div>
   <table>
     <thead>
       <tr>
-        <th rowspan="2" class="cb">Batch</th><th rowspan="2" class="cd">Date &amp; time</th>
+        <th rowspan="2" class="cb">Batch</th><th rowspan="2" class="cd">Date</th>
         <th rowspan="2" class="cp">Product</th><th rowspan="2" class="cq">Qty</th>
         ${groupHead}
       </tr>
       <tr>${subHead}</tr>
     </thead>
-    <tbody>${body || `<tr><td colspan="${span}" style="text-align:center;padding:14px">No batches in this period</td></tr>`}${body ? blanks : ""}</tbody>
+    <tbody>${body || `<tr><td colspan="${span}" style="text-align:center;padding:10px">No batches in this period</td></tr>`}</tbody>
     <tfoot><tr>
       <th colspan="3" style="text-align:left">${rows.length} batch(es)</th>
       <th class="r">${num(totals.qty, 3)}</th>
@@ -177,18 +172,23 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
     </tr></tfoot>
   </table>
   <div class="sg"><div>Artisan</div><div>Production Manager</div><div>Owner / Accounts</div></div>
-  <div class="ft"><span>"Actual" columns are filled in by hand — quantity actually taken by the artisan.</span><span>${esc(company.name)}</span></div>
+  <div class="ft"><span>"Act." columns are filled in by hand — quantity actually taken by the artisan. Material quantities are in the unit shown in each column header.</span><span>${esc(company.name)}</span></div>
 </div>
 <script>window.onload=function(){
-  var pg=document.getElementById('pg');
-  // A4 landscape printable area at 96dpi minus 6mm margins
-  var W=(297-12)/25.4*96, H=(210-12)/25.4*96;
-  var s=Math.min(1, W/pg.scrollWidth, H/pg.scrollHeight);
-  if(s<1){ pg.style.transform='scale('+s+')'; pg.style.width=(100/s)+'%'; }
-  setTimeout(function(){window.print()},200);
+  var fit=function(){
+    var pg=document.getElementById('pg');
+    // A4 landscape printable area at 96dpi minus 5mm margins
+    var W=(297-10)/25.4*96, H=(210-10)/25.4*96;
+    var s=Math.min(1, W/pg.scrollWidth, H/pg.scrollHeight);
+    s=Math.max(0.6, s);
+    if(s<1){ pg.style.transform='scale('+s+')'; pg.style.width=(100/s)+'%'; }
+    setTimeout(function(){window.print()},200);
+  };
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); } else { fit(); }
 }</script>
 </body></html>`;
 }
+
 
 export function printBatchHistoryReport(opts: BatchReportOptions) {
   const html = renderBatchHistoryHtml(opts);
