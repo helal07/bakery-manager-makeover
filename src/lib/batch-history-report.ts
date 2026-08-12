@@ -179,9 +179,10 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
     var pg=document.getElementById('pg');
     // A4 landscape printable area at 96dpi minus 5mm margins
     var W=(297-10)/25.4*96, H=(210-10)/25.4*96;
-    var s=Math.min(1, W/pg.scrollWidth, H/pg.scrollHeight);
-    s=Math.max(0.6, s);
-    if(s<1){ pg.style.transform='scale('+s+')'; pg.style.width=(100/s)+'%'; }
+    // Scale to fill the sheet: shrink if too big, enlarge if there is empty space
+    var s=Math.min(W/pg.scrollWidth, H/pg.scrollHeight);
+    s=Math.max(0.6, Math.min(2.2, s));
+    if(Math.abs(s-1)>0.01){ pg.style.transform='scale('+s+')'; pg.style.width=(100/s)+'%'; }
     setTimeout(function(){window.print()},200);
   };
   if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); } else { fit(); }
