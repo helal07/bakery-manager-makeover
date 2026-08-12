@@ -110,6 +110,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   @page { size: A4 landscape; margin: 5mm; }
   * { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:#111; margin:0; }
+  #sheet { overflow: hidden; page-break-after: avoid; break-after: avoid; }
   #pg { transform-origin: top left; }
   .top { border-bottom:1.6px solid #000; padding-bottom:3px; margin-bottom:4px; text-align:center; }
   .co { font-size:19px; font-weight:800; line-height:1.15; }
@@ -137,7 +138,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   .sg div { border-top:1px solid #333; padding-top:3px; width:58mm; text-align:center; }
   .ft { margin-top:4px; font-size:9px; color:#555; display:flex; justify-content:space-between; }
 </style></head><body>
-<div id="pg">
+<div id="sheet"><div id="pg">
   <div class="top">
     <div class="co">${esc(company.name)}</div>
     ${
@@ -173,15 +174,19 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   </table>
   <div class="sg"><div>Artisan</div><div>Production Manager</div><div>Owner / Accounts</div></div>
   <div class="ft"><span>"Act." columns are filled in by hand — quantity actually taken by the artisan. Material quantities are in the unit shown in each column header.</span><span>${esc(company.name)}</span></div>
-</div>
+</div></div>
 <script>window.onload=function(){
   var fit=function(){
     var pg=document.getElementById('pg');
     // A4 landscape printable area at 96dpi minus 5mm margins
     var W=(297-10)/25.4*96, H=(210-10)/25.4*96;
+    var sheet=document.getElementById('sheet');
+    // Clamp the printed flow to exactly one sheet so the scaled-down content
+    // cannot push a second (mostly blank) page.
+    sheet.style.width=W+'px'; sheet.style.height=H+'px';
     var apply=function(s){ pg.style.transform='scale('+s+')'; pg.style.width=(W/s)+'px'; };
     // Binary search the largest scale whose laid-out content still fits the sheet height.
-    var lo=0.6, hi=2.2, best=0.6;
+    var lo=0.35, hi=2.2, best=0.35;
     for(var i=0;i<18;i++){
       var mid=(lo+hi)/2;
       apply(mid);
