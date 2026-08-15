@@ -86,7 +86,7 @@ function BatchHistoryPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
-  const initial = presetRange("month");
+  const initial = presetRange("today");
   const from = search.from ?? initial.from;
   const to = search.to ?? initial.to;
   const productFilter = search.product ?? "";
