@@ -416,6 +416,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         category: form.category,
         unit: form.unit || undefined,
         price: Number(form.price) || 0,
+        transferPrice: Number(form.transferPrice) || 0,
         threshold: Number(form.threshold) || 0,
         shelfLifeDays: shelf,
         imageUrl: form.imageUrl || undefined,
