@@ -126,6 +126,10 @@ function NewTransferPage() {
     () => items.reduce((sum, r) => sum + (Number(r.qty) || 0), 0),
     [items],
   );
+  const totalValue = useMemo(
+    () => items.reduce((sum, r) => sum + (Number(r.qty) || 0) * (Number(r.price) || 0), 0),
+    [items],
+  );
   const hasOver = items.some((r) => (Number(r.qty) || 0) > stockAt(r.product_id, sourceLocId));
 
   const addProduct = (p: Product) => {
@@ -134,7 +138,8 @@ function NewTransferPage() {
         toast.info(`${p.name} already added`);
         return prev;
       }
-      return [...prev, { product_id: p.id, qty: "" }];
+      const price = defaultSupplyPrice({ transferPrice: p.transfer_price, cost: p.cost });
+      return [...prev, { product_id: p.id, qty: "", price: price ? String(price) : "" }];
     });
   };
   const setRow = (i: number, patch: Partial<Row>) =>
@@ -150,7 +155,7 @@ function NewTransferPage() {
     if (source !== "factory" && source === dest) { toast.error("Source and destination cannot be same"); return; }
 
     const clean = items
-      .map((r) => ({ product_id: r.product_id, qty: Number(r.qty) }))
+      .map((r) => ({ product_id: r.product_id, qty: Number(r.qty), price: Number(r.price) || 0 }))
       .filter((r) => r.product_id && r.qty > 0);
     if (clean.length === 0) { toast.error("Add at least one item with qty"); return; }
     for (const c of clean) {
@@ -177,7 +182,12 @@ function NewTransferPage() {
     if (error || !created) { toast.error(error?.message ?? "Failed"); setSaving(false); return; }
     const { error: itErr } = await sb
       .from("transfer_items")
-      .insert(clean.map((c) => ({ transfer_id: created.id, product_id: c.product_id, qty: c.qty })));
+      .insert(clean.map((c) => ({
+        transfer_id: created.id,
+        product_id: c.product_id,
+        qty: c.qty,
+        unit_price: c.price,
+      })));
     if (itErr) { toast.error(itErr.message); setSaving(false); return; }
     toast.success("Transfer created as draft");
     setSaving(false);
