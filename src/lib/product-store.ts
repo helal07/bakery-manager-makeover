@@ -194,6 +194,7 @@ export async function updateProduct(
   if (patch.unit !== undefined) row.unit = patch.unit || null;
   if (patch.price !== undefined) row.price = patch.price;
   if (patch.cost !== undefined) row.cost = patch.cost;
+  if (patch.transferPrice !== undefined) row.transfer_price = patch.transferPrice;
   if (patch.mfgDate !== undefined) row.mfg_date = patch.mfgDate || null;
   if (patch.expiryDate !== undefined) row.expiry_date = patch.expiryDate || null;
   if (patch.shelfLifeDays !== undefined) row.shelf_life_days = patch.shelfLifeDays ?? null;
