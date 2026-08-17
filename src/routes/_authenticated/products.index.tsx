@@ -368,6 +368,7 @@ function Products() {
                     <Th>Product</Th>
                     <Th>Business Location</Th>
                     <Th>Unit Purchase Price</Th>
+                    <Th>Supply Price</Th>
                     <Th>Selling Price</Th>
                     <Th>Current stock</Th>
                     <Th>Product Type</Th>
