@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { PermissionGate } from "@/components/permission-gate";
+import { defaultSupplyPrice } from "@/lib/transfer-pricing";
 
 export const Route = createFileRoute("/_authenticated/transfers/new")({
   head: () => ({ meta: [{ title: "New Transfer · Muzahid Food" }] }),
