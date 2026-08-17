@@ -137,12 +137,13 @@ export async function addProduct(
       unit: p.unit ?? null,
       price: p.price,
       cost: p.cost ?? 0,
+      transfer_price: p.transferPrice ?? 0,
       mfg_date: mfg,
       expiry_date: expiry,
       shelf_life_days: p.shelfLifeDays ?? null,
       image_url: p.imageUrl ?? null,
     })
-    .select("id,sku,name,category,unit,price,cost,mfg_date,expiry_date,shelf_life_days,image_url")
+    .select("id,sku,name,category,unit,price,cost,transfer_price,mfg_date,expiry_date,shelf_life_days,image_url")
     .single();
   if (error) throw friendlySkuError(error, p.sku);
 
