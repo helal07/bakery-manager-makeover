@@ -155,6 +155,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
             category: p.category,
             unit: p.unit ?? "",
             price: String(p.price),
+            transferPrice: p.transferPrice ? String(p.transferPrice) : "",
             stock: String(p.stock),
             threshold: String(p.threshold),
             shelfLifeDays: p.shelfLifeDays !== undefined ? String(p.shelfLifeDays) : "",
