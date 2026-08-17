@@ -172,6 +172,7 @@ export async function addProduct(
     unit: data.unit ?? undefined,
     price: Number(data.price) || 0,
     cost: Number(data.cost) || 0,
+    transferPrice: Number(data.transfer_price) || 0,
     stock: opening,
     threshold,
     mfgDate: data.mfg_date ?? undefined,
