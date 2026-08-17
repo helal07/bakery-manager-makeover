@@ -212,10 +212,11 @@ function Products() {
 
   const exportCSV = () => {
     const headers = [
-      "SKU","Product","Category","Business Location","Unit Purchase Price","Selling Price","Current Stock","Product Type",
+      "SKU","Product","Category","Business Location","Unit Purchase Price","Supply Price","Selling Price","Current Stock","Product Type",
     ];
     const rows = filtered.map((p) => [
-      p.sku, p.name, p.category, currentShowroomName, p.cost.toFixed(2), p.price.toFixed(2), p.stock, "Single",
+      p.sku, p.name, p.category, currentShowroomName, p.cost.toFixed(2),
+      (p.transferPrice || p.cost).toFixed(2), p.price.toFixed(2), p.stock, "Single",
     ]);
     const csv = [headers, ...rows]
       .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
@@ -368,6 +369,7 @@ function Products() {
                     <Th>Product</Th>
                     <Th>Business Location</Th>
                     <Th>Unit Purchase Price</Th>
+                    <Th>Supply Price</Th>
                     <Th>Selling Price</Th>
                     <Th>Current stock</Th>
                     <Th>Product Type</Th>
@@ -443,6 +445,7 @@ function Products() {
                         <td className="px-3 py-3 font-medium">{p.name}</td>
                         <td className="px-3 py-3">{currentShowroomName}</td>
                         <td className="px-3 py-3">৳ {p.cost.toFixed(2)}</td>
+                        <td className="px-3 py-3">৳ {(p.transferPrice || p.cost).toFixed(2)}</td>
                         <td className="px-3 py-3">৳ {p.price.toFixed(2)}</td>
                         <td className="px-3 py-3">
                           <span className={low ? "text-destructive font-medium" : ""}>{p.stock} Pieces</span>

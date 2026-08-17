@@ -1088,6 +1088,7 @@ export type Database = {
           show_on_landing: boolean
           sku: string | null
           threshold: number
+          transfer_price: number
           unit: string | null
           updated_at: string
         }
@@ -1109,6 +1110,7 @@ export type Database = {
           show_on_landing?: boolean
           sku?: string | null
           threshold?: number
+          transfer_price?: number
           unit?: string | null
           updated_at?: string
         }
@@ -1130,6 +1132,7 @@ export type Database = {
           show_on_landing?: boolean
           sku?: string | null
           threshold?: number
+          transfer_price?: number
           unit?: string | null
           updated_at?: string
         }
@@ -2465,6 +2468,7 @@ export type Database = {
           product_id: string | null
           qty: number
           transfer_id: string
+          unit_price: number | null
           updated_at: string
         }
         Insert: {
@@ -2474,6 +2478,7 @@ export type Database = {
           product_id?: string | null
           qty?: number
           transfer_id: string
+          unit_price?: number | null
           updated_at?: string
         }
         Update: {
@@ -2483,6 +2488,7 @@ export type Database = {
           product_id?: string | null
           qty?: number
           transfer_id?: string
+          unit_price?: number | null
           updated_at?: string
         }
         Relationships: [

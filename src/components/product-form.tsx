@@ -35,6 +35,7 @@ type FormState = {
   category: ProductCategory;
   unit: string;
   price: string;
+  transferPrice: string;
   stock: string;
   threshold: string;
   shelfLifeDays: string;
@@ -47,6 +48,7 @@ const emptyForm: FormState = {
   category: "",
   unit: "",
   price: "",
+  transferPrice: "",
   stock: "",
   threshold: "",
   shelfLifeDays: "",
@@ -153,6 +155,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
             category: p.category,
             unit: p.unit ?? "",
             price: String(p.price),
+            transferPrice: p.transferPrice ? String(p.transferPrice) : "",
             stock: String(p.stock),
             threshold: String(p.threshold),
             shelfLifeDays: p.shelfLifeDays !== undefined ? String(p.shelfLifeDays) : "",
@@ -183,6 +186,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
               category: src.category,
               unit: src.unit ?? "",
               price: String(src.price),
+              transferPrice: src.transferPrice ? String(src.transferPrice) : "",
               stock: "0",
               threshold: String(src.threshold),
               shelfLifeDays: src.shelfLifeDays !== undefined ? String(src.shelfLifeDays) : "",
@@ -412,6 +416,7 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
         category: form.category,
         unit: form.unit || undefined,
         price: Number(form.price) || 0,
+        transferPrice: Number(form.transferPrice) || 0,
         threshold: Number(form.threshold) || 0,
         shelfLifeDays: shelf,
         imageUrl: form.imageUrl || undefined,
@@ -620,6 +625,21 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
               <div>
                 <Label htmlFor="p-price">Price (৳)</Label>
                 <Input id="p-price" type="number" min={0} step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              </div>
+              <div>
+                <Label htmlFor="p-transfer-price">Showroom supply price (৳)</Label>
+                <Input
+                  id="p-transfer-price"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="Defaults to production cost"
+                  value={form.transferPrice}
+                  onChange={(e) => setForm({ ...form, transferPrice: e.target.value })}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Price the factory charges a showroom on transfers.
+                </p>
               </div>
               <div>
                 <Label htmlFor="p-stock">{isEdit ? "Current stock" : "Opening stock"}</Label>

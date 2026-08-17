@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
 import { scopeTo } from "@/lib/scope";
+import { supplyPrice } from "@/lib/transfer-pricing";
 import {
   pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings,
 } from "@/lib/company-settings";
@@ -89,7 +90,7 @@ function ProfitLossPage() {
       // Transfers dispatched to showrooms
       let transferQ = sb
         .from("transfers")
-        .select("id,code,created_at,dest_showroom_id,transfer_items(qty,product_id,products(name,price))")
+        .select("id,code,created_at,dest_showroom_id,transfer_items(qty,unit_price,product_id,products(name,price,cost,transfer_price))")
 
         .gte("created_at", fromTs).lte("created_at", toTs)
         .order("created_at", { ascending: false });
@@ -166,13 +167,17 @@ function ProfitLossPage() {
       );
 
 
-      // Transfers
+      // Transfers — valued at the supply price actually charged to the showroom
       const tRows: TransferRow[] = [];
       for (const t of ((trans as any).data ?? []) as any[]) {
         for (const [i, it] of ((t.transfer_items ?? []) as any[]).entries()) {
           if (!it.product_id) continue;
           const qty = Math.abs(Number(it.qty) || 0);
-          const price = Number(it.products?.price) || 0;
+          const price = supplyPrice({
+            linePrice: it.unit_price,
+            productTransferPrice: it.products?.transfer_price,
+            productCost: it.products?.cost,
+          });
           tRows.push({
             key: `${t.id}-${i}`,
             date: String(t.created_at).slice(0, 10),
@@ -288,7 +293,7 @@ function ProfitLossPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4 no-print">
           <Kpi label="Materials consumed" value={money(totals.materialCost)} sub={`${materials.length} materials`} />
           <Kpi label="Production output" value={money(totals.producedValue)} sub={`${fmt(totals.producedQty, 2)} units`} />
-          <Kpi label="Transferred to showrooms" value={money(totals.transferredValue)} sub={`${transfers.length} lines`} />
+          <Kpi label="Supply value transferred" value={money(totals.transferredValue)} sub={`${transfers.length} lines`} />
           <Kpi label="Overheads" value={money(overheads)} />
           <Kpi label="Wastage loss" value={money(totals.wastageCost)} tone="rose" />
           <Kpi
@@ -301,7 +306,7 @@ function ProfitLossPage() {
 
         <div className="print-only print-summary">
           <div className="kpi"><div className="lbl">Materials Consumed</div><div className="val">{money(totals.materialCost)}</div></div>
-          <div className="kpi"><div className="lbl">Transferred Value</div><div className="val">{money(totals.transferredValue)}</div></div>
+          <div className="kpi"><div className="lbl">Supply Value</div><div className="val">{money(totals.transferredValue)}</div></div>
           <div className="kpi"><div className="lbl">Overheads + Wastage</div><div className="val">{money(overheads + totals.wastageCost)}</div></div>
           <div className="kpi"><div className="lbl">{totals.profit >= 0 ? "Net Profit" : "Net Loss"}</div><div className="val">{money(Math.abs(totals.profit))}</div><div className="sub">{totals.margin.toFixed(1)}% margin</div></div>
         </div>
@@ -309,7 +314,7 @@ function ProfitLossPage() {
         <Section title="Profit & Loss Summary">
           <table className="w-full text-sm">
             <tbody className="divide-y divide-border">
-              <SumLine label="Value transferred to showrooms" value={totals.transferredValue} />
+              <SumLine label="Supply value transferred to showrooms" value={totals.transferredValue} />
               <SumLine label="Production output value (at product price)" value={totals.producedValue} muted />
               <SumLine label="Raw materials consumed" value={-totals.materialCost} />
               <SumLine label="Production overheads" value={-overheads} />
@@ -348,7 +353,7 @@ function ProfitLossPage() {
 
         <Section title="Transferred to Showrooms">
           <Table
-            head={["Date", "Showroom", "Product", "Qty", "Unit price", "Value"]}
+            head={["Date", "Showroom", "Product", "Qty", "Supply price", "Value"]}
             empty={loading ? "Loading…" : "No transfers in this range"}
             rows={transfers.map((t) => [t.date, t.showroom, t.product, fmt(t.qty, 2), money(t.unitPrice), money(t.value)])}
             footer={["Total", "", "", "", "", money(totals.transferredValue)]}

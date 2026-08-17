@@ -10,6 +10,8 @@ export type Product = {
   category: ProductCategory;
   price: number;
   cost: number;
+  /** Default price charged when the factory supplies this product to a showroom. */
+  transferPrice: number;
   stock: number;
   threshold: number;
   mfgDate?: string;
@@ -27,6 +29,7 @@ export type ProductInput = {
   unit?: string;
   price: number;
   cost?: number;
+  transferPrice?: number;
   threshold?: number;
   mfgDate?: string;
   expiryDate?: string;
@@ -43,6 +46,7 @@ function mapRow(r: any, stockMap: Map<string, { qty: number; min: number }>): Pr
     category: (r.category ?? "Cake") as ProductCategory,
     price: Number(r.price) || 0,
     cost: Number(r.cost) || 0,
+    transferPrice: Number(r.transfer_price) || 0,
     stock: s?.qty ?? 0,
     threshold: s?.min ?? 0,
     mfgDate: r.mfg_date ?? undefined,
@@ -84,7 +88,7 @@ export async function loadProducts(
 ): Promise<Product[]> {
   let q = sb
     .from("products")
-    .select("id,sku,name,category,price,cost,mfg_date,expiry_date,shelf_life_days,image_url,is_active,unit")
+    .select("id,sku,name,category,price,cost,transfer_price,mfg_date,expiry_date,shelf_life_days,image_url,is_active,unit")
     .order("name");
   if (!opts?.includeInactive) q = q.eq("is_active", true);
   const { data: rows, error } = await q;
@@ -133,12 +137,13 @@ export async function addProduct(
       unit: p.unit ?? null,
       price: p.price,
       cost: p.cost ?? 0,
+      transfer_price: p.transferPrice ?? 0,
       mfg_date: mfg,
       expiry_date: expiry,
       shelf_life_days: p.shelfLifeDays ?? null,
       image_url: p.imageUrl ?? null,
     })
-    .select("id,sku,name,category,unit,price,cost,mfg_date,expiry_date,shelf_life_days,image_url")
+    .select("id,sku,name,category,unit,price,cost,transfer_price,mfg_date,expiry_date,shelf_life_days,image_url")
     .single();
   if (error) throw friendlySkuError(error, p.sku);
 
@@ -167,6 +172,7 @@ export async function addProduct(
     unit: data.unit ?? undefined,
     price: Number(data.price) || 0,
     cost: Number(data.cost) || 0,
+    transferPrice: Number(data.transfer_price) || 0,
     stock: opening,
     threshold,
     mfgDate: data.mfg_date ?? undefined,
@@ -188,6 +194,7 @@ export async function updateProduct(
   if (patch.unit !== undefined) row.unit = patch.unit || null;
   if (patch.price !== undefined) row.price = patch.price;
   if (patch.cost !== undefined) row.cost = patch.cost;
+  if (patch.transferPrice !== undefined) row.transfer_price = patch.transferPrice;
   if (patch.mfgDate !== undefined) row.mfg_date = patch.mfgDate || null;
   if (patch.expiryDate !== undefined) row.expiry_date = patch.expiryDate || null;
   if (patch.shelfLifeDays !== undefined) row.shelf_life_days = patch.shelfLifeDays ?? null;

@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { PermissionGate } from "@/components/permission-gate";
+import { defaultSupplyPrice } from "@/lib/transfer-pricing";
 
 export const Route = createFileRoute("/_authenticated/transfers/new")({
   head: () => ({ meta: [{ title: "New Transfer · Muzahid Food" }] }),
@@ -37,9 +38,11 @@ type Product = {
   sku: string | null;
   unit: string | null;
   category: string | null;
+  cost: number | null;
+  transfer_price: number | null;
 };
 type StockRow = { product_id: string; showroom_id: string | null; quantity: number };
-type Row = { product_id: string; qty: string };
+type Row = { product_id: string; qty: string; price: string };
 
 function NewTransferPage() {
   const navigate = useNavigate();
@@ -84,7 +87,7 @@ function NewTransferPage() {
     // Stock is read for the two locations involved only — never "all locations".
     const stockQ = sb.from("product_stock").select("product_id,showroom_id,quantity");
     const [{ data: p }, { data: sSrc }, { data: sDest }] = await Promise.all([
-      sb.from("products").select("id,name,sku,unit,category").eq("is_active", true).order("name"),
+      sb.from("products").select("id,name,sku,unit,category,cost,transfer_price").eq("is_active", true).order("name"),
       sourceLocId ? stockQ.eq("showroom_id", sourceLocId) : stockQ.is("showroom_id", null),
       dest
         ? sb.from("product_stock").select("product_id,showroom_id,quantity").eq("showroom_id", dest)
@@ -124,6 +127,10 @@ function NewTransferPage() {
     () => items.reduce((sum, r) => sum + (Number(r.qty) || 0), 0),
     [items],
   );
+  const totalValue = useMemo(
+    () => items.reduce((sum, r) => sum + (Number(r.qty) || 0) * (Number(r.price) || 0), 0),
+    [items],
+  );
   const hasOver = items.some((r) => (Number(r.qty) || 0) > stockAt(r.product_id, sourceLocId));
 
   const addProduct = (p: Product) => {
@@ -132,7 +139,8 @@ function NewTransferPage() {
         toast.info(`${p.name} already added`);
         return prev;
       }
-      return [...prev, { product_id: p.id, qty: "" }];
+      const price = defaultSupplyPrice({ transferPrice: p.transfer_price, cost: p.cost });
+      return [...prev, { product_id: p.id, qty: "", price: price ? String(price) : "" }];
     });
   };
   const setRow = (i: number, patch: Partial<Row>) =>
@@ -148,7 +156,7 @@ function NewTransferPage() {
     if (source !== "factory" && source === dest) { toast.error("Source and destination cannot be same"); return; }
 
     const clean = items
-      .map((r) => ({ product_id: r.product_id, qty: Number(r.qty) }))
+      .map((r) => ({ product_id: r.product_id, qty: Number(r.qty), price: Number(r.price) || 0 }))
       .filter((r) => r.product_id && r.qty > 0);
     if (clean.length === 0) { toast.error("Add at least one item with qty"); return; }
     for (const c of clean) {
@@ -175,7 +183,12 @@ function NewTransferPage() {
     if (error || !created) { toast.error(error?.message ?? "Failed"); setSaving(false); return; }
     const { error: itErr } = await sb
       .from("transfer_items")
-      .insert(clean.map((c) => ({ transfer_id: created.id, product_id: c.product_id, qty: c.qty })));
+      .insert(clean.map((c) => ({
+        transfer_id: created.id,
+        product_id: c.product_id,
+        qty: c.qty,
+        unit_price: c.price,
+      })));
     if (itErr) { toast.error(itErr.message); setSaving(false); return; }
     toast.success("Transfer created as draft");
     setSaving(false);
@@ -407,18 +420,35 @@ function NewTransferPage() {
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                        <div className="mt-2.5 flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="any"
-                            placeholder="Qty"
-                            value={row.qty}
-                            onChange={(e) => setRow(i, { qty: e.target.value })}
-                            className={`h-9 ${over ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                          />
-                          <span className="text-xs text-muted-foreground w-12 shrink-0">{p?.unit ?? ""}</span>
+                        <div className="mt-2.5 grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] text-muted-foreground">Qty {p?.unit ? `(${p.unit})` : ""}</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="any"
+                              placeholder="Qty"
+                              value={row.qty}
+                              onChange={(e) => setRow(i, { qty: e.target.value })}
+                              className={`h-9 ${over ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-muted-foreground">Unit price (৳)</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="Supply price"
+                              value={row.price}
+                              onChange={(e) => setRow(i, { price: e.target.value })}
+                              className="h-9"
+                            />
+                          </div>
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1.5 text-right tabular-nums">
+                          Line total ৳{(qtyNum * (Number(row.price) || 0)).toFixed(2)}
+                        </p>
                         {over && (
                           <p className="text-xs text-destructive mt-1.5">Exceeds available stock</p>
                         )}
@@ -437,6 +467,10 @@ function NewTransferPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total qty</span>
                 <span className="font-medium tabular-nums">{totalUnits}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Supply value</span>
+                <span className="font-semibold tabular-nums">৳{totalValue.toFixed(2)}</span>
               </div>
               <Button
                 className="w-full"
