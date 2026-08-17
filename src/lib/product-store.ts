@@ -10,6 +10,8 @@ export type Product = {
   category: ProductCategory;
   price: number;
   cost: number;
+  /** Default price charged when the factory supplies this product to a showroom. */
+  transferPrice: number;
   stock: number;
   threshold: number;
   mfgDate?: string;
@@ -27,6 +29,7 @@ export type ProductInput = {
   unit?: string;
   price: number;
   cost?: number;
+  transferPrice?: number;
   threshold?: number;
   mfgDate?: string;
   expiryDate?: string;
@@ -43,6 +46,7 @@ function mapRow(r: any, stockMap: Map<string, { qty: number; min: number }>): Pr
     category: (r.category ?? "Cake") as ProductCategory,
     price: Number(r.price) || 0,
     cost: Number(r.cost) || 0,
+    transferPrice: Number(r.transfer_price) || 0,
     stock: s?.qty ?? 0,
     threshold: s?.min ?? 0,
     mfgDate: r.mfg_date ?? undefined,
