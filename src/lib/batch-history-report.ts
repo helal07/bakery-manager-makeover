@@ -107,38 +107,38 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>Daily Production Report</title>
 <style>
-  @page { size: A4 landscape; margin: 5mm; }
+  @page { size: Legal landscape; margin: 6mm; }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:#111; margin:0; }
-  #sheet { overflow: hidden; page-break-after: avoid; break-after: avoid; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:#000; margin:0; }
   #pg { transform-origin: top left; }
-  .top { border-bottom:1.6px solid #000; padding-bottom:3px; margin-bottom:4px; text-align:center; }
-  .co { font-size:19px; font-weight:800; line-height:1.15; }
-  .ad { font-size:11px; color:#333; }
-  .ti { font-size:14px; font-weight:800; }
-  .dt { font-size:10px; color:#444; }
-  .sum { display:flex; flex-wrap:wrap; justify-content:center; gap:2px 14px; font-size:11px; font-weight:600; margin:0 0 5px; }
-  .sum span b { font-weight:800; }
-  table { border-collapse:collapse; width:100%; font-size:11px; table-layout:fixed; }
-  th, td { border:0.8px solid #777; padding:3px 3px; line-height:1.25; word-wrap:break-word; font-weight:600; }
-  thead th { background:#dbe5f1; font-weight:800; text-align:center; color:#000; }
-  th.grp { background:#cfdcee; font-size:10.5px; }
+  .top { border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:6px; text-align:center; }
+  .co { font-size:24px; font-weight:800; line-height:1.15; }
+  .ad { font-size:13px; color:#222; }
+  .ti { font-size:17px; font-weight:800; }
+  .dt { font-size:12px; color:#333; }
+  .sum { display:flex; flex-wrap:wrap; justify-content:center; gap:2px 18px; font-size:13px; font-weight:700; margin:0 0 7px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; table-layout:fixed; }
+  th, td { border:1px solid #444; padding:4px 4px; line-height:1.25; word-wrap:break-word; font-weight:700; }
+  thead th { background:#dbe5f1; font-weight:800; text-align:center; color:#000; font-size:14px; }
+  th.grp { background:#cfdcee; font-size:13px; }
   tfoot th { background:#eef2f7; font-weight:800; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
   .r { text-align:right; }
-  .ac { width:9mm; background:#fff; }
-  th.cb { width:14mm; }
-  th.cd { width:18mm; }
-  th.cp { width:34mm; }
-  th.cq { width:13mm; }
+  .ac { width:11mm; background:#fff; }
+  th.cb { width:17mm; }
+  th.cd { width:21mm; }
+  th.cp { width:40mm; }
+  th.cq { width:15mm; }
   td.nw { white-space:nowrap; }
   td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-  tr { page-break-inside: avoid; }
-  .sg { margin-top:10px; display:flex; justify-content:space-between; font-size:11px; font-weight:600; }
-  .sg div { border-top:1px solid #333; padding-top:3px; width:58mm; text-align:center; }
-  .ft { margin-top:4px; font-size:9px; color:#555; display:flex; justify-content:space-between; }
+  tr, td, th { page-break-inside: avoid; break-inside: avoid; }
+  .sg { margin-top:12px; display:flex; justify-content:space-between; font-size:13px; font-weight:700; page-break-inside:avoid; }
+  .sg div { border-top:1px solid #333; padding-top:4px; width:70mm; text-align:center; }
+  .ft { margin-top:5px; font-size:11px; color:#333; display:flex; justify-content:space-between; }
 </style></head><body>
-<div id="sheet"><div id="pg">
+<div id="pg">
   <div class="top">
     <div class="co">${esc(company.name)}</div>
     ${
@@ -174,26 +174,17 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   </table>
   <div class="sg"><div>Artisan</div><div>Production Manager</div><div>Owner / Accounts</div></div>
   <div class="ft"><span>"Act." columns are filled in by hand — quantity actually taken by the artisan. Material quantities are in the unit shown in each column header.</span><span>${esc(company.name)}</span></div>
-</div></div>
+</div>
 <script>window.onload=function(){
   var fit=function(){
     var pg=document.getElementById('pg');
-    // A4 landscape printable area at 96dpi minus 5mm margins
-    var W=(297-10)/25.4*96, H=(210-10)/25.4*96;
-    var sheet=document.getElementById('sheet');
-    // Clamp the printed flow to exactly one sheet so the scaled-down content
-    // cannot push a second (mostly blank) page.
-    sheet.style.width=W+'px'; sheet.style.height=H+'px';
-    var apply=function(s){ pg.style.transform='scale('+s+')'; pg.style.width=(W/s)+'px'; };
-    // Binary search the largest scale whose laid-out content still fits the sheet height.
-    var lo=0.35, hi=2.2, best=0.35;
-    for(var i=0;i<18;i++){
-      var mid=(lo+hi)/2;
-      apply(mid);
-      // measure real height at this width
-      if(pg.scrollHeight*mid<=H && pg.scrollWidth*mid<=W+1){ best=mid; lo=mid; } else { hi=mid; }
-    }
-    apply(best);
+    // Legal landscape printable width at 96dpi minus 6mm margins. Height is NOT
+    // clamped: the report may flow onto as many pages as it needs.
+    var W=(355.6-12)/25.4*96;
+    var natural=pg.scrollWidth;
+    var s=1;
+    if(natural>W){ s=Math.max(0.7, W/natural); }
+    if(s<1){ pg.style.transform='scale('+s+')'; pg.style.width=(W/s)+'px'; }
     setTimeout(function(){window.print()},250);
   };
   if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); } else { fit(); }
