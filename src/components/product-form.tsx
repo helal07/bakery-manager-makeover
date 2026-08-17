@@ -627,6 +627,21 @@ export function ProductForm({ editId, from }: { editId?: string; from?: string }
                 <Input id="p-price" type="number" min={0} step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
               </div>
               <div>
+                <Label htmlFor="p-transfer-price">Showroom supply price (৳)</Label>
+                <Input
+                  id="p-transfer-price"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="Defaults to production cost"
+                  value={form.transferPrice}
+                  onChange={(e) => setForm({ ...form, transferPrice: e.target.value })}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Price the factory charges a showroom on transfers.
+                </p>
+              </div>
+              <div>
                 <Label htmlFor="p-stock">{isEdit ? "Current stock" : "Opening stock"}</Label>
                 <Input
                   id="p-stock"
