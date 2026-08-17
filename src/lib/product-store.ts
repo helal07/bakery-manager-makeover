@@ -88,7 +88,7 @@ export async function loadProducts(
 ): Promise<Product[]> {
   let q = sb
     .from("products")
-    .select("id,sku,name,category,price,cost,mfg_date,expiry_date,shelf_life_days,image_url,is_active,unit")
+    .select("id,sku,name,category,price,cost,transfer_price,mfg_date,expiry_date,shelf_life_days,image_url,is_active,unit")
     .order("name");
   if (!opts?.includeInactive) q = q.eq("is_active", true);
   const { data: rows, error } = await q;
