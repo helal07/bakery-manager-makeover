@@ -420,18 +420,35 @@ function NewTransferPage() {
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                        <div className="mt-2.5 flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="any"
-                            placeholder="Qty"
-                            value={row.qty}
-                            onChange={(e) => setRow(i, { qty: e.target.value })}
-                            className={`h-9 ${over ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                          />
-                          <span className="text-xs text-muted-foreground w-12 shrink-0">{p?.unit ?? ""}</span>
+                        <div className="mt-2.5 grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] text-muted-foreground">Qty {p?.unit ? `(${p.unit})` : ""}</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="any"
+                              placeholder="Qty"
+                              value={row.qty}
+                              onChange={(e) => setRow(i, { qty: e.target.value })}
+                              className={`h-9 ${over ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-muted-foreground">Unit price (৳)</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="Supply price"
+                              value={row.price}
+                              onChange={(e) => setRow(i, { price: e.target.value })}
+                              className="h-9"
+                            />
+                          </div>
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1.5 text-right tabular-nums">
+                          Line total ৳{(qtyNum * (Number(row.price) || 0)).toFixed(2)}
+                        </p>
                         {over && (
                           <p className="text-xs text-destructive mt-1.5">Exceeds available stock</p>
                         )}
@@ -450,6 +467,10 @@ function NewTransferPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total qty</span>
                 <span className="font-medium tabular-nums">{totalUnits}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Supply value</span>
+                <span className="font-semibold tabular-nums">৳{totalValue.toFixed(2)}</span>
               </div>
               <Button
                 className="w-full"
