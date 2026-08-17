@@ -293,7 +293,7 @@ function ProfitLossPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4 no-print">
           <Kpi label="Materials consumed" value={money(totals.materialCost)} sub={`${materials.length} materials`} />
           <Kpi label="Production output" value={money(totals.producedValue)} sub={`${fmt(totals.producedQty, 2)} units`} />
-          <Kpi label="Transferred to showrooms" value={money(totals.transferredValue)} sub={`${transfers.length} lines`} />
+          <Kpi label="Supply value transferred" value={money(totals.transferredValue)} sub={`${transfers.length} lines`} />
           <Kpi label="Overheads" value={money(overheads)} />
           <Kpi label="Wastage loss" value={money(totals.wastageCost)} tone="rose" />
           <Kpi
