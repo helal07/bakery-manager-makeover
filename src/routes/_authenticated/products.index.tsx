@@ -444,6 +444,7 @@ function Products() {
                         <td className="px-3 py-3 font-medium">{p.name}</td>
                         <td className="px-3 py-3">{currentShowroomName}</td>
                         <td className="px-3 py-3">৳ {p.cost.toFixed(2)}</td>
+                        <td className="px-3 py-3">৳ {(p.transferPrice || p.cost).toFixed(2)}</td>
                         <td className="px-3 py-3">৳ {p.price.toFixed(2)}</td>
                         <td className="px-3 py-3">
                           <span className={low ? "text-destructive font-medium" : ""}>{p.stock} Pieces</span>
