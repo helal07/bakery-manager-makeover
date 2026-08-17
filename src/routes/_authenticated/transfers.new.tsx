@@ -86,7 +86,7 @@ function NewTransferPage() {
     // Stock is read for the two locations involved only — never "all locations".
     const stockQ = sb.from("product_stock").select("product_id,showroom_id,quantity");
     const [{ data: p }, { data: sSrc }, { data: sDest }] = await Promise.all([
-      sb.from("products").select("id,name,sku,unit,category").eq("is_active", true).order("name"),
+      sb.from("products").select("id,name,sku,unit,category,cost,transfer_price").eq("is_active", true).order("name"),
       sourceLocId ? stockQ.eq("showroom_id", sourceLocId) : stockQ.is("showroom_id", null),
       dest
         ? sb.from("product_stock").select("product_id,showroom_id,quantity").eq("showroom_id", dest)
