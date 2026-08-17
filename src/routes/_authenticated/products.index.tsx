@@ -212,10 +212,11 @@ function Products() {
 
   const exportCSV = () => {
     const headers = [
-      "SKU","Product","Category","Business Location","Unit Purchase Price","Selling Price","Current Stock","Product Type",
+      "SKU","Product","Category","Business Location","Unit Purchase Price","Supply Price","Selling Price","Current Stock","Product Type",
     ];
     const rows = filtered.map((p) => [
-      p.sku, p.name, p.category, currentShowroomName, p.cost.toFixed(2), p.price.toFixed(2), p.stock, "Single",
+      p.sku, p.name, p.category, currentShowroomName, p.cost.toFixed(2),
+      (p.transferPrice || p.cost).toFixed(2), p.price.toFixed(2), p.stock, "Single",
     ]);
     const csv = [headers, ...rows]
       .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
