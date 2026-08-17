@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { toast } from "sonner";
 import { scopeTo } from "@/lib/scope";
+import { supplyPrice } from "@/lib/transfer-pricing";
 import {
   pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings,
 } from "@/lib/company-settings";
