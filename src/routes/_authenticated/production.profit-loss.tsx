@@ -166,13 +166,17 @@ function ProfitLossPage() {
       );
 
 
-      // Transfers
+      // Transfers — valued at the supply price actually charged to the showroom
       const tRows: TransferRow[] = [];
       for (const t of ((trans as any).data ?? []) as any[]) {
         for (const [i, it] of ((t.transfer_items ?? []) as any[]).entries()) {
           if (!it.product_id) continue;
           const qty = Math.abs(Number(it.qty) || 0);
-          const price = Number(it.products?.price) || 0;
+          const price = supplyPrice({
+            linePrice: it.unit_price,
+            productTransferPrice: it.products?.transfer_price,
+            productCost: it.products?.cost,
+          });
           tRows.push({
             key: `${t.id}-${i}`,
             date: String(t.created_at).slice(0, 10),
