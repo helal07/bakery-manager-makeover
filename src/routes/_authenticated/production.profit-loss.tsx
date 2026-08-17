@@ -89,7 +89,7 @@ function ProfitLossPage() {
       // Transfers dispatched to showrooms
       let transferQ = sb
         .from("transfers")
-        .select("id,code,created_at,dest_showroom_id,transfer_items(qty,product_id,products(name,price))")
+        .select("id,code,created_at,dest_showroom_id,transfer_items(qty,unit_price,product_id,products(name,price,cost,transfer_price))")
 
         .gte("created_at", fromTs).lte("created_at", toTs)
         .order("created_at", { ascending: false });
