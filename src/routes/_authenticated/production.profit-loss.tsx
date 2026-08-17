@@ -314,7 +314,7 @@ function ProfitLossPage() {
         <Section title="Profit & Loss Summary">
           <table className="w-full text-sm">
             <tbody className="divide-y divide-border">
-              <SumLine label="Value transferred to showrooms" value={totals.transferredValue} />
+              <SumLine label="Supply value transferred to showrooms" value={totals.transferredValue} />
               <SumLine label="Production output value (at product price)" value={totals.producedValue} muted />
               <SumLine label="Raw materials consumed" value={-totals.materialCost} />
               <SumLine label="Production overheads" value={-overheads} />
