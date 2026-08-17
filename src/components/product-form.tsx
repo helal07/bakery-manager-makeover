@@ -35,6 +35,7 @@ type FormState = {
   category: ProductCategory;
   unit: string;
   price: string;
+  transferPrice: string;
   stock: string;
   threshold: string;
   shelfLifeDays: string;
@@ -47,6 +48,7 @@ const emptyForm: FormState = {
   category: "",
   unit: "",
   price: "",
+  transferPrice: "",
   stock: "",
   threshold: "",
   shelfLifeDays: "",
