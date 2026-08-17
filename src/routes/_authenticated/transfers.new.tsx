@@ -37,9 +37,11 @@ type Product = {
   sku: string | null;
   unit: string | null;
   category: string | null;
+  cost: number | null;
+  transfer_price: number | null;
 };
 type StockRow = { product_id: string; showroom_id: string | null; quantity: number };
-type Row = { product_id: string; qty: string };
+type Row = { product_id: string; qty: string; price: string };
 
 function NewTransferPage() {
   const navigate = useNavigate();
