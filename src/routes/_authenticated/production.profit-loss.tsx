@@ -353,7 +353,7 @@ function ProfitLossPage() {
 
         <Section title="Transferred to Showrooms">
           <Table
-            head={["Date", "Showroom", "Product", "Qty", "Unit price", "Value"]}
+            head={["Date", "Showroom", "Product", "Qty", "Supply price", "Value"]}
             empty={loading ? "Loading…" : "No transfers in this range"}
             rows={transfers.map((t) => [t.date, t.showroom, t.product, fmt(t.qty, 2), money(t.unitPrice), money(t.value)])}
             footer={["Total", "", "", "", "", money(totals.transferredValue)]}
