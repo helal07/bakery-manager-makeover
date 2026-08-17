@@ -306,7 +306,7 @@ function ProfitLossPage() {
 
         <div className="print-only print-summary">
           <div className="kpi"><div className="lbl">Materials Consumed</div><div className="val">{money(totals.materialCost)}</div></div>
-          <div className="kpi"><div className="lbl">Transferred Value</div><div className="val">{money(totals.transferredValue)}</div></div>
+          <div className="kpi"><div className="lbl">Supply Value</div><div className="val">{money(totals.transferredValue)}</div></div>
           <div className="kpi"><div className="lbl">Overheads + Wastage</div><div className="val">{money(overheads + totals.wastageCost)}</div></div>
           <div className="kpi"><div className="lbl">{totals.profit >= 0 ? "Net Profit" : "Net Loss"}</div><div className="val">{money(Math.abs(totals.profit))}</div><div className="sub">{totals.margin.toFixed(1)}% margin</div></div>
         </div>
