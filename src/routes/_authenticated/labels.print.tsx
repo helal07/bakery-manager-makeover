@@ -273,6 +273,13 @@ function PrintLabelsPage() {
   );
 }
 
+function fmtDate(iso: string): string {
+  if (!iso || iso === "—") return "—";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return iso;
+  return `${d}-${m}-${y.slice(-2)}`;
+}
+
 function LabelCell({
   info,
   company,
@@ -301,7 +308,7 @@ function LabelCell({
       <div className="w-full">
         <div className="label-name">{info.productName}</div>
         <div className="label-meta">
-          <b>MFG:</b> {info.mfgDate || "—"} · <b>EXP:</b> {info.expiryDate || "—"}
+          <b>MFG:</b> <b>{fmtDate(info.mfgDate)}</b> · <b>EXP:</b> <b>{fmtDate(info.expiryDate)}</b>
         </div>
       </div>
       <div className="label-price">MRP: ৳{info.price.toFixed(2)}</div>
