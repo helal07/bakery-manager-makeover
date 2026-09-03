@@ -174,13 +174,14 @@ function BatchHistoryPage() {
       const ledRes = await scopeTo(
         sb
           .from("stock_ledger")
-          .select("id,ref_id,product_id,qty,kind,created_at,products(name,price)")
+          .select("id,ref_id,product_id,qty,kind,created_at,products(name,price,transfer_price)")
           .in("kind", ["production", "production_void"])
           .gte("created_at", `${from}T00:00:00.000Z`)
           .lte("created_at", `${to}T23:59:59.999Z`)
           .order("created_at", { ascending: false }),
         null,
       );
+
       if (cancel) return;
       if (ledRes.error) {
         setDenied(true);
@@ -266,11 +267,13 @@ function BatchHistoryPage() {
           qty: netQty.get(batchId) ?? (Number(r.qty) || 0),
 
           price: Number(r.products?.price) || 0,
+          transferPrice: Number(r.products?.transfer_price) || 0,
           materials: mats,
           materialCost: mats.reduce((s, m) => s + m.cost, 0),
           overhead: ohByBatch.get(batchId) ?? 0,
         };
       });
+
 
       setBatches(list);
       setLoading(false);
@@ -332,8 +335,10 @@ function BatchHistoryPage() {
     cost: b.materialCost,
     overhead: b.overhead,
     value: b.qty * b.price,
+    supplyPrice: b.transferPrice,
     materials: b.materials,
   }));
+
 
 
   const doPrint = () => {
