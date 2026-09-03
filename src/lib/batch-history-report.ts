@@ -205,7 +205,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
     <span><b>Produced Qty:</b> ${num(totals.qty, 3)}</span>
     <span><b>Raw Materials Cost:</b> ${money(totals.cost)}</span>
     <span><b>Overhead:</b> ${money(totals.overhead)}</span>
-    <span><b>Supply Value:</b> ${money(totals.supplyPrice)}</span>
+    <span><b>Total Showroom Supply Price:</b> ${money(totals.supplyPrice)}</span>
   </div>
   ${tablesHtml}
   <div class="sg"><div>Artisan</div><div>Production Manager</div><div>Owner / Accounts</div></div>
