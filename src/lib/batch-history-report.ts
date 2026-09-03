@@ -115,7 +115,8 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
       })
       .join("");
 
-    const footCells = blockCols
+    const blockColTotals = blockCols.map((c) => rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
+    const footCells = blockColTotals
       .map((t) => `<th class="r">${t ? qty(t) : ""}</th><th class="ac"></th>`)
       .join("");
 
@@ -150,6 +151,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
         </table>
       </div>`;
   };
+
 
   const tablesHtml = hasBlocks
     ? blocks.map(renderBlock).join("")
