@@ -73,8 +73,9 @@ function chunkColumns(cols: MatCol[], perBlock: number): MatCol[][] {
 /**
  * Batch history production report: one row per batch, one material column per
  * raw material. Material columns are split into blocks so each printed sheet is
- * large and readable; the identity columns (Batch, Product, Qty, Supply Price)
- * repeat on every block so a loose page is never ambiguous.
+ * large and readable; the identity columns (Batch, Product, Qty) repeat on every
+ * block so a loose page is never ambiguous. Total Showroom Supply Price is shown
+ * only in the top summary, not per batch.
  */
 export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchReportOptions) {
   const cols = materialColumns(rows);
@@ -89,7 +90,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   );
   const colTotals = cols.map((c) => rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
 
-  const perBlock = 8;
+  const perBlock = 9;
   const blocks = chunkColumns(cols, perBlock);
   const hasBlocks = blocks.length > 0;
 
@@ -109,7 +110,6 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
           <td class="mono">#${esc(r.batchNo)}</td>
           <td class="pr">${esc(r.productName)}</td>
           <td class="r">${num(r.qty, 3)}</td>
-          <td class="r">${money(r.supplyPrice)}</td>
           ${cells}
         </tr>`;
       })
@@ -125,7 +125,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
         ? `<div class="block-label">Materials ${index + 1} of ${blocks.length} — ${esc(blockCols.map(colLabel).join(", "))}</div>`
         : "";
 
-    const span = 4 + blockCols.length * 2;
+    const span = 3 + blockCols.length * 2;
 
     return `
       <div class="block${index > 0 ? " new-page" : ""}">
@@ -136,7 +136,6 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
               <th rowspan="2" class="cb">Batch</th>
               <th rowspan="2" class="cp">Product</th>
               <th rowspan="2" class="cq">Qty</th>
-              <th rowspan="2" class="cs">Supply Price</th>
               ${groupHead}
             </tr>
             <tr>${subHead}</tr>
@@ -145,7 +144,6 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
           <tfoot><tr>
             <th colspan="2" style="text-align:left">${rows.length} batch(es)</th>
             <th class="r">${num(totals.qty, 3)}</th>
-            <th class="r">${money(totals.supplyPrice)}</th>
             ${footCells}
           </tr></tfoot>
         </table>
@@ -180,10 +178,9 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   tfoot { display: table-footer-group; }
   .r { text-align:right; }
   .ac { width:14mm; background:#fff; }
-  th.cb { width:22mm; }
-  th.cp { width:52mm; }
-  th.cq { width:18mm; }
-  th.cs { width:26mm; }
+  th.cb { width:24mm; }
+  th.cp { width:58mm; }
+  th.cq { width:20mm; }
   td.nw { white-space:nowrap; }
   td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -208,7 +205,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
     <span><b>Produced Qty:</b> ${num(totals.qty, 3)}</span>
     <span><b>Raw Materials Cost:</b> ${money(totals.cost)}</span>
     <span><b>Overhead:</b> ${money(totals.overhead)}</span>
-    <span><b>Supply Value:</b> ${money(totals.supplyPrice)}</span>
+    <span><b>Total Showroom Supply Price:</b> ${money(totals.supplyPrice)}</span>
   </div>
   ${tablesHtml}
   <div class="sg"><div>Artisan</div><div>Production Manager</div><div>Owner / Accounts</div></div>
