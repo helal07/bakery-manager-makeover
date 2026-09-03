@@ -77,10 +77,12 @@ type Batch = {
   productName: string;
   qty: number;
   price: number;
+  transferPrice: number;
   materials: { name: string; unit: string; qty: number; cost: number }[];
   materialCost: number;
   overhead: number;
 };
+
 
 function BatchHistoryPage() {
   const search = Route.useSearch();
