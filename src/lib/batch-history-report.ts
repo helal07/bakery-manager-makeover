@@ -178,10 +178,9 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   tfoot { display: table-footer-group; }
   .r { text-align:right; }
   .ac { width:14mm; background:#fff; }
-  th.cb { width:22mm; }
-  th.cp { width:52mm; }
-  th.cq { width:18mm; }
-  th.cs { width:26mm; }
+  th.cb { width:24mm; }
+  th.cp { width:58mm; }
+  th.cq { width:20mm; }
   td.nw { white-space:nowrap; }
   td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
