@@ -16,6 +16,7 @@ export type BatchReportRow = {
   cost: number;
   overhead: number;
   value: number;
+  supplyPrice: number;
   materials: BatchMaterialLine[];
 };
 
@@ -24,6 +25,8 @@ const esc = (v: unknown) =>
 
 const num = (n: number, d = 2) =>
   new Intl.NumberFormat("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: d }).format(Number(n) || 0);
+
+const money = (n: number) => `৳${num(n, 2)}`;
 
 export type BatchReportOptions = {
   company: CompanySettings;
@@ -59,11 +62,19 @@ const qty = (n: number) => {
 
 const colLabel = (c: MatCol) => `${c.name}${c.unit ? ` (${c.unit})` : ""}`;
 
+function chunkColumns(cols: MatCol[], perBlock: number): MatCol[][] {
+  const blocks: MatCol[][] = [];
+  for (let i = 0; i < cols.length; i += perBlock) {
+    blocks.push(cols.slice(i, i + perBlock));
+  }
+  return blocks;
+}
+
 /**
- * A4 landscape matrix production report: one row per batch, one column group per
- * raw material with an "Estimated" (system deducted) and a blank "Actual" column
- * the production manager fills in by hand so the owner can compare.
- * Layout is tuned to fit everything on a single sheet.
+ * Batch history production report: one row per batch, one material column per
+ * raw material. Material columns are split into blocks so each printed sheet is
+ * large and readable; the identity columns (Batch, Product, Qty, Supply Price)
+ * repeat on every block so a loose page is never ambiguous.
  */
 export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchReportOptions) {
   const cols = materialColumns(rows);
@@ -72,71 +83,114 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
       qty: a.qty + r.qty,
       cost: a.cost + r.cost,
       overhead: a.overhead + r.overhead,
-      value: a.value + r.value,
+      supplyPrice: a.supplyPrice + r.qty * r.supplyPrice,
     }),
-    { qty: 0, cost: 0, overhead: 0, value: 0 },
+    { qty: 0, cost: 0, overhead: 0, supplyPrice: 0 },
   );
   const colTotals = cols.map((c) => rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
 
-  const groupHead = cols.map((c) => `<th class="grp" colspan="2">${esc(colLabel(c))}</th>`).join("");
-  const subHead = cols.map(() => `<th class="r">Est.</th><th class="ac">Act.</th>`).join("");
+  const perBlock = 8;
+  const blocks = chunkColumns(cols, perBlock);
+  const hasBlocks = blocks.length > 0;
 
-  const body = rows
-    .map((r) => {
-      const cells = cols
-        .map((c) => {
-          const v = cellFor(r, c);
-          return `<td class="r">${v === null ? "" : qty(v)}</td><td class="ac"></td>`;
-        })
-        .join("");
-      return `<tr>
-        <td class="mono">#${esc(r.batchNo)}</td>
-        <td class="nw">${esc(r.dateTime)}</td>
-        <td class="pr">${esc(r.productName)}</td>
-        <td class="r">${num(r.qty, 3)}</td>
-        ${cells}
-      </tr>`;
-    })
-    .join("");
+  const renderBlock = (blockCols: MatCol[], index: number) => {
+    const groupHead = blockCols.map((c) => `<th class="grp" colspan="2">${esc(colLabel(c))}</th>`).join("");
+    const subHead = blockCols.map(() => `<th class="r">Est.</th><th class="ac">Act.</th>`).join("");
 
-  const footCells = colTotals
-    .map((t) => `<th class="r">${t ? qty(t) : ""}</th><th class="ac"></th>`)
-    .join("");
+    const body = rows
+      .map((r) => {
+        const cells = blockCols
+          .map((c) => {
+            const v = cellFor(r, c);
+            return `<td class="r">${v === null ? "" : qty(v)}</td><td class="ac"></td>`;
+          })
+          .join("");
+        return `<tr>
+          <td class="mono">#${esc(r.batchNo)}</td>
+          <td class="pr">${esc(r.productName)}</td>
+          <td class="r">${num(r.qty, 3)}</td>
+          <td class="r">${money(r.supplyPrice)}</td>
+          ${cells}
+        </tr>`;
+      })
+      .join("");
 
-  const span = 4 + cols.length * 2;
+    const blockColTotals = blockCols.map((c) => rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
+    const footCells = blockColTotals
+      .map((t) => `<th class="r">${t ? qty(t) : ""}</th><th class="ac"></th>`)
+      .join("");
+
+    const blockLabel =
+      hasBlocks && blocks.length > 1
+        ? `<div class="block-label">Materials ${index + 1} of ${blocks.length} — ${esc(blockCols.map(colLabel).join(", "))}</div>`
+        : "";
+
+    const span = 4 + blockCols.length * 2;
+
+    return `
+      <div class="block${index > 0 ? " new-page" : ""}">
+        ${blockLabel}
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2" class="cb">Batch</th>
+              <th rowspan="2" class="cp">Product</th>
+              <th rowspan="2" class="cq">Qty</th>
+              <th rowspan="2" class="cs">Supply Price</th>
+              ${groupHead}
+            </tr>
+            <tr>${subHead}</tr>
+          </thead>
+          <tbody>${body || `<tr><td colspan="${span}" style="text-align:center;padding:10px">No batches in this period</td></tr>`}</tbody>
+          <tfoot><tr>
+            <th colspan="2" style="text-align:left">${rows.length} batch(es)</th>
+            <th class="r">${num(totals.qty, 3)}</th>
+            <th class="r">${money(totals.supplyPrice)}</th>
+            ${footCells}
+          </tr></tfoot>
+        </table>
+      </div>`;
+  };
+
+
+  const tablesHtml = hasBlocks
+    ? blocks.map(renderBlock).join("")
+    : renderBlock([], 0);
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>Daily Production Report</title>
 <style>
   @page { size: Legal landscape; margin: 6mm; }
   * { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:#000; margin:0; }
-  #pg { transform-origin: top left; }
-  .top { border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:6px; text-align:center; }
-  .co { font-size:24px; font-weight:800; line-height:1.15; }
-  .ad { font-size:13px; color:#222; }
-  .ti { font-size:17px; font-weight:800; }
-  .dt { font-size:12px; color:#333; }
-  .sum { display:flex; flex-wrap:wrap; justify-content:center; gap:2px 18px; font-size:13px; font-weight:700; margin:0 0 7px; }
-  table { border-collapse:collapse; width:100%; font-size:13px; table-layout:fixed; }
-  th, td { border:1px solid #444; padding:4px 4px; line-height:1.25; word-wrap:break-word; font-weight:700; }
-  thead th { background:#dbe5f1; font-weight:800; text-align:center; color:#000; font-size:14px; }
-  th.grp { background:#cfdcee; font-size:13px; }
-  tfoot th { background:#eef2f7; font-weight:800; }
+  .top { border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:8px; text-align:center; }
+  .co { font-size:26px; font-weight:900; line-height:1.15; }
+  .ad { font-size:14px; color:#222; }
+  .ti { font-size:19px; font-weight:900; }
+  .dt { font-size:14px; color:#333; font-weight:700; }
+  .sum { display:flex; flex-wrap:wrap; justify-content:center; gap:4px 24px; font-size:14px; font-weight:800; margin:0 0 10px; }
+  .block { width:100%; }
+  .block.new-page { page-break-before: always; }
+  .block-label { font-size:14px; font-weight:800; margin-bottom:4px; color:#111; }
+  table { border-collapse:collapse; width:100%; font-size:15px; table-layout:fixed; }
+  th, td { border:1.5px solid #000; padding:6px 5px; line-height:1.25; word-wrap:break-word; font-weight:800; }
+  thead th { background:#dbe5f1; font-weight:900; text-align:center; color:#000; font-size:16px; }
+  th.grp { background:#cfdcee; font-size:14px; }
+  tfoot th { background:#eef2f7; font-weight:900; }
   thead { display: table-header-group; }
   tfoot { display: table-footer-group; }
   .r { text-align:right; }
-  .ac { width:11mm; background:#fff; }
-  th.cb { width:17mm; }
-  th.cd { width:21mm; }
-  th.cp { width:40mm; }
-  th.cq { width:15mm; }
+  .ac { width:14mm; background:#fff; }
+  th.cb { width:22mm; }
+  th.cp { width:52mm; }
+  th.cq { width:18mm; }
+  th.cs { width:26mm; }
   td.nw { white-space:nowrap; }
   td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   tr, td, th { page-break-inside: avoid; break-inside: avoid; }
-  .sg { margin-top:12px; display:flex; justify-content:space-between; font-size:13px; font-weight:700; page-break-inside:avoid; }
-  .sg div { border-top:1px solid #333; padding-top:4px; width:70mm; text-align:center; }
-  .ft { margin-top:5px; font-size:11px; color:#333; display:flex; justify-content:space-between; }
+  .sg { margin-top:14px; display:flex; justify-content:space-between; font-size:14px; font-weight:800; page-break-inside:avoid; }
+  .sg div { border-top:1.5px solid #333; padding-top:5px; width:75mm; text-align:center; }
+  .ft { margin-top:6px; font-size:12px; color:#333; display:flex; justify-content:space-between; font-weight:700; }
 </style></head><body>
 <div id="pg">
   <div class="top">
@@ -152,47 +206,20 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   <div class="sum">
     <span><b>Batches:</b> ${rows.length}</span>
     <span><b>Produced Qty:</b> ${num(totals.qty, 3)}</span>
-    <span><b>Raw Materials Cost:</b> ${num(totals.cost)}</span>
-    <span><b>Overhead:</b> ${num(totals.overhead)}</span>
-    <span><b>Production Value:</b> ${num(totals.value)}</span>
+    <span><b>Raw Materials Cost:</b> ${money(totals.cost)}</span>
+    <span><b>Overhead:</b> ${money(totals.overhead)}</span>
+    <span><b>Supply Value:</b> ${money(totals.supplyPrice)}</span>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th rowspan="2" class="cb">Batch</th><th rowspan="2" class="cd">Date</th>
-        <th rowspan="2" class="cp">Product</th><th rowspan="2" class="cq">Qty</th>
-        ${groupHead}
-      </tr>
-      <tr>${subHead}</tr>
-    </thead>
-    <tbody>${body || `<tr><td colspan="${span}" style="text-align:center;padding:10px">No batches in this period</td></tr>`}</tbody>
-    <tfoot><tr>
-      <th colspan="3" style="text-align:left">${rows.length} batch(es)</th>
-      <th class="r">${num(totals.qty, 3)}</th>
-      ${footCells}
-    </tr></tfoot>
-  </table>
+  ${tablesHtml}
   <div class="sg"><div>Artisan</div><div>Production Manager</div><div>Owner / Accounts</div></div>
   <div class="ft"><span>"Act." columns are filled in by hand — quantity actually taken by the artisan. Material quantities are in the unit shown in each column header.</span><span>${esc(company.name)}</span></div>
 </div>
 <script>window.onload=function(){
-  var fit=function(){
-    var pg=document.getElementById('pg');
-    // Legal landscape printable width at 96dpi minus 6mm margins. Height is NOT
-    // clamped: the report may flow onto as many pages as it needs.
-    var W=(355.6-12)/25.4*96;
-    var natural=pg.scrollWidth;
-    var s=1;
-    if(natural>W){ s=Math.max(0.7, W/natural); }
-    if(s<1){ pg.style.transform='scale('+s+')'; pg.style.width=(W/s)+'px'; }
-    setTimeout(function(){window.print()},250);
-  };
-  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); } else { fit(); }
+  var print=function(){ window.print(); };
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(print); } else { print(); }
 }</script>
-
 </body></html>`;
 }
-
 
 export function printBatchHistoryReport(opts: BatchReportOptions) {
   const html = renderBatchHistoryHtml(opts);
@@ -228,7 +255,6 @@ export function exportBatchHistoryXlsx(opts: BatchReportOptions & { fileName: st
     sub.push("Estimated", "Actual");
   }
   aoa.push(group, sub);
-
 
   for (const r of rows) {
     const line: (string | number)[] = [`#${r.batchNo}`, r.dateTime, r.productName, r.qty];
