@@ -243,18 +243,16 @@ export function exportBatchHistoryXlsx(opts: BatchReportOptions & { fileName: st
   ];
 
   const group: (string | number)[] = ["Batch", "Date", "Product", "Quantity"];
-  const sub: (string | number)[] = ["", "", "", ""];
   for (const c of cols) {
-    group.push(colLabel(c), "");
-    sub.push("Estimated", "Actual");
+    group.push(colLabel(c));
   }
-  aoa.push(group, sub);
+  aoa.push(group);
 
   for (const r of rows) {
     const line: (string | number)[] = [`#${r.batchNo}`, r.dateTime, r.productName, r.qty];
     for (const c of cols) {
       const v = cellFor(r, c);
-      line.push(v === null ? "" : v, "");
+      line.push(v === null ? "" : v);
     }
     aoa.push(line);
   }
@@ -262,12 +260,13 @@ export function exportBatchHistoryXlsx(opts: BatchReportOptions & { fileName: st
   aoa.push([]);
   const foot: (string | number)[] = [`${rows.length} batch(es)`, "", "", t.qty];
   for (const c of cols) {
-    foot.push(rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0), "");
+    foot.push(rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
   }
   aoa.push(foot);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = [{ wch: 12 }, { wch: 20 }, { wch: 26 }, { wch: 10 }, ...cols.flatMap(() => [{ wch: 12 }, { wch: 10 }])];
+  ws["!cols"] = [{ wch: 12 }, { wch: 20 }, { wch: 26 }, { wch: 10 }, ...cols.map(() => ({ wch: 12 }))];
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Batch History");
   XLSX.writeFile(wb, fileName);
