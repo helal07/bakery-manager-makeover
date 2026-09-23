@@ -166,21 +166,21 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   .block { width:100%; }
   .block.new-page { page-break-before: always; }
   .block-label { font-size:14px; font-weight:800; margin-bottom:4px; color:#111; }
-  table { border-collapse:collapse; width:100%; font-size:15px; table-layout:fixed; }
-  th, td { border:1.5px solid #000; padding:6px 5px; line-height:1.25; word-wrap:break-word; font-weight:800; }
-  thead th { background:#dbe5f1; font-weight:900; text-align:center; color:#000; font-size:16px; }
-  th.grp { background:#cfdcee; font-size:14px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; table-layout:fixed; }
+  th, td { border:1.2px solid #000; padding:4px 3px; line-height:1.2; word-wrap:break-word; overflow-wrap:anywhere; font-weight:800; }
+  thead th { background:#dbe5f1; font-weight:900; text-align:center; color:#000; font-size:12.5px; vertical-align:bottom; }
   tfoot th { background:#eef2f7; font-weight:900; }
   thead { display: table-header-group; }
   tfoot { display: table-footer-group; }
   .r { text-align:right; }
-  .ac { width:14mm; background:#fff; }
-  th.cb { width:24mm; }
-  th.cp { width:58mm; }
-  th.cq { width:20mm; }
+  th.mat { font-size:12px; }
+  th.cb { width:15mm; }
+  th.cp { width:31mm; }
+  th.cq { width:14mm; }
   td.nw { white-space:nowrap; }
-  td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  td.pr { text-align:left; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
+
   tr, td, th { page-break-inside: avoid; break-inside: avoid; }
   .sg { margin-top:14px; display:flex; justify-content:space-between; font-size:14px; font-weight:800; page-break-inside:avoid; }
   .sg div { border-top:1.5px solid #333; padding-top:5px; width:75mm; text-align:center; }
