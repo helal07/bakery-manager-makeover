@@ -90,20 +90,19 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   );
   const colTotals = cols.map((c) => rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
 
-  const perBlock = 9;
+  const perBlock = 22;
   const blocks = chunkColumns(cols, perBlock);
   const hasBlocks = blocks.length > 0;
 
   const renderBlock = (blockCols: MatCol[], index: number) => {
-    const groupHead = blockCols.map((c) => `<th class="grp" colspan="2">${esc(colLabel(c))}</th>`).join("");
-    const subHead = blockCols.map(() => `<th class="r">Est.</th><th class="ac">Act.</th>`).join("");
+    const head = blockCols.map((c) => `<th class="r mat">${esc(colLabel(c))}</th>`).join("");
 
     const body = rows
       .map((r) => {
         const cells = blockCols
           .map((c) => {
             const v = cellFor(r, c);
-            return `<td class="r">${v === null ? "" : qty(v)}</td><td class="ac"></td>`;
+            return `<td class="r">${v === null ? "" : qty(v)}</td>`;
           })
           .join("");
         return `<tr>
@@ -116,16 +115,14 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
       .join("");
 
     const blockColTotals = blockCols.map((c) => rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
-    const footCells = blockColTotals
-      .map((t) => `<th class="r">${t ? qty(t) : ""}</th><th class="ac"></th>`)
-      .join("");
+    const footCells = blockColTotals.map((t) => `<th class="r">${t ? qty(t) : ""}</th>`).join("");
 
     const blockLabel =
       hasBlocks && blocks.length > 1
         ? `<div class="block-label">Materials ${index + 1} of ${blocks.length} — ${esc(blockCols.map(colLabel).join(", "))}</div>`
         : "";
 
-    const span = 3 + blockCols.length * 2;
+    const span = 3 + blockCols.length;
 
     return `
       <div class="block${index > 0 ? " new-page" : ""}">
@@ -133,12 +130,11 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
         <table>
           <thead>
             <tr>
-              <th rowspan="2" class="cb">Batch</th>
-              <th rowspan="2" class="cp">Product</th>
-              <th rowspan="2" class="cq">Qty</th>
-              ${groupHead}
+              <th class="cb">Batch</th>
+              <th class="cp">Product</th>
+              <th class="cq">Qty</th>
+              ${head}
             </tr>
-            <tr>${subHead}</tr>
           </thead>
           <tbody>${body || `<tr><td colspan="${span}" style="text-align:center;padding:10px">No batches in this period</td></tr>`}</tbody>
           <tfoot><tr>
@@ -149,6 +145,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
         </table>
       </div>`;
   };
+
 
 
   const tablesHtml = hasBlocks
@@ -169,21 +166,21 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   .block { width:100%; }
   .block.new-page { page-break-before: always; }
   .block-label { font-size:14px; font-weight:800; margin-bottom:4px; color:#111; }
-  table { border-collapse:collapse; width:100%; font-size:15px; table-layout:fixed; }
-  th, td { border:1.5px solid #000; padding:6px 5px; line-height:1.25; word-wrap:break-word; font-weight:800; }
-  thead th { background:#dbe5f1; font-weight:900; text-align:center; color:#000; font-size:16px; }
-  th.grp { background:#cfdcee; font-size:14px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; table-layout:fixed; }
+  th, td { border:1.2px solid #000; padding:4px 3px; line-height:1.2; word-wrap:break-word; overflow-wrap:anywhere; font-weight:800; }
+  thead th { background:#dbe5f1; font-weight:900; text-align:center; color:#000; font-size:12.5px; vertical-align:bottom; }
   tfoot th { background:#eef2f7; font-weight:900; }
   thead { display: table-header-group; }
   tfoot { display: table-footer-group; }
   .r { text-align:right; }
-  .ac { width:14mm; background:#fff; }
-  th.cb { width:24mm; }
-  th.cp { width:58mm; }
-  th.cq { width:20mm; }
+  th.mat { font-size:12px; }
+  th.cb { width:15mm; }
+  th.cp { width:31mm; }
+  th.cq { width:14mm; }
   td.nw { white-space:nowrap; }
-  td.pr { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  td.pr { text-align:left; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
+
   tr, td, th { page-break-inside: avoid; break-inside: avoid; }
   .sg { margin-top:14px; display:flex; justify-content:space-between; font-size:14px; font-weight:800; page-break-inside:avoid; }
   .sg div { border-top:1.5px solid #333; padding-top:5px; width:75mm; text-align:center; }
@@ -209,7 +206,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   </div>
   ${tablesHtml}
   <div class="sg"><div>Artisan</div><div>Production Manager</div><div>Owner / Accounts</div></div>
-  <div class="ft"><span>"Act." columns are filled in by hand — quantity actually taken by the artisan. Material quantities are in the unit shown in each column header.</span><span>${esc(company.name)}</span></div>
+  <div class="ft"><span>Material quantities are in the unit shown in each column header.</span><span>${esc(company.name)}</span></div>
 </div>
 <script>window.onload=function(){
   var print=function(){ window.print(); };
@@ -246,18 +243,16 @@ export function exportBatchHistoryXlsx(opts: BatchReportOptions & { fileName: st
   ];
 
   const group: (string | number)[] = ["Batch", "Date", "Product", "Quantity"];
-  const sub: (string | number)[] = ["", "", "", ""];
   for (const c of cols) {
-    group.push(colLabel(c), "");
-    sub.push("Estimated", "Actual");
+    group.push(colLabel(c));
   }
-  aoa.push(group, sub);
+  aoa.push(group);
 
   for (const r of rows) {
     const line: (string | number)[] = [`#${r.batchNo}`, r.dateTime, r.productName, r.qty];
     for (const c of cols) {
       const v = cellFor(r, c);
-      line.push(v === null ? "" : v, "");
+      line.push(v === null ? "" : v);
     }
     aoa.push(line);
   }
@@ -265,12 +260,13 @@ export function exportBatchHistoryXlsx(opts: BatchReportOptions & { fileName: st
   aoa.push([]);
   const foot: (string | number)[] = [`${rows.length} batch(es)`, "", "", t.qty];
   for (const c of cols) {
-    foot.push(rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0), "");
+    foot.push(rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
   }
   aoa.push(foot);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = [{ wch: 12 }, { wch: 20 }, { wch: 26 }, { wch: 10 }, ...cols.flatMap(() => [{ wch: 12 }, { wch: 10 }])];
+  ws["!cols"] = [{ wch: 12 }, { wch: 20 }, { wch: 26 }, { wch: 10 }, ...cols.map(() => ({ wch: 12 }))];
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Batch History");
   XLSX.writeFile(wb, fileName);
