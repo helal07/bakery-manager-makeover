@@ -90,20 +90,19 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   );
   const colTotals = cols.map((c) => rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
 
-  const perBlock = 9;
+  const perBlock = 22;
   const blocks = chunkColumns(cols, perBlock);
   const hasBlocks = blocks.length > 0;
 
   const renderBlock = (blockCols: MatCol[], index: number) => {
-    const groupHead = blockCols.map((c) => `<th class="grp" colspan="2">${esc(colLabel(c))}</th>`).join("");
-    const subHead = blockCols.map(() => `<th class="r">Est.</th><th class="ac">Act.</th>`).join("");
+    const head = blockCols.map((c) => `<th class="r mat">${esc(colLabel(c))}</th>`).join("");
 
     const body = rows
       .map((r) => {
         const cells = blockCols
           .map((c) => {
             const v = cellFor(r, c);
-            return `<td class="r">${v === null ? "" : qty(v)}</td><td class="ac"></td>`;
+            return `<td class="r">${v === null ? "" : qty(v)}</td>`;
           })
           .join("");
         return `<tr>
@@ -116,16 +115,14 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
       .join("");
 
     const blockColTotals = blockCols.map((c) => rows.reduce((a, r) => a + (cellFor(r, c) ?? 0), 0));
-    const footCells = blockColTotals
-      .map((t) => `<th class="r">${t ? qty(t) : ""}</th><th class="ac"></th>`)
-      .join("");
+    const footCells = blockColTotals.map((t) => `<th class="r">${t ? qty(t) : ""}</th>`).join("");
 
     const blockLabel =
       hasBlocks && blocks.length > 1
         ? `<div class="block-label">Materials ${index + 1} of ${blocks.length} — ${esc(blockCols.map(colLabel).join(", "))}</div>`
         : "";
 
-    const span = 3 + blockCols.length * 2;
+    const span = 3 + blockCols.length;
 
     return `
       <div class="block${index > 0 ? " new-page" : ""}">
@@ -133,12 +130,11 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
         <table>
           <thead>
             <tr>
-              <th rowspan="2" class="cb">Batch</th>
-              <th rowspan="2" class="cp">Product</th>
-              <th rowspan="2" class="cq">Qty</th>
-              ${groupHead}
+              <th class="cb">Batch</th>
+              <th class="cp">Product</th>
+              <th class="cq">Qty</th>
+              ${head}
             </tr>
-            <tr>${subHead}</tr>
           </thead>
           <tbody>${body || `<tr><td colspan="${span}" style="text-align:center;padding:10px">No batches in this period</td></tr>`}</tbody>
           <tfoot><tr>
@@ -149,6 +145,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
         </table>
       </div>`;
   };
+
 
 
   const tablesHtml = hasBlocks
