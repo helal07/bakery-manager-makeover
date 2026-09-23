@@ -211,16 +211,29 @@ function BatchHistoryPage() {
       let consumed: any[] = [];
       let overheads: any[] = [];
       if (ids.length) {
-        const [cRes, oRes] = await Promise.all([
-          sb
-            .from("raw_stock_ledger")
-            .select("ref_id,material_id,qty,kind,raw_materials(name,unit,cost)")
-            .in("kind", ["production_consume", "production_reverse"])
-            .in("ref_id", ids),
-          sb.from("production_overheads").select("batch_id,amount").in("batch_id", ids),
-        ]);
-        consumed = (cRes.data ?? []) as any[];
-        overheads = (oRes.data ?? []) as any[];
+        // Long id lists make the request URL exceed proxy limits (HTTP 414),
+        // so fetch in small chunks and merge the results.
+        const chunks: string[][] = [];
+        for (let i = 0; i < ids.length; i += 20) chunks.push(ids.slice(i, i + 20) as string[]);
+        for (const chunk of chunks) {
+          const [cRes, oRes] = await Promise.all([
+            sb
+              .from("raw_stock_ledger")
+              .select("ref_id,material_id,qty,kind,raw_materials(name,unit,cost)")
+              .in("kind", ["production_consume", "production_reverse"])
+              .in("ref_id", chunk),
+            sb.from("production_overheads").select("batch_id,amount").in("batch_id", chunk),
+          ]);
+          if (cancel) return;
+          if (cRes.error) {
+            setDenied(true);
+            setBatches([]);
+            setLoading(false);
+            return;
+          }
+          consumed = consumed.concat((cRes.data ?? []) as any[]);
+          overheads = overheads.concat((oRes.data ?? []) as any[]);
+        }
       }
 
       if (cancel) return;
