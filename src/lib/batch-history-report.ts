@@ -206,7 +206,7 @@ export function renderBatchHistoryHtml({ company, rangeLabel, rows }: BatchRepor
   </div>
   ${tablesHtml}
   <div class="sg"><div>Artisan</div><div>Production Manager</div><div>Owner / Accounts</div></div>
-  <div class="ft"><span>"Act." columns are filled in by hand — quantity actually taken by the artisan. Material quantities are in the unit shown in each column header.</span><span>${esc(company.name)}</span></div>
+  <div class="ft"><span>Material quantities are in the unit shown in each column header.</span><span>${esc(company.name)}</span></div>
 </div>
 <script>window.onload=function(){
   var print=function(){ window.print(); };
