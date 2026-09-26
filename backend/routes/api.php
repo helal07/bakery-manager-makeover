@@ -78,6 +78,7 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     Route::post('transfers/{id}/send', [TransferController::class, 'send'])->middleware('perm:inventory.transfer');
     Route::post('transfers/{id}/receive', [TransferController::class, 'receive'])->middleware('perm:inventory.receive');
     Route::post('transfers/{id}/approve-damaged', [TransferController::class, 'approveDamaged'])->middleware('perm:inventory.damaged_return');
+    Route::post('transfers/{id}/cancel', [TransferController::class, 'cancel'])->middleware('perm:inventory.transfer');
     Route::delete('transfers/{id}', [TransferController::class, 'destroy'])->middleware('perm:inventory.transfer');
 
     // ---------------- sales ----------------
