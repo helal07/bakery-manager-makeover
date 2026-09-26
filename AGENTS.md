@@ -14,3 +14,4 @@
 - The Laravel 12 + MySQL 8 rewrite lives in `backend/` (migrations, models, services, API controllers); it is deployed separately on Coolify, so never import it from `src/` — the React app talks to it over HTTP only.
 - `backend/` money columns are `decimal(14,2)` and quantity columns `decimal(14,4)`; ledger `qty` stays signed (IN positive, OUT negative) and `showroom_id NULL` means factory, matching the current database so no report total shifts.
 - Only Laravel 12 core plus `laravel/sanctum` may be used in `backend/`; any further package needs the user's approval first.
+- `backend/app/Services/` ports each database function one-to-one (same checks, same error text); money/qty maths uses `Num` (bcmath), never floats — so Laravel results match the current database exactly.
