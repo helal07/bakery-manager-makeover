@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiRawMaterialsWithStock } from "@/lib/stock-api";
 import { supabase } from "@/integrations/supabase/client";
 
 export type RawMaterial = {
@@ -13,6 +15,13 @@ export type RawMaterial = {
 const sb = supabase as any;
 
 export async function loadRawMaterials(_showroomId?: string | null): Promise<RawMaterial[]> {
+  if (isLaravel()) {
+    const rows = await apiRawMaterialsWithStock();
+    return rows.map((m) => ({
+      id: m.id, name: m.name, unit: m.unit, stock: m.stock,
+      threshold: m.min_stock, expiry: "", cost: m.cost,
+    }));
+  }
   const { data: mats, error } = await sb
     .from("raw_materials")
     .select("id,name,unit,min_stock,cost,is_active")

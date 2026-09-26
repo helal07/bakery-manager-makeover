@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiProductsResult, apiProductStockResult, apiRawMaterialsWithStock } from "@/lib/stock-api";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell, Card } from "@/components/app-shell";
@@ -48,8 +50,8 @@ function FactoryStockPage() {
       // Factory = showroom_id IS NULL
       const [mats, prodStock, prodMeta] = await Promise.all([
         loadRawMaterials(null),
-        sb.from("product_stock").select("product_id,quantity").is("showroom_id", null),
-        sb.from("products").select("id,name,sku,unit,price,cost").eq("is_active", true),
+        isLaravel() ? apiProductStockResult(null) : sb.from("product_stock").select("product_id,quantity").is("showroom_id", null),
+        isLaravel() ? apiProductsResult() : sb.from("products").select("id,name,sku,unit,price,cost").eq("is_active", true),
       ]);
       if (prodStock.error) throw prodStock.error;
       if (prodMeta.error) throw prodMeta.error;

@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiProductsResult, apiProductStockResult, apiRawMaterialsWithStock } from "@/lib/stock-api";
 import { createFileRoute } from "@tanstack/react-router";
 import { PermissionGate } from "@/components/permission-gate";
 
@@ -71,8 +73,8 @@ function ProductStockPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const [{ data: products, error: pErr }, stockRes] = await Promise.all([
-      sb.from("products").select("id,name,sku,category,unit").eq("is_active", true).order("name"),
-      isFactory
+      isLaravel() ? apiProductsResult() : sb.from("products").select("id,name,sku,category,unit").eq("is_active", true).order("name"),
+      isLaravel() ? apiProductStockResult(isFactory ? null : loc) : isFactory
         ? sb.from("product_stock").select("product_id,quantity,min_stock,updated_at").is("showroom_id", null)
         : sb.from("product_stock").select("product_id,quantity,min_stock,updated_at").eq("showroom_id", loc),
     ]);

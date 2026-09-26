@@ -65,3 +65,13 @@ export async function apiRawMaterialsWithStock() {
     stock: map.get(m.id) ?? 0,
   }));
 }
+
+/** Supabase-style `{ data, error }` wrappers so screens can swap one call. */
+export async function apiProductsResult() {
+  try { return { data: await apiProducts(), error: null as any }; }
+  catch (error: any) { return { data: [] as ApiProduct[], error }; }
+}
+export async function apiProductStockResult(loc: string | null) {
+  try { return { data: await apiProductStock(loc), error: null as any }; }
+  catch (error: any) { return { data: [] as Awaited<ReturnType<typeof apiProductStock>>, error }; }
+}
