@@ -8,6 +8,13 @@
       "when": 1790444947008,
       "tag": "0000_ledger_ref_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790445486102,
+      "tag": "0001_performance_indexes",
+      "breakpoints": true
     }
   ]
 }
