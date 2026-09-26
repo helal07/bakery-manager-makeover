@@ -1,6 +1,7 @@
 # Bakery Manager — Laravel 12 + MySQL 8 backend
 
 Step 1: **database schema + Eloquent models**. Step 2: **business services**.
+Step 3: **HTTP API — Sanctum login, middleware, controllers, routes**.
 Nothing here touches the running React app; it is a separate deployable.
 
 ## What is in here now
@@ -9,6 +10,11 @@ Nothing here touches the running React app; it is a separate deployable.
 backend/
   database/migrations/    7 migration files, 60 tables
   app/Models/             58 models with full relationships
+  app/Services/           5 service classes (all business rules)
+  app/Http/Middleware/    staff / location / permission guards
+  app/Http/Controllers/   8 API controllers
+  routes/api.php          the whole API surface
+  bootstrap/app.php       middleware aliases + JSON error shapes
 ```
 
 Table coverage matches the current database one-for-one (57 business tables),
@@ -76,8 +82,33 @@ Passing `null` as the actor means a trusted system call (the old service_role).
 
 Requires the PHP `bcmath` extension (built into the official PHP Docker images; not a Composer package).
 
+## API layer (step 3)
+
+Every business route is wrapped in four layers, so no controller re-checks access:
+
+| Middleware | Replaces |
+| --- | --- |
+| `auth:sanctum` | Supabase GoTrue session |
+| `staff` | `assert_app_staff()` |
+| `location` | `user_can_access_location()` — reads the `X-Location-Id` header; absent or `factory` means `showroom_id IS NULL` |
+| `perm:<key>` | `user_has_permission()` — keys are identical to `src/lib/rbac-matrix.ts`; several keys mean "any of" |
+
+`BusinessRuleException` renders as JSON: 403 when it was a permission problem, otherwise 422, keeping the exact message text the database functions produced.
+
+| Controller | Endpoints |
+| --- | --- |
+| `AuthController` | `POST auth/login`, `POST auth/logout`, `GET auth/me`, `POST auth/password` — `me` returns profile, roles, permission list and allowed locations in one call (replaces the RBAC cache round-trips) |
+| `ProductionBatchController` | `GET/POST production/batches`, `PUT/DELETE production/batches/{id}` — the index is the replacement for `batch_history_page`: permission checked once, then three queries per page (batches, ingredients, overheads), never one per ingredient row |
+| `StockController` | `GET stock/products`, `stock/materials`, `stock/ledger`; `POST stock/adjust`, `stock/damaged-sale`, `stock/wastage` |
+| `TransferController` | `GET transfers`, `GET transfers/{id}`, `POST transfers`, `{id}/send`, `{id}/receive`, `{id}/approve-damaged`, `DELETE transfers/{id}` (drafts only) |
+| `SaleController` | `GET sales` (server-side date / payment-status / search filtering + totals), `GET sales/{id}` (full invoice bundle), `POST sales`, `{id}/payments`, `{id}/returns` |
+| `PurchaseController` | `GET purchases`, `GET purchases/{id}`, `POST purchases`, `PUT/DELETE purchases/{id}` (edit reverses the old intake first, so stock can never go negative), `{id}/payments`, `{id}/returns` |
+| `LedgerController` | `GET ledger/customer/{id}`, `ledger/supplier/{id}`, `ledger/outstanding` |
+| `CatalogController` | products, raw materials, recipes, sub-recipes, customers, suppliers, plus `GET lookups` for every dropdown in one request |
+
+Paging is uniform: `?limit` (max 200, default 50) and `?offset`, and every list
+returns `{ total, limit, offset, rows }` — plus `totals` where money is involved.
+
 ## Next steps (not done yet)
 
-- Step 3 — `app/Http/Controllers/Api/` + `routes/api.php`, including the paged
-  batch-history query that replaces `batch_history_page`.
 - Step 4 — `src/lib/api-client.ts` in the React app, replacing the current data client.
