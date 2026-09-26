@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiRequest } from "@/lib/api-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { Input } from "@/components/ui/input";
@@ -341,6 +343,14 @@ function HistorySheet({
     let alive = true;
     (async () => {
       setLoading(true);
+      if (isLaravel()) {
+        try {
+          const r = await apiRequest<any>("GET", "stock/ledger", { location: showroomId ?? "factory", query: { type: "material", id: row.id, limit: 50 } });
+          if (alive) setEntries((r?.rows ?? []).map((x: any) => ({ ...x, qty: Number(x.qty) })) as LedgerRow[]);
+        } catch (e: any) { if (alive) toast.error(e?.message ?? "Failed"); }
+        if (alive) setLoading(false);
+        return;
+      }
       let q = sb
         .from("raw_stock_ledger")
         .select("id,kind,qty,note,created_at,ref_type")

@@ -1,4 +1,5 @@
 import { isLaravel } from "@/lib/backend-mode";
+import { apiRequest } from "@/lib/api-client";
 import { apiProductsResult, apiProductStockResult, apiRawMaterialsWithStock } from "@/lib/stock-api";
 import { createFileRoute } from "@tanstack/react-router";
 import { PermissionGate } from "@/components/permission-gate";
@@ -281,6 +282,15 @@ function AdjustDialog({
     const n = Number(qty);
     if (!qty || Number.isNaN(n) || n === 0) { toast.error("Enter a non-zero quantity"); return; }
     setSaving(true);
+    if (isLaravel()) {
+      try {
+        await apiRequest("POST", "stock/adjust", { location: showroomId ?? "factory", body: { type: "product", id: row.product.id, qty: n, note: note || null } });
+      } catch (e: any) { setSaving(false); toast.error(e?.message ?? "Failed"); return; }
+      setSaving(false);
+      toast.success("Stock adjusted");
+      onSaved();
+      return;
+    }
     const { error } = await sb.rpc("commit_stock_movement", {
       _product_id: row.product.id,
       _showroom_id: showroomId,
@@ -350,6 +360,14 @@ function HistorySheet({
     let alive = true;
     (async () => {
       setLoading(true);
+      if (isLaravel()) {
+        try {
+          const r = await apiRequest<any>("GET", "stock/ledger", { location: showroomId ?? "factory", query: { type: "product", id: row.product.id, limit: 50 } });
+          if (alive) setEntries((r?.rows ?? []).map((x: any) => ({ ...x, qty: Number(x.qty) })) as LedgerRow[]);
+        } catch (e: any) { if (alive) toast.error(e?.message ?? "Failed"); }
+        if (alive) setLoading(false);
+        return;
+      }
       let q = sb
         .from("stock_ledger")
         .select("id,kind,qty,note,created_at,ref_type")
