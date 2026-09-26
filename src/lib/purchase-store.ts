@@ -1,5 +1,39 @@
 import { supabase } from "@/integrations/supabase/client";
 import { scopeTo } from "@/lib/scope";
+import { isLaravel } from "@/lib/backend-mode";
+import { api, apiRequest } from "@/lib/api-client";
+
+const mapApiItem = (it: any): PurchaseItem => ({
+  materialId: it.material_id, name: it.name, unit: it.unit ?? "",
+  qty: Number(it.qty) || 0, price: Number(it.price) || 0,
+});
+const mapApiPurchase = (r: any, items: any[], supplierName?: string | null): Purchase => ({
+  id: r.code || r.id,
+  uuid: r.id,
+  supplier: supplierName ?? r.supplier_name ?? "",
+  supplier_id: r.supplier_id ?? undefined,
+  category: r.category_name ?? undefined,
+  date: String(r.purchase_date ?? "").slice(0, 10),
+  total: Number(r.total) || 0,
+  paid: Number(r.paid) || 0,
+  status: r.status as Purchase["status"],
+  payment: (r.payment ?? undefined) as Purchase["payment"],
+  items: (items ?? []).map(mapApiItem),
+});
+/** Laravel works out subtotal from the lines; any gap to the entered total becomes discount/tax. */
+const apiPurchaseBody = (input: { supplier_id: string; date: string; items: PurchaseItem[]; total: number; paid: number; payment: string }) => {
+  const sum = input.items.reduce((a, it) => a + it.qty * it.price, 0);
+  const diff = Math.round((input.total - sum) * 100) / 100;
+  return {
+    supplierId: input.supplier_id || null,
+    purchaseDate: input.date,
+    discount: diff < 0 ? -diff : 0,
+    tax: diff > 0 ? diff : 0,
+    paid: input.paid,
+    payment: input.payment,
+    items: input.items.map((it) => ({ materialId: it.materialId, qty: it.qty, price: it.price })),
+  };
+};
 
 const sb = supabase as any;
 
@@ -89,6 +123,17 @@ export async function deleteCategory(id: string): Promise<void> {
 }
 
 export async function loadPurchases(showroomId?: string | null): Promise<Purchase[]> {
+  if (isLaravel()) {
+    const out: Purchase[] = [];
+    for (let offset = 0; ; offset += 200) {
+      const page = await apiRequest<{ total: number; rows: any[] }>("GET", "purchases", {
+        query: { limit: 200, offset }, location: showroomId ?? "factory",
+      });
+      out.push(...(page.rows ?? []).map((r) => mapApiPurchase(r, r.items)));
+      if (!page.rows?.length || offset + 200 >= Number(page.total ?? 0)) break;
+    }
+    return out;
+  }
   let q = sb
     .from("purchases")
     .select(
@@ -134,6 +179,17 @@ export type SavePurchaseInput = {
 };
 
 export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> {
+  if (isLaravel()) {
+    try {
+      const res = await apiRequest<{ id: string }>("POST", "purchases", {
+        body: apiPurchaseBody(input), location: input.showroom_id ?? "factory",
+      });
+      const saved = await loadPurchase(res.id);
+      if (saved) return saved;
+      return { id: res.id, uuid: res.id, supplier: "", supplier_id: input.supplier_id, date: input.date,
+        total: input.total, paid: input.paid, status: "Received", payment: input.payment, items: input.items };
+    } catch (e) { throw explainStockRpcError(e); }
+  }
   const { data: userData } = await supabase.auth.getUser();
   const due = Math.max(0, input.total - input.paid);
   const code = input.code ?? `PO-${Date.now().toString().slice(-6)}`;
@@ -225,6 +281,10 @@ export async function savePurchase(input: SavePurchaseInput): Promise<Purchase> 
 
 /** Load a single purchase (by DB uuid) with its item lines, for editing. */
 export async function loadPurchase(uuid: string): Promise<Purchase | null> {
+  if (isLaravel()) {
+    const res = await api.get<{ purchase: any; supplier: any; items: any[] }>(`purchases/${uuid}`);
+    return res?.purchase ? mapApiPurchase(res.purchase, res.items, res.supplier?.name) : null;
+  }
   const { data, error } = await sb
     .from("purchases")
     .select(
@@ -266,6 +326,10 @@ export async function updatePurchase(
   uuid: string,
   input: Omit<SavePurchaseInput, "showroom_id"> & { showroom_id?: string | null },
 ): Promise<void> {
+  if (isLaravel()) {
+    try { await api.put(`purchases/${uuid}`, apiPurchaseBody(input)); return; }
+    catch (e) { throw explainStockRpcError(e); }
+  }
   const { data: oldRows, error: e0 } = await sb
     .from("purchase_items")
     .select("material_id,qty")
@@ -333,6 +397,14 @@ export async function updatePurchasePayment(
   paid: number,
   total: number,
 ): Promise<void> {
+  if (isLaravel()) {
+    // The server records payments as entries; post only the newly paid amount.
+    const current = await loadPurchase(uuid);
+    const extra = Math.round((paid - (current?.paid ?? 0)) * 100) / 100;
+    if (extra < 0) throw new Error("A payment already recorded cannot be reduced here. Record a supplier refund instead.");
+    if (extra > 0) await api.post(`purchases/${uuid}/payments`, { amount: extra, method: payment === "Paid" ? "Cash" : null });
+    return;
+  }
   const due = Math.max(0, total - paid);
   const { error } = await sb
     .from("purchases")
@@ -346,6 +418,10 @@ export async function updatePurchasePayment(
  * Stock is reversed through the ledger RPC (negative qty) so history stays auditable.
  */
 export async function deletePurchase(uuid: string): Promise<void> {
+  if (isLaravel()) {
+    try { await api.del(`purchases/${uuid}`); return; }
+    catch (e) { throw explainStockRpcError(e); }
+  }
   const { data: rows, error } = await sb
     .from("purchase_items")
     .select("material_id,qty")

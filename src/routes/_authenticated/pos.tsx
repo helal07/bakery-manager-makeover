@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiRequest } from "@/lib/api-client";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PermissionGate } from "@/components/permission-gate";
 
@@ -633,9 +635,30 @@ function PosPage() {
 
     const externalRef = `TX-${Math.floor(Math.random() * 9000) + 1000}`;
     try {
-      const { data: userRes } = await supabase.auth.getUser();
       const paymentMode = mode === "cash" ? "cash" : mode === "card" ? "card" : mode === "credit" ? "due" : due > 0 ? "partial" : "cash";
-      const { data: sale, error: sErr } = await sb
+      // Multi-tender payment rows
+      const payRows: any[] =
+        mode === "cash" ? [{ method: "cash", amount: total }] :
+        mode === "card" ? [{ method: "card", amount: total }] :
+        mode === "credit" ? [] :
+        tenders.filter((t) => t.amount > 0).map((t) => ({ method: t.method, amount: t.amount, reference: t.reference ?? null }));
+      let sale: { id: string };
+      if (isLaravel()) {
+        // One server call: sale + lines + payments + stock out in one transaction.
+        const res = await apiRequest<{ id: string }>("POST", "sales", {
+          location: loc ?? "factory",
+          body: {
+            customerId, customerName: customerName.trim() || "Walk-in Customer",
+            customerPhone: customerPhone.trim() || null, registerId: register?.id ?? null,
+            discount, tax: 0, shipping, paid, paymentMode, externalRef,
+            items: items.map(({ p, qty }) => ({ productId: p.id, qty, unitPrice: netPriceFor(p) })),
+            payments: payRows,
+          },
+        });
+        sale = { id: res.id };
+      } else {
+      const { data: userRes } = await supabase.auth.getUser();
+      const { data: saleRow, error: sErr } = await sb
         .from("sales")
         .insert({
           showroom_id: loc,
@@ -650,7 +673,8 @@ function PosPage() {
         })
         .select("id")
         .single();
-      if (sErr || !sale) throw sErr ?? new Error("Insert failed");
+      if (sErr || !saleRow) throw sErr ?? new Error("Insert failed");
+      sale = saleRow;
 
       const lines = items.map(({ p, qty }) => {
         const up = netPriceFor(p);
@@ -663,15 +687,7 @@ function PosPage() {
       if (liErr) throw liErr;
 
 
-      // Multi-tender payment rows
-      const payRows: any[] =
-        mode === "cash" ? [{ sale_id: sale.id, method: "cash", amount: total }] :
-        mode === "card" ? [{ sale_id: sale.id, method: "card", amount: total }] :
-        mode === "credit" ? [] :
-        tenders.filter((t) => t.amount > 0).map((t) => ({
-          sale_id: sale.id, method: t.method, amount: t.amount, reference: t.reference ?? null,
-        }));
-      if (payRows.length) await sb.from("sale_payments").insert(payRows);
+      if (payRows.length) await sb.from("sale_payments").insert(payRows.map((r) => ({ ...r, sale_id: sale.id })));
 
       const rpcs: Promise<unknown>[] = [];
       for (const { p, qty } of items) {
@@ -684,6 +700,7 @@ function PosPage() {
         }));
       }
       await Promise.all(rpcs);
+      }
       invalidate("pos:products:");
 
       // Stash invoice snapshot for the print window

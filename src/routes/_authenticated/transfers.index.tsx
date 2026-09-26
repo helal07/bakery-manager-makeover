@@ -14,6 +14,18 @@ import { PermissionGate } from "@/components/permission-gate";
 import { getCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
 import { printTransferSheet } from "@/lib/transfer-sheet";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { isLaravel } from "@/lib/backend-mode";
+import { apiProductsResult } from "@/lib/stock-api";
+import {
+  apiTransferList, apiTransferItems, apiTransferSend, apiTransferReceive,
+  apiTransferApproveDamaged, apiTransferCancel,
+} from "@/lib/transfer-api";
+
+const loadItems = async (id: string) =>
+  isLaravel() ? { data: await apiTransferItems(id) } : await sb.from("transfer_items").select("*").eq("transfer_id", id);
+const runApi = async (fn: () => Promise<unknown>): Promise<string | null> => {
+  try { await fn(); return null; } catch (e: any) { return e?.message ?? "Failed"; }
+};
 
 
 export const Route = createFileRoute("/_authenticated/transfers/")({
@@ -63,7 +75,7 @@ function TransfersPage() {
   useEffect(() => { getCompany().then(setCompany).catch(() => {}); }, []);
 
   const printSheet = async (row: TransferRow) => {
-    const { data } = await sb.from("transfer_items").select("*").eq("transfer_id", row.id);
+    const { data } = await loadItems(row.id);
     const list = (data ?? []) as TransferItem[];
     if (list.length === 0) { toast.error("No items in this transfer"); return; }
     const ok = printTransferSheet({
@@ -89,6 +101,15 @@ function TransfersPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    if (isLaravel()) {
+      try {
+        const [t, p] = await Promise.all([apiTransferList(), apiProductsResult()]);
+        setRows(t as TransferRow[]);
+        setProducts(p.data as unknown as Product[]);
+      } catch (e: any) { toast.error(e?.message ?? "Failed to load transfers"); }
+      setLoading(false);
+      return;
+    }
     let q = sb.from("transfers").select("*").order("created_at", { ascending: false }).limit(200);
     // Strict location scope: only transfers this location sent or is receiving.
     // No scope selected means Factory (source/dest IS NULL).
@@ -109,13 +130,18 @@ function TransfersPage() {
 
   const openTransfer = async (row: TransferRow) => {
     setOpenView(row);
-    const { data } = await sb.from("transfer_items").select("*").eq("transfer_id", row.id);
+    const { data } = await loadItems(row.id);
     setViewItems((data ?? []) as TransferItem[]);
   };
 
   const sendTransfer = async (row: TransferRow) => {
     const isDamaged = row.kind === "damaged_return";
-    const { data: items } = await sb.from("transfer_items").select("*").eq("transfer_id", row.id);
+    if (isLaravel()) {
+      const err = await runApi(() => apiTransferSend(row.id));
+      if (err) { toast.error(err); return; }
+      toast.success("Transfer sent"); setOpenView(null); load(); return;
+    }
+    const { data: items } = await loadItems(row.id);
     const list = (items ?? []) as TransferItem[];
     if (list.length === 0) { toast.error("Add items first"); return; }
     const productIds = list.map((i) => i.product_id);
@@ -162,6 +188,13 @@ function TransfersPage() {
   };
 
   const receiveTransfer = async (row: TransferRow) => {
+    if (isLaravel()) {
+      const damaged = row.kind === "damaged_return";
+      const err = await runApi(() => damaged ? apiTransferApproveDamaged(row.id) : apiTransferReceive(row.id));
+      if (err) { toast.error(err); return; }
+      toast.success(damaged ? "Received into repurpose queue" : "Transfer received");
+      setOpenView(null); load(); return;
+    }
     if (row.kind === "damaged_return") {
       const { error } = await sb.rpc("commit_damaged_transfer_approve", { _transfer_id: row.id });
       if (error) { toast.error(error.message); return; }
@@ -169,7 +202,7 @@ function TransfersPage() {
       setOpenView(null); load();
       return;
     }
-    const { data: items } = await sb.from("transfer_items").select("*").eq("transfer_id", row.id);
+    const { data: items } = await loadItems(row.id);
     const list = (items ?? []) as TransferItem[];
     for (const it of list) {
       const { error } = await sb.rpc("commit_stock_movement", {
@@ -195,7 +228,9 @@ function TransfersPage() {
 
   const cancelTransfer = async (row: TransferRow) => {
     setCancelBusy(true);
-    const { error } = await sb.from("transfers").update({ status: "cancelled" }).eq("id", row.id);
+    const error = isLaravel()
+      ? await runApi(() => apiTransferCancel(row.id)).then((m) => (m ? { message: m } : null))
+      : (await sb.from("transfers").update({ status: "cancelled" }).eq("id", row.id)).error;
     setCancelBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Cancelled");

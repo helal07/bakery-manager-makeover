@@ -1,3 +1,6 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiProducts } from "@/lib/stock-api";
+import { apiTransferCreate, apiDamagedStock } from "@/lib/transfer-api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { AppShell, Card } from "@/components/app-shell";
@@ -44,6 +47,15 @@ function DamagedReturnPage() {
   const load = useCallback(async () => {
     if (!source) { setLoading(false); return; }
     setLoading(true);
+    if (isLaravel()) {
+      try {
+        const [p, d] = await Promise.all([apiProducts(), apiDamagedStock(source)]);
+        setProducts(p as unknown as Product[]);
+        setDamaged((d as unknown as DamagedRow[]).filter((r) => Number(r.quantity) > 0));
+      } catch (e: any) { toast.error(e?.message ?? "Failed to load damaged stock"); }
+      setLoading(false);
+      return;
+    }
     const [{ data: p }, { data: d }] = await Promise.all([
       sb.from("products").select("id,name,sku,unit").eq("is_active", true).order("name"),
       sb.from("damaged_stock").select("product_id,showroom_id,quantity").eq("showroom_id", source),
@@ -82,6 +94,18 @@ function DamagedReturnPage() {
     if (!clean.length) { toast.error("Add at least one item"); return; }
     if (hasOver) { toast.error("Some quantities exceed damaged stock"); return; }
     setSaving(true);
+    if (isLaravel()) {
+      try {
+        await apiTransferCreate(source, {
+          destShowroomId: source, kind: "damaged_return", note: note || null,
+          items: clean.map((c) => ({ productId: c.product_id, qty: c.qty })),
+        });
+        toast.success("Damaged return created — send to factory from transfers list");
+        navigate({ to: "/transfers" });
+      } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+      setSaving(false);
+      return;
+    }
     const code = `DR-${Date.now().toString(36).toUpperCase()}`;
     // Factory dest = we need a "factory" placeholder. Use source_showroom_id=source, dest_showroom_id=null represents factory.
     // But transfers.dest_showroom_id is NOT NULL in schema — use source as dest sentinel and rely on kind='damaged_return'.

@@ -43,12 +43,14 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     Route::post('materials', [CatalogController::class, 'storeMaterial'])->middleware('perm:production.raw_materials.manage');
     Route::put('materials/{id}', [CatalogController::class, 'updateMaterial'])->middleware('perm:production.raw_materials.manage');
 
+    Route::get('recipes', [CatalogController::class, 'allRecipes'])->middleware('perm:production.recipes.view');
     Route::get('recipes/{productId}', [CatalogController::class, 'recipe'])->middleware('perm:production.recipes.view');
     Route::put('recipes/{productId}', [CatalogController::class, 'saveRecipe'])->middleware('perm:production.recipes.manage');
 
     Route::get('sub-recipes', [CatalogController::class, 'subRecipes'])->middleware('perm:production.recipes.view');
     Route::post('sub-recipes', [CatalogController::class, 'saveSubRecipe'])->middleware('perm:production.sub_recipes.manage');
     Route::put('sub-recipes/{id}', [CatalogController::class, 'saveSubRecipe'])->middleware('perm:production.sub_recipes.manage');
+    Route::delete('sub-recipes/{id}', [CatalogController::class, 'destroySubRecipe'])->middleware('perm:production.sub_recipes.manage');
 
     Route::get('customers', [CatalogController::class, 'customers'])->middleware('perm:contacts.customers.view');
     Route::get('suppliers', [CatalogController::class, 'suppliers'])->middleware('perm:contacts.suppliers.view');
@@ -66,6 +68,7 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     // ---------------- stock ----------------
     Route::get('stock/products', [StockController::class, 'products'])->middleware('perm:inventory.view');
     Route::get('stock/materials', [StockController::class, 'materials'])->middleware('perm:production.factory_stock.view,inventory.view');
+    Route::get('stock/damaged', [StockController::class, 'damaged'])->middleware('perm:inventory.view,inventory.damaged_return');
     Route::get('stock/ledger', [StockController::class, 'ledger'])->middleware('perm:inventory.view');
     Route::post('stock/adjust', [StockController::class, 'adjust'])->middleware('perm:inventory.adjust');
     Route::post('stock/damaged-sale', [StockController::class, 'damagedSale'])->middleware('perm:production.damaged.sell');
@@ -78,6 +81,7 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     Route::post('transfers/{id}/send', [TransferController::class, 'send'])->middleware('perm:inventory.transfer');
     Route::post('transfers/{id}/receive', [TransferController::class, 'receive'])->middleware('perm:inventory.receive');
     Route::post('transfers/{id}/approve-damaged', [TransferController::class, 'approveDamaged'])->middleware('perm:inventory.damaged_return');
+    Route::post('transfers/{id}/cancel', [TransferController::class, 'cancel'])->middleware('perm:inventory.transfer');
     Route::delete('transfers/{id}', [TransferController::class, 'destroy'])->middleware('perm:inventory.transfer');
 
     // ---------------- sales ----------------

@@ -61,7 +61,7 @@ class CatalogController extends Controller
     public function updateProduct(Request $request, string $id): JsonResponse
     {
         $product = Product::findOrFail($id);
-        $data = $this->productRules($request);
+        $data = $this->productRules($request, partial: true);
         $this->assertSkuFree($data['sku'] ?? null, $id);
 
         $product->update($data);
@@ -105,6 +105,14 @@ class CatalogController extends Controller
     }
 
     /** Recipe (bill of materials) for one product, materials and sub-recipes together. */
+    /** Every recipe line (product_id, material_id, sub_recipe_id, qty). */
+    public function allRecipes(Request $request): JsonResponse
+    {
+        return response()->json([
+            'rows' => DB::table('recipes')->get(['product_id', 'material_id', 'sub_recipe_id', 'qty']),
+        ]);
+    }
+
     public function recipe(Request $request, string $productId): JsonResponse
     {
         $rows = DB::table('recipes as r')
@@ -162,6 +170,17 @@ class CatalogController extends Controller
             ->orderBy('name')->get();
 
         return response()->json(['rows' => $rows]);
+    }
+
+    /** Deactivate a sub-recipe that no product recipe uses. */
+    public function destroySubRecipe(Request $request, string $id): JsonResponse
+    {
+        if (DB::table('recipes')->where('sub_recipe_id', $id)->exists()) {
+            throw new BusinessRuleException('This sub-recipe is used in a product recipe. Remove it from the recipe first.');
+        }
+        SubRecipe::where('id', $id)->update(['is_active' => false]);
+
+        return response()->json(['ok' => true]);
     }
 
     public function saveSubRecipe(Request $request, ?string $id = null): JsonResponse
@@ -241,9 +260,9 @@ class CatalogController extends Controller
 
     // -------------------------------------------------------------------
 
-    private function productRules(Request $request): array
+    private function productRules(Request $request, bool $partial = false): array
     {
-        return $request->validate([
+        $rules = [
             'sku' => ['nullable', 'string', 'max:60'],
             'name' => ['required', 'string', 'max:200'],
             'category_id' => ['nullable', 'uuid'],
@@ -258,7 +277,16 @@ class CatalogController extends Controller
             'description' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
             'show_on_landing' => ['nullable', 'boolean'],
-        ]);
+            'category' => ['nullable', 'string', 'max:120'],
+            'mfg_date' => ['nullable', 'date'],
+            'expiry_date' => ['nullable', 'date'],
+        ];
+        if ($partial) {
+            // Edits may send only the changed fields.
+            $rules = array_map(fn ($r) => array_map(fn ($x) => $x === 'required' ? 'sometimes' : $x, $r), $rules);
+        }
+
+        return $request->validate($rules);
     }
 
     private function materialRules(Request $request): array

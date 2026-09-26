@@ -1,3 +1,6 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiProducts, apiProductStock } from "@/lib/stock-api";
+import { apiTransferCreate } from "@/lib/transfer-api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { AppShell, Card } from "@/components/app-shell";
@@ -84,6 +87,22 @@ function NewTransferPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    if (isLaravel()) {
+      try {
+        const [p, sSrc, sDest] = await Promise.all([
+          apiProducts(),
+          apiProductStock(sourceLocId),
+          dest ? apiProductStock(dest) : Promise.resolve([]),
+        ]);
+        setProducts(p as unknown as Product[]);
+        setStock([
+          ...sSrc.map((r) => ({ ...r, showroom_id: sourceLocId })),
+          ...sDest.map((r) => ({ ...r, showroom_id: dest })),
+        ] as unknown as StockRow[]);
+      } catch (e: any) { toast.error(e?.message ?? "Failed to load stock"); }
+      setLoading(false);
+      return;
+    }
     // Stock is read for the two locations involved only — never "all locations".
     const stockQ = sb.from("product_stock").select("product_id,showroom_id,quantity");
     const [{ data: p }, { data: sSrc }, { data: sDest }] = await Promise.all([
@@ -168,6 +187,18 @@ function NewTransferPage() {
       }
     }
     setSaving(true);
+    if (isLaravel()) {
+      try {
+        await apiTransferCreate(sourceLocId, {
+          destShowroomId: dest, note: note || null,
+          items: clean.map((c) => ({ productId: c.product_id, qty: c.qty, unitPrice: c.price })),
+        });
+        toast.success("Transfer created as draft");
+        navigate({ to: "/transfers" });
+      } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+      setSaving(false);
+      return;
+    }
     const code = `TR-${Date.now().toString(36).toUpperCase()}`;
     const { data: created, error } = await sb
       .from("transfers")

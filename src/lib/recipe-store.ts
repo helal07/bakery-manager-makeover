@@ -12,6 +12,12 @@ export type Ingredient = {
 export type RecipeMap = Record<string, Ingredient[]>;
 
 export async function loadRecipes(): Promise<RecipeMap> {
+  if (isLaravel()) {
+    const res = await api.get<{ rows: any[] }>("recipes");
+    const map: RecipeMap = {};
+    for (const r of res.rows ?? []) (map[r.product_id] ||= []).push(((r: any) => ({ materialId: r.material_id ?? "", subRecipeId: r.sub_recipe_id ?? undefined, qty: Number(r.qty) || 0 }))(r));
+    return map;
+  }
   const { data, error } = await sb
     .from("recipes")
     .select("product_id,material_id,sub_recipe_id,qty");
@@ -28,6 +34,10 @@ export async function loadRecipes(): Promise<RecipeMap> {
 }
 
 export async function loadRecipeFor(productId: string): Promise<Ingredient[]> {
+  if (isLaravel()) {
+    const res = await api.get<{ rows: any[] }>(`recipes/${productId}`);
+    return (res.rows ?? []).map((r: any) => ({ materialId: r.material_id ?? "", subRecipeId: r.sub_recipe_id ?? undefined, qty: Number(r.qty) || 0 }));
+  }
   const { data, error } = await sb
     .from("recipes")
     .select("material_id,sub_recipe_id,qty")
@@ -41,6 +51,13 @@ export async function loadRecipeFor(productId: string): Promise<Ingredient[]> {
 }
 
 export async function saveRecipe(productId: string, ingredients: Ingredient[]): Promise<void> {
+  if (isLaravel()) {
+    const rows = ingredients
+      .filter((i) => (i.materialId || i.subRecipeId) && i.qty > 0)
+      .map((i) => ({ materialId: i.subRecipeId ? null : i.materialId, subRecipeId: i.subRecipeId ?? null, qty: i.qty }));
+    await api.put(`recipes/${productId}`, { rows });
+    return;
+  }
   const { error: delErr } = await sb.from("recipes").delete().eq("product_id", productId);
   if (delErr) throw delErr;
   const rows = ingredients

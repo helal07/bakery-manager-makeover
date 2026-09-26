@@ -162,6 +162,23 @@ class TransferController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /** Cancel a transfer that has not left the source yet (no stock has moved). */
+    public function cancel(Request $request, string $id): JsonResponse
+    {
+        return DB::transaction(function () use ($id) {
+            $status = DB::table('transfers')->where('id', $id)->lockForUpdate()->value('status');
+            if ($status === null) {
+                throw new BusinessRuleException("Transfer {$id} not found");
+            }
+            if ($status !== 'draft') {
+                throw new BusinessRuleException('Only a draft transfer can be cancelled');
+            }
+            DB::table('transfers')->where('id', $id)->update(['status' => 'cancelled', 'updated_at' => now()]);
+
+            return response()->json(['ok' => true]);
+        });
+    }
+
     public function destroy(Request $request, string $id): JsonResponse
     {
         return DB::transaction(function () use ($id) {

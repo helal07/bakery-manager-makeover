@@ -57,6 +57,14 @@ class PurchaseController extends Controller
                 'p.paid', 'p.due', 'p.status', 'p.payment', 'p.created_at',
             ]);
 
+        // Item lines for the page's purchases in one query (no N+1).
+        $items = DB::table('purchase_items')->whereIn('purchase_id', $rows->pluck('id'))
+            ->orderBy('created_at')->get(['purchase_id', 'material_id', 'product_id', 'name', 'unit', 'qty', 'price'])
+            ->groupBy('purchase_id');
+        foreach ($rows as $r) {
+            $r->items = array_values(($items[$r->id] ?? collect())->all());
+        }
+
         return response()->json([
             'total' => $total,
             'limit' => $limit,
