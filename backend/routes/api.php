@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\LedgerController;
 use App\Http\Controllers\Api\ProductionBatchController;
 use App\Http\Controllers\Api\PosController;
@@ -118,6 +120,22 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     Route::post('purchases/{id}/returns', [PurchaseController::class, 'storeReturn'])->middleware('perm:purchases.return');
 
     // ---------------- ledgers ----------------
+    // Expenses
+    Route::get('expense-categories', [ExpenseController::class, 'categories'])->middleware('perm:expenses.view,expenses.manage,expenses.categories.manage,reports.expenses');
+    Route::post('expense-categories', [ExpenseController::class, 'storeCategory'])->middleware('perm:expenses.categories.manage');
+    Route::put('expense-categories/{id}', [ExpenseController::class, 'updateCategory'])->middleware('perm:expenses.categories.manage');
+    Route::delete('expense-categories/{id}', [ExpenseController::class, 'destroyCategory'])->middleware('perm:expenses.categories.manage');
+    Route::get('expenses', [ExpenseController::class, 'index'])->middleware('perm:expenses.view,expenses.manage,reports.expenses');
+    Route::post('expenses', [ExpenseController::class, 'store'])->middleware('perm:expenses.manage');
+    Route::put('expenses/{id}', [ExpenseController::class, 'update'])->middleware('perm:expenses.manage');
+    Route::delete('expenses/{id}', [ExpenseController::class, 'destroy'])->middleware('perm:expenses.manage');
+
+    // Audit log (superadmins only, checked in the controller like the database policy)
+    Route::get('audit-log', [AuditLogController::class, 'index']);
+    Route::get('audit-log/filters', [AuditLogController::class, 'filters']);
+    Route::post('audit-log/purge', [AuditLogController::class, 'purge']);
+    Route::post('audit-log/event', [AuditLogController::class, 'event']);
+
     Route::get('ledger/customer/{id}', [LedgerController::class, 'customer'])->middleware('perm:contacts.customers.ledger,reports.ledgers');
     Route::get('ledger/supplier/{id}', [LedgerController::class, 'supplier'])->middleware('perm:reports.ledgers');
     Route::get('ledger/outstanding', [LedgerController::class, 'outstanding'])->middleware('perm:reports.ledgers');

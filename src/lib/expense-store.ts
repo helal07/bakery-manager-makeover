@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiRequest } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeTo } from "@/lib/scope";
 
@@ -11,6 +13,7 @@ export type Expense = {
 };
 
 const sb = supabase as any;
+const L = (id?: string | null) => id ?? "factory";
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
   "Rent",
@@ -29,6 +32,7 @@ export const EXPENSE_CATEGORIES = DEFAULT_EXPENSE_CATEGORIES;
 export type ExpenseCategory = { id: string; name: string; is_active: boolean };
 
 export async function loadExpenseCategories(): Promise<ExpenseCategory[]> {
+  if (isLaravel()) return apiRequest("GET", "expense-categories");
   const { data, error } = await sb
     .from("expense_categories")
     .select("id,name,is_active")
@@ -38,6 +42,7 @@ export async function loadExpenseCategories(): Promise<ExpenseCategory[]> {
 }
 
 export async function addExpenseCategory(name: string): Promise<ExpenseCategory> {
+  if (isLaravel()) return apiRequest("POST", "expense-categories", { body: { name: name.trim() } });
   const { data, error } = await sb
     .from("expense_categories")
     .insert({ name: name.trim() })
@@ -48,11 +53,14 @@ export async function addExpenseCategory(name: string): Promise<ExpenseCategory>
 }
 
 export async function updateExpenseCategory(id: string, patch: Partial<Pick<ExpenseCategory, "name" | "is_active">>): Promise<void> {
+  if (isLaravel()) { await apiRequest("PUT", `expense-categories/${id}`, { body: patch }); return; }
   const { error } = await sb.from("expense_categories").update(patch).eq("id", id);
   if (error) throw error;
 }
 
 export async function deleteExpenseCategory(id: string): Promise<void> {
+  if (isLaravel()) { await apiRequest("DELETE", `expenses/${id}`); return; }
+  if (isLaravel()) { await apiRequest("DELETE", `expense-categories/${id}`); return; }
   const { error } = await sb.from("expense_categories").delete().eq("id", id);
   if (error) throw error;
 }
@@ -69,6 +77,7 @@ function toExpense(r: any): Expense {
 }
 
 export async function loadExpenses(showroomId?: string | null): Promise<Expense[]> {
+  if (isLaravel()) return ((await apiRequest<any[]>("GET", "expenses", { location: L(showroomId) })) ?? []).map(toExpense);
   let q = sb.from("expenses").select("*").order("expense_date", { ascending: false });
   q = scopeTo(q, showroomId, "showroom_id");
   const { data, error } = await q;
@@ -79,6 +88,7 @@ export async function loadExpenses(showroomId?: string | null): Promise<Expense[
 export async function addExpense(
   input: Omit<Expense, "id">,
 ): Promise<Expense> {
+  if (isLaravel()) return toExpense(await apiRequest("POST", "expenses", { location: L(input.showroom_id), body: { date: input.date, category: input.category, desc: input.desc, amount: input.amount } }));
   const { data: userData } = await supabase.auth.getUser();
   const { data, error } = await sb
     .from("expenses")
@@ -100,6 +110,7 @@ export async function updateExpense(
   id: string,
   patch: Partial<Omit<Expense, "id">>,
 ): Promise<void> {
+  if (isLaravel()) { await apiRequest("PUT", `expenses/${id}`, { location: patch.showroom_id === undefined ? undefined : L(patch.showroom_id), body: patch }); return; }
   const row: Record<string, unknown> = {};
   if (patch.date !== undefined) row.expense_date = patch.date;
   if (patch.category !== undefined) row.category = patch.category;
