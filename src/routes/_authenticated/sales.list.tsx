@@ -228,11 +228,12 @@ function SaleList() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={11} className="text-center text-sm text-muted-foreground py-10">No sales match your filters</td></tr>
+                <tr><td colSpan={11} className="text-center text-sm text-muted-foreground py-10">{loading ? "Loading…" : "No sales match your filters"}</td></tr>
               )}
             </tbody>
           </table>
         </div>
+        <Pager page={page} pageSize={PAGE_SIZE} total={total} onPage={setPage} loading={loading} />
       </Card>
       {action && (
         <Modal title={`${action.type === "Notify" ? "New sale notification" : action.type} — #${action.row.id}`} onClose={() => setAction(null)}>
