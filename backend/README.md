@@ -1,6 +1,6 @@
 # Bakery Manager — Laravel 12 + MySQL 8 backend
 
-Step 1 of the conversion: **database schema + Eloquent models**.
+Step 1: **database schema + Eloquent models**. Step 2: **business services**.
 Nothing here touches the running React app; it is a separate deployable.
 
 ## What is in here now
@@ -31,7 +31,7 @@ plus Laravel's own `users`, `password_reset_tokens` and `sessions`.
 - Ledger `qty` is signed — IN positive, OUT negative.
 - `showroom_id IS NULL` means **factory** (production and the raw material store).
 - `sales.due = total - paid`; `due > 0` Due/Partial, `due < 0` Advance, `due <= 0 && paid > 0` Paid.
-- `production_overheads.batch_id` points at the `stock_ledger` row of the produced batch, and `raw_stock_ledger.ref_id` points at the same row — that is how a batch finds its ingredients.
+- A production batch is one generated UUID stored in `stock_ledger.ref_id`, `raw_stock_ledger.ref_id` (both with `ref_type = 'production'`) and `production_overheads.batch_id` — that is how a batch finds its ingredients and overheads.
 - Every index from `sql/36_ledger_ref_indexes.sql` and `sql/37_performance_indexes.sql` is reproduced, including the composite `(ref_id, kind)` index that batch history depends on.
 
 ## Packages
@@ -58,10 +58,26 @@ DB_USERNAME=bakery
 DB_PASSWORD=...
 ```
 
+## Services (step 2)
+
+`app/Services/` — each ports the database function named beside it, same checks, same error texts:
+
+| Service | Replaces |
+| --- | --- |
+| `AccessService` | is_app_staff, user_is_global_admin, user_is_factory_user, user_can_access_location, user_has_permission, assert_* |
+| `StockService` | commit_stock_movement, commit_raw_stock_movement, commit_damaged_movement, commit_damaged_sale, log_finished_product_wastage, commit_transfer_receive, commit_damaged_transfer_approve, transfer send, default supply price (sql/35) |
+| `ProductionService` | commit_production_batch (sub-recipe expansion), void_production_batch, edit_production_batch (keeps original date, sql/34) |
+| `LedgerService` | src/lib/ledger-math.ts + the customer/supplier statement loaders |
+| `Num` | exact decimal maths (PHP `bcmath`, no floats) |
+
+Every write runs inside `DB::transaction()` with `lockForUpdate()` on the balance rows it checks.
+Business errors throw `BusinessRuleException` (403 when `forbidden`, otherwise 422 — wired in step 3).
+Passing `null` as the actor means a trusted system call (the old service_role).
+
+Requires the PHP `bcmath` extension (built into the official PHP Docker images; not a Composer package).
+
 ## Next steps (not done yet)
 
-- Step 2 — `app/Services/`: `ProductionService`, `StockService`, `LedgerService`
-  (sub-recipe expansion, batch edit/void, transfer pricing, customer/supplier balances).
 - Step 3 — `app/Http/Controllers/Api/` + `routes/api.php`, including the paged
   batch-history query that replaces `batch_history_page`.
 - Step 4 — `src/lib/api-client.ts` in the React app, replacing the current data client.

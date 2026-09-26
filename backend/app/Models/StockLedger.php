@@ -44,13 +44,14 @@ class StockLedger extends Model
         return $this->belongsTo(Showroom::class, 'showroom_id');
     }
 
+    /** Raw materials used by this batch (both rows share the batch id in ref_id). */
     public function consumption(): HasMany
     {
-        return $this->hasMany(RawStockLedger::class, 'ref_id');
+        return $this->hasMany(RawStockLedger::class, 'ref_id', 'ref_id')->where('ref_type', 'production');
     }
 
     public function overheads(): HasMany
     {
-        return $this->hasMany(ProductionOverhead::class, 'batch_id');
+        return $this->hasMany(ProductionOverhead::class, 'batch_id', 'ref_id');
     }
 }

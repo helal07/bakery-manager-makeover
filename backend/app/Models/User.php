@@ -67,28 +67,20 @@ class User extends Authenticatable
         return $this->roles()->where('role', $role)->exists();
     }
 
+    /** Same rule as user_is_global_admin() — see App\Services\AccessService. */
     public function isGlobalAdmin(): bool
     {
-        return $this->roles()
-            ->whereIn('role', ['superadmin', 'owner', 'admin'])
-            ->exists();
+        return app(\App\Services\AccessService::class)->isGlobalAdmin($this);
     }
 
-    /**
-     * Replaces the old user_can_access_location() database check.
-     * $showroomId === null means the factory / global scope.
-     */
+    /** Same rule as user_can_access_location(). $showroomId null = factory. */
     public function canAccessLocation(?string $showroomId): bool
     {
-        if ($this->isGlobalAdmin()) {
-            return true;
-        }
+        return app(\App\Services\AccessService::class)->canAccessLocation($this, $showroomId);
+    }
 
-        return $this->roleAssignments()
-            ->when($showroomId === null,
-                fn ($q) => $q->whereNull('showroom_id'),
-                fn ($q) => $q->where('showroom_id', $showroomId),
-            )
-            ->exists();
+    public function hasPermission(string $key): bool
+    {
+        return app(\App\Services\AccessService::class)->hasPermission($this, $key);
     }
 }
