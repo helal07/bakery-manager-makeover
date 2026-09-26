@@ -9,7 +9,7 @@
 - [x] Products, recipes, sub-recipes
 - [x] POS checkout (new sale)
 - [x] POS: held sales, cash register
-- [ ] POS: sale edit, customer due lookup — need API endpoints
+- [x] POS: sale edit, customer due lookup, today's sales
 - [ ] Purchase returns list & supplier payments list — need API endpoints
 - [ ] Stock adjust dialog & movement history — wire to stock/adjust + stock/ledger
 - [ ] Settings, HR, expenses, landing page, audit log, backup — no API yet
