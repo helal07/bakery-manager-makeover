@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiProductsResult, apiProductStockResult, apiRawMaterialsWithStock } from "@/lib/stock-api";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { useEffect, useMemo, useState } from "react";
@@ -38,8 +40,8 @@ function StockReport() {
       setLoading(true);
       if (scope === "Products") {
         const [{ data: products }, stockRes] = await Promise.all([
-          sb.from("products").select("id,name,sku,category,unit,price").eq("is_active", true).order("name"),
-          loc === null
+          isLaravel() ? apiProductsResult() : sb.from("products").select("id,name,sku,category,unit,price").eq("is_active", true).order("name"),
+          isLaravel() ? apiProductStockResult(loc ?? null) : loc === null
             ? sb.from("product_stock").select("product_id,quantity,min_stock").is("showroom_id", null)
             : sb.from("product_stock").select("product_id,quantity,min_stock").eq("showroom_id", loc),
         ]);
