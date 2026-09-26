@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiLedger } from "@/lib/ledger-api";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { ArrowLeft } from "lucide-react";
@@ -43,6 +45,16 @@ function CustomerLedger() {
   const load = async () => {
     setLoading(true);
     try {
+      if (isLaravel()) {
+        const [{ party: c, entries: list, locations: rooms }, comp] = await Promise.all([apiLedger("customer", id), getCompany()]);
+        if (!c) { setParty(null); return; }
+        setParty({ name: c.name, phone: c.phone ?? "", email: c.email ?? "", address: c.address ?? "" });
+      setCustomer({ id: c.id, name: c.name, phone: c.phone ?? "" });
+        setCompany(comp);
+        setLocations(rooms);
+        setEntries(list);
+        return;
+      }
       const cRes = await sb.from("customers").select("id,name,phone,email,address").eq("id", id).maybeSingle();
       if (cRes.error) throw cRes.error;
       if (!cRes.data) { setParty(null); return; }
