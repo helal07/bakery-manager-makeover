@@ -96,6 +96,7 @@ function BatchHistoryPage() {
 
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
@@ -169,6 +170,7 @@ function BatchHistoryPage() {
     let cancel = false;
     setLoading(true);
     setDenied(false);
+    setLoadError(null);
     (async () => {
       // Production always lives in the factory scope (showroom_id IS NULL).
       const ledRes = await scopeTo(
@@ -184,7 +186,10 @@ function BatchHistoryPage() {
 
       if (cancel) return;
       if (ledRes.error) {
-        setDenied(true);
+        console.error("Batch history load failed", ledRes.error);
+        const code = (ledRes.error as any).code;
+        if (code === "42501" || /permission/i.test(ledRes.error.message)) setDenied(true);
+        else setLoadError(ledRes.error.message);
         setBatches([]);
         setLoading(false);
         return;
@@ -300,9 +305,10 @@ function BatchHistoryPage() {
 
       setBatches(list);
       setLoading(false);
-    })().catch(() => {
+    })().catch((e) => {
       if (!cancel) {
-        setDenied(true);
+        console.error("Batch history load failed", e);
+        setLoadError(e?.message ?? "Could not load batches");
         setLoading(false);
       }
     });
@@ -473,7 +479,9 @@ function BatchHistoryPage() {
                   <td colSpan={canEditBatch || canDeleteBatch ? 10 : 9} className="text-center py-8 text-muted-foreground text-sm">
                     {loading
                       ? "Loading…"
-                      : denied
+                      : loadError
+                        ? `Could not load batches (${loadError}). Please try again.`
+                        : denied
                         ? "Your account cannot view Factory production records. Ask an admin to assign you to the Factory location in Roles & Teams."
                         : "No batches in this range"}
                   </td>
