@@ -98,6 +98,8 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     Route::get('sales', [SaleController::class, 'index'])->middleware('perm:sales.view');
     Route::get('sales/{id}', [SaleController::class, 'show'])->middleware('perm:sales.view');
     Route::post('sales', [SaleController::class, 'store'])->middleware('perm:sales.create,pos.access');
+    Route::put('sales/{id}', [SaleController::class, 'update'])->middleware('perm:sales.edit,pos.access');
+    Route::get('pos/customer-due', [SaleController::class, 'customerDue'])->middleware('perm:pos.access');
     Route::post('sales/{id}/payments', [SaleController::class, 'addPayment'])->middleware('perm:sales.payments');
     Route::post('sales/{id}/returns', [SaleController::class, 'storeReturn'])->middleware('perm:sales.return');
 

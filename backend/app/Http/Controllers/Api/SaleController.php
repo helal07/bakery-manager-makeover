@@ -306,6 +306,99 @@ class SaleController extends Controller
     }
 
     /** Sale return. condition=good puts stock back, condition=damaged goes to damaged stock. */
+    /** POS edit: return old qty to stock, take new qty, replace lines; paid is kept, due recomputed. */
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $data = $request->validate([
+            'customerId' => ['nullable', 'uuid'],
+            'customerName' => ['nullable', 'string', 'max:160'],
+            'customerPhone' => ['nullable', 'string', 'max:40'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'shipping' => ['nullable', 'numeric', 'min:0'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.productId' => ['required', 'uuid'],
+            'items.*.qty' => ['required', 'numeric', 'gt:0'],
+            'items.*.unitPrice' => ['required', 'numeric', 'min:0'],
+        ]);
+        $user = $request->user();
+
+        return DB::transaction(function () use ($data, $id, $user) {
+            $sale = DB::table('sales')->where('id', $id)->lockForUpdate()->first();
+            if (! $sale) {
+                throw new BusinessRuleException("Sale {$id} not found");
+            }
+            $old = [];
+            foreach (DB::table('sale_items')->where('sale_id', $id)->get(['product_id', 'qty']) as $r) {
+                if ($r->product_id) {
+                    $old[$r->product_id] = Num::add($old[$r->product_id] ?? '0', (string) $r->qty);
+                }
+            }
+            $new = [];
+            $subtotal = '0';
+            $lines = [];
+            foreach ($data['items'] as $item) {
+                $product = DB::table('products')->where('id', $item['productId'])->first(['id', 'name', 'sku']);
+                if (! $product) {
+                    throw new BusinessRuleException('Product not found');
+                }
+                $lineTotal = Num::money(Num::mul($item['qty'], $item['unitPrice']));
+                $subtotal = Num::add($subtotal, $lineTotal);
+                $new[$product->id] = Num::add($new[$product->id] ?? '0', (string) $item['qty']);
+                $lines[] = [
+                    'id' => (string) Str::uuid(), 'sale_id' => $id,
+                    'product_id' => $product->id, 'product_name' => $product->name, 'product_sku' => $product->sku,
+                    'qty' => Num::qty($item['qty']), 'unit_price' => Num::money($item['unitPrice']),
+                    'line_total' => $lineTotal, 'created_at' => now(), 'updated_at' => now(),
+                ];
+            }
+            foreach (array_unique(array_merge(array_keys($old), array_keys($new))) as $pid) {
+                $delta = Num::sub($old[$pid] ?? '0', $new[$pid] ?? '0'); // positive = back to stock
+                if (Num::cmp($delta, '0') !== 0) {
+                    $this->stock->productMovement($user, $pid, $sale->showroom_id, $delta, 'sale_edit', 'sale', $id, 'POS edit');
+                }
+            }
+            DB::table('sale_items')->where('sale_id', $id)->delete();
+            DB::table('sale_items')->insert($lines);
+
+            $discount = Num::money($data['discount'] ?? 0);
+            $shipping = Num::money($data['shipping'] ?? 0);
+            $total = Num::money(Num::add(Num::sub($subtotal, $discount), $shipping));
+            $paid = Num::money((string) $sale->paid);
+            $due = Num::sub($total, $paid);
+            if (Num::cmp($due, '0') < 0) {
+                $due = '0';
+            }
+            DB::table('sales')->where('id', $id)->update([
+                'customer_id' => $data['customerId'] ?? null,
+                'customer_name' => $data['customerName'] ?: 'Walk-in Customer',
+                'customer_phone' => $data['customerPhone'] ?? null,
+                'subtotal' => Num::money($subtotal), 'discount' => $discount, 'tax' => '0.00',
+                'shipping' => $shipping, 'total' => $total, 'due' => Num::money($due),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json(['id' => $id, 'total' => (float) $total]);
+        });
+    }
+
+    /** Outstanding due of a customer: sales.due (by id or same phone digits) minus standalone payments. */
+    public function customerDue(Request $request): JsonResponse
+    {
+        $data = $request->validate(['customer_id' => ['required', 'uuid'], 'phone' => ['nullable', 'string', 'max:40']]);
+        $digits = preg_replace('/\D/', '', (string) ($data['phone'] ?? ''));
+        $match = function ($q) use ($data, $digits) {
+            $q->where('customer_id', $data['customer_id']);
+            if ($digits !== '') {
+                $q->orWhereRaw("REGEXP_REPLACE(COALESCE(customer_phone,''), '[^0-9]', '') = ?", [$digits]);
+            }
+        };
+        $salesDue = (string) (DB::table('sales')->where($match)->sum('due') ?? '0');
+        $extra = (string) (DB::table('customer_payments')->whereNull('sale_id')->where($match)->sum('amount') ?? '0');
+        $out = Num::sub($salesDue, $extra);
+
+        return response()->json(['due' => Num::cmp($out, '0') > 0 ? (float) Num::money($out) : 0]);
+    }
+
     public function storeReturn(Request $request, string $id): JsonResponse
     {
         $data = $request->validate([
