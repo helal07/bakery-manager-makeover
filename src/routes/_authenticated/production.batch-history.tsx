@@ -506,6 +506,9 @@ function BatchHistoryPage() {
             )}
           </table>
         </div>
+        {total > PAGE_SIZE && (
+          <Pager page={page} pageSize={PAGE_SIZE} total={total} onPage={setPage} loading={loading} />
+        )}
       </Card>
 
       <ConfirmDialog
