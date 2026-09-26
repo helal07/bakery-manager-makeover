@@ -96,6 +96,7 @@ function BatchHistoryPage() {
 
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [company, setCompany] = useState<CompanySettings>(() => getCachedCompany() ?? defaultCompany);
@@ -169,6 +170,7 @@ function BatchHistoryPage() {
     let cancel = false;
     setLoading(true);
     setDenied(false);
+    setLoadError(null);
     (async () => {
       // Production always lives in the factory scope (showroom_id IS NULL).
       const ledRes = await scopeTo(
@@ -184,7 +186,10 @@ function BatchHistoryPage() {
 
       if (cancel) return;
       if (ledRes.error) {
-        setDenied(true);
+        console.error("Batch history load failed", ledRes.error);
+        const code = (ledRes.error as any).code;
+        if (code === "42501" || /permission/i.test(ledRes.error.message)) setDenied(true);
+        else setLoadError(ledRes.error.message);
         setBatches([]);
         setLoading(false);
         return;
@@ -215,18 +220,28 @@ function BatchHistoryPage() {
         // so fetch in small chunks and merge the results.
         const chunks: string[][] = [];
         for (let i = 0; i < ids.length; i += 20) chunks.push(ids.slice(i, i + 20) as string[]);
-        for (const chunk of chunks) {
-          const [cRes, oRes] = await Promise.all([
-            sb
-              .from("raw_stock_ledger")
-              .select("ref_id,material_id,qty,kind,raw_materials(name,unit,cost)")
-              .in("kind", ["production_consume", "production_reverse"])
-              .in("ref_id", chunk),
-            sb.from("production_overheads").select("batch_id,amount").in("batch_id", chunk),
-          ]);
-          if (cancel) return;
+        // Run chunks in parallel (not one after another) and always scope to the
+        // factory so the showroom index is used.
+        const results = await Promise.all(
+          chunks.map((chunk) =>
+            Promise.all([
+              scopeTo(
+                sb
+                  .from("raw_stock_ledger")
+                  .select("ref_id,material_id,qty,kind,raw_materials(name,unit,cost)")
+                  .in("kind", ["production_consume", "production_reverse"])
+                  .in("ref_id", chunk),
+                null,
+              ),
+              sb.from("production_overheads").select("batch_id,amount").in("batch_id", chunk),
+            ]),
+          ),
+        );
+        if (cancel) return;
+        for (const [cRes, oRes] of results) {
           if (cRes.error) {
-            setDenied(true);
+            console.error("Batch history materials load failed", cRes.error);
+            setLoadError(cRes.error.message);
             setBatches([]);
             setLoading(false);
             return;
@@ -290,9 +305,10 @@ function BatchHistoryPage() {
 
       setBatches(list);
       setLoading(false);
-    })().catch(() => {
+    })().catch((e) => {
       if (!cancel) {
-        setDenied(true);
+        console.error("Batch history load failed", e);
+        setLoadError(e?.message ?? "Could not load batches");
         setLoading(false);
       }
     });
@@ -463,7 +479,9 @@ function BatchHistoryPage() {
                   <td colSpan={canEditBatch || canDeleteBatch ? 10 : 9} className="text-center py-8 text-muted-foreground text-sm">
                     {loading
                       ? "Loading…"
-                      : denied
+                      : loadError
+                        ? `Could not load batches (${loadError}). Please try again.`
+                        : denied
                         ? "Your account cannot view Factory production records. Ask an admin to assign you to the Factory location in Roles & Teams."
                         : "No batches in this range"}
                   </td>
