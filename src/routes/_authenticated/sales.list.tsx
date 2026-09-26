@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Eye, Pencil, CreditCard, FileText, Undo2, Bell, ChevronDown, UserRound, Store, Download, Printer, Share2, MessageCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
+import { Pager } from "@/components/pager";
 import { pageTitle, getCachedCompany, defaultCompany } from "@/lib/company-settings";
 
 const sb = supabase as any;
@@ -31,17 +32,35 @@ function SaleList() {
   const [to, setTo] = useState("");
   const [payment, setPayment] = useState<"All" | "Due" | "Advance" | "Paid" | "Partial">("All");
 
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  useEffect(() => setPage(0), [loc, q, from, to, payment]);
+
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const t = setTimeout(async () => {
       setLoading(true);
-      // Item quantities are embedded in the same request — passing 500 ids in
-      // an `.in()` filter overflows the URL limit (HTTP 414) on the server.
+      // Only the current page is fetched; filters run in the database.
       const cols = "id,external_ref,customer_name,customer_phone,total,paid,due,created_at,showroom_id,sale_items(qty)";
-      const q1 = loc === null
-        ? sb.from("sales").select(cols).is("showroom_id", null)
-        : sb.from("sales").select(cols).eq("showroom_id", loc);
-      const { data: sales } = await q1.order("created_at", { ascending: false }).limit(500);
+      let q1 = sb.from("sales").select(cols, { count: "exact" });
+      q1 = loc === null ? q1.is("showroom_id", null) : q1.eq("showroom_id", loc);
+      if (from) q1 = q1.gte("created_at", new Date(`${from}T00:00:00`).toISOString());
+      if (to) q1 = q1.lte("created_at", new Date(`${to}T23:59:59.999`).toISOString());
+      if (payment === "Due") q1 = q1.gt("due", 0);
+      else if (payment === "Advance") q1 = q1.lt("due", 0);
+      else if (payment === "Paid") q1 = q1.gt("paid", 0).lte("due", 0);
+      else if (payment === "Partial") q1 = q1.gt("paid", 0).gt("due", 0);
+      const needle = q.trim().replace(/[,()*%]/g, " ").trim();
+      if (needle) {
+        const parts = [`external_ref.ilike.*${needle}*`, `customer_name.ilike.*${needle}*`];
+        const digits = needle.replace(/\D/g, "");
+        if (digits) parts.push(`customer_phone.ilike.*${digits}*`);
+        q1 = q1.or(parts.join(","));
+      }
+      const { data: sales, count } = await q1
+        .order("created_at", { ascending: false })
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
       const ids = (sales ?? []).map((s: any) => s.id);
       let counts: Record<string, number> = {};
       let showroomNames: Record<string, string> = {};
@@ -70,10 +89,10 @@ function SaleList() {
           branch: s.showroom_id ? (showroomNames[s.showroom_id] ?? "—") : "Factory",
         };
       });
-      if (!cancelled) { setRows(mapped); setLoading(false); }
-    })();
-    return () => { cancelled = true; };
-  }, [loc]);
+      if (!cancelled) { setRows(mapped); setTotal(count ?? mapped.length); setLoading(false); }
+    }, q ? 300 : 0);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [loc, q, from, to, payment, page]);
 
   const users = Array.from(new Set(rows.map((r) => r.addedBy)));
   const branches = Array.from(new Set(rows.map((r) => r.branch)));
@@ -82,26 +101,9 @@ function SaleList() {
     return rows.filter((r) => {
       if (addedBy !== "All" && r.addedBy !== addedBy) return false;
       if (branch !== "All" && r.branch !== branch) return false;
-      if (from && r.date < from) return false;
-      if (to && r.date > to) return false;
-      if (payment === "Due") {
-        if (r.total - r.paid <= 0) return false;
-      } else if (payment === "Advance") {
-        if (r.paid - r.total <= 0) return false;
-      } else if (payment !== "All" && r.status !== payment) return false;
-      if (q) {
-        const s = q.toLowerCase();
-        const digits = q.replace(/\D/g, "");
-        const phoneDigits = r.phone.replace(/\D/g, "");
-        const matches =
-          r.id.toLowerCase().includes(s) ||
-          r.customer.toLowerCase().includes(s) ||
-          (digits.length > 0 && phoneDigits.length > 0 && phoneDigits.includes(digits));
-        if (!matches) return false;
-      }
       return true;
     });
-  }, [rows, q, addedBy, branch, from, to, payment]);
+  }, [rows, addedBy, branch]);
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
