@@ -215,18 +215,28 @@ function BatchHistoryPage() {
         // so fetch in small chunks and merge the results.
         const chunks: string[][] = [];
         for (let i = 0; i < ids.length; i += 20) chunks.push(ids.slice(i, i + 20) as string[]);
-        for (const chunk of chunks) {
-          const [cRes, oRes] = await Promise.all([
-            sb
-              .from("raw_stock_ledger")
-              .select("ref_id,material_id,qty,kind,raw_materials(name,unit,cost)")
-              .in("kind", ["production_consume", "production_reverse"])
-              .in("ref_id", chunk),
-            sb.from("production_overheads").select("batch_id,amount").in("batch_id", chunk),
-          ]);
-          if (cancel) return;
+        // Run chunks in parallel (not one after another) and always scope to the
+        // factory so the showroom index is used.
+        const results = await Promise.all(
+          chunks.map((chunk) =>
+            Promise.all([
+              scopeTo(
+                sb
+                  .from("raw_stock_ledger")
+                  .select("ref_id,material_id,qty,kind,raw_materials(name,unit,cost)")
+                  .in("kind", ["production_consume", "production_reverse"])
+                  .in("ref_id", chunk),
+                null,
+              ),
+              sb.from("production_overheads").select("batch_id,amount").in("batch_id", chunk),
+            ]),
+          ),
+        );
+        if (cancel) return;
+        for (const [cRes, oRes] of results) {
           if (cRes.error) {
-            setDenied(true);
+            console.error("Batch history materials load failed", cRes.error);
+            setLoadError(cRes.error.message);
             setBatches([]);
             setLoading(false);
             return;
