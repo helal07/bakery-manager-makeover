@@ -17,3 +17,6 @@
 - `backend/app/Services/` ports each database function one-to-one (same checks, same error text); money/qty maths uses `Num` (bcmath), never floats — so Laravel results match the current database exactly.
 - `backend/` API routes carry `auth:sanctum` + `staff` + `location` + `perm:<key>` middleware and controllers never re-check access themselves; the `perm:` keys are exactly the ones in `src/lib/rbac-matrix.ts`, so one permission list drives both sides. The location comes from the `X-Location-Id` header (absent/`factory` = `showroom_id NULL`).
 - Server switch lives in `src/lib/backend-mode.ts` (`VITE_API_BASE_URL` set = Laravel API, empty = current database); screens branch with `isLaravel()` and call `src/lib/api-client.ts` — so Lovable development keeps working while the Laravel build is tested.
+
+- `backend/` audit trail uses MySQL triggers (migration `000800`) reading `@app_user_id` set by the `staff` middleware — controllers use `DB::table`, so model observers would miss changes.
+- `backend/` images go on the `public` disk via `POST uploads` (needs `php artisan storage:link`); the stored path is the public URL.

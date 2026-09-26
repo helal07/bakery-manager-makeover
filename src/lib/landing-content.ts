@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
 export type LandingTheme = {
@@ -92,13 +94,17 @@ export const defaultLanding: LandingContent = {
 const sb = supabase as any;
 
 export async function fetchLandingContent(): Promise<LandingContent> {
-  const { data, error } = await sb
+  let data: any = null, error: any = null;
+  if (isLaravel()) {
+    const res: any = await api.get("public/landing").catch((e) => { error = e; return null; });
+    data = res?.content ? { content: res.content } : null;
+  } else ({ data, error } = await sb
     .from("landing_content")
     .select("content")
     .eq("is_current", true)
     .order("updated_at", { ascending: false })
     .limit(1)
-    .maybeSingle();
+    .maybeSingle());
   if (error || !data) return defaultLanding;
   const stored = (data.content ?? {}) as Partial<LandingContent>;
   return {
@@ -123,6 +129,7 @@ export async function fetchLandingContent(): Promise<LandingContent> {
 }
 
 export async function saveLandingContent(content: LandingContent) {
+  if (isLaravel()) { await api.put("landing/content", { content }); return; }
   const { data: userRes } = await supabase.auth.getUser();
   // Find existing current row
   const { data: existing } = await sb

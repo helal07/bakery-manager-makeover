@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::post('auth/login', [AuthController::class, 'login']);
+Route::get('public/company', [\App\Http\Controllers\Api\SettingsController::class, 'publicCompany']);
+Route::get('public/landing', [\App\Http\Controllers\Api\SettingsController::class, 'publicLanding']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -139,4 +141,32 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     Route::get('ledger/customer/{id}', [LedgerController::class, 'customer'])->middleware('perm:contacts.customers.ledger,reports.ledgers');
     Route::get('ledger/supplier/{id}', [LedgerController::class, 'supplier'])->middleware('perm:reports.ledgers');
     Route::get('ledger/outstanding', [LedgerController::class, 'outstanding'])->middleware('perm:reports.ledgers');
+
+    // ---------------- settings / landing / uploads ----------------
+    Route::get('settings/company', [\App\Http\Controllers\Api\SettingsController::class, 'company']);
+    Route::put('settings/company', [\App\Http\Controllers\Api\SettingsController::class, 'saveCompany'])->middleware('perm:settings.general');
+    Route::put('settings/invoice', [\App\Http\Controllers\Api\SettingsController::class, 'saveInvoice'])->middleware('perm:settings.general');
+    Route::post('uploads', [\App\Http\Controllers\Api\SettingsController::class, 'upload']);
+    Route::put('landing/content', [\App\Http\Controllers\Api\SettingsController::class, 'saveLanding'])->middleware('perm:settings.landing');
+    Route::get('landing/carousels', [\App\Http\Controllers\Api\SettingsController::class, 'carousels'])->middleware('perm:settings.landing');
+    Route::post('landing/carousels', [\App\Http\Controllers\Api\SettingsController::class, 'saveCarousel'])->middleware('perm:settings.landing');
+    Route::put('landing/carousels/{id}', [\App\Http\Controllers\Api\SettingsController::class, 'saveCarousel'])->middleware('perm:settings.landing');
+    Route::delete('landing/carousels/{id}', [\App\Http\Controllers\Api\SettingsController::class, 'destroyCarousel'])->middleware('perm:settings.landing');
+    Route::get('landing/products', [\App\Http\Controllers\Api\SettingsController::class, 'landingProducts'])->middleware('perm:settings.landing');
+    Route::put('landing/products/{id}', [\App\Http\Controllers\Api\SettingsController::class, 'toggleLandingProduct'])->middleware('perm:settings.landing');
+
+    // ---------------- employees (HR) ----------------
+    Route::get('employees', [\App\Http\Controllers\Api\EmployeeController::class, 'index'])->middleware('perm:employees.view,employees.manage');
+    Route::get('employees/{id}', [\App\Http\Controllers\Api\EmployeeController::class, 'show'])->middleware('perm:employees.view,employees.manage');
+    Route::post('employees', [\App\Http\Controllers\Api\EmployeeController::class, 'store'])->middleware('perm:employees.manage');
+    Route::put('employees/{id}', [\App\Http\Controllers\Api\EmployeeController::class, 'update'])->middleware('perm:employees.manage');
+    Route::delete('employees/{id}', [\App\Http\Controllers\Api\EmployeeController::class, 'destroy'])->middleware('perm:employees.manage');
+    Route::post('employee-logins', [\App\Http\Controllers\Api\EmployeeController::class, 'createLogin'])->middleware('perm:employees.manage');
+    Route::post('employee-logins/password', [\App\Http\Controllers\Api\EmployeeController::class, 'resetPassword'])->middleware('perm:employees.manage');
+    Route::post('employee-logins/access', [\App\Http\Controllers\Api\EmployeeController::class, 'updateAccess'])->middleware('perm:employees.manage');
+    Route::post('employee-logins/disable', [\App\Http\Controllers\Api\EmployeeController::class, 'disableLogin'])->middleware('perm:employees.manage');
+
+    // ---------------- backup ----------------
+    Route::post('backup/export', [\App\Http\Controllers\Api\BackupController::class, 'export'])->middleware('perm:settings.backup');
+    Route::post('backup/restore', [\App\Http\Controllers\Api\BackupController::class, 'restore'])->middleware('perm:settings.backup');
 });

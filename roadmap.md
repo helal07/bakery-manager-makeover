@@ -13,6 +13,6 @@
 - [x] Purchase returns list & supplier payments list
 - [x] Stock adjust dialog & movement history
 - [x] Expenses & categories, audit log (view, filters, purge, sign-in event)
-- [ ] Settings, employees (HR), landing page, backup — no API yet
-- [ ] Audit log: Laravel does not yet record create/update/delete changes automatically
+- [x] Settings (company, invoice), employees + logins, landing page, image uploads, backup export/restore
+- [x] Audit log: Laravel records every add/change/delete via MySQL triggers (needs trigger rights on Hostinger — verify on live server)
 - [ ] Real test on Hostinger with a live Laravel server (blocked: server not here)

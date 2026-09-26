@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
 const sb = supabase as any;
@@ -25,6 +27,7 @@ function mapRow(r: any): LandingProduct {
 }
 
 export async function listAllProductsForLanding(): Promise<LandingProduct[]> {
+  if (isLaravel()) return ((await api.get("landing/products")) as any[]).map(mapRow);
   const { data, error } = await sb
     .from("products")
     .select("id,name,sku,category,price,image_url,show_on_landing,is_active")
@@ -35,6 +38,7 @@ export async function listAllProductsForLanding(): Promise<LandingProduct[]> {
 }
 
 export async function listLandingProducts(): Promise<LandingProduct[]> {
+  if (isLaravel()) return (((await api.get("public/landing")).products ?? []) as any[]).map(mapRow);
   const { data, error } = await sb
     .from("products")
     .select("id,name,sku,category,price,image_url,show_on_landing")
@@ -46,6 +50,7 @@ export async function listLandingProducts(): Promise<LandingProduct[]> {
 }
 
 export async function setProductShowOnLanding(id: string, show: boolean) {
+  if (isLaravel()) { await api.put(`landing/products/${id}`, { show }); return; }
   const { error } = await sb.from("products").update({ show_on_landing: show }).eq("id", id);
   if (error) throw error;
 }

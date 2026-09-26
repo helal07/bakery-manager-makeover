@@ -130,6 +130,20 @@ export const api = {
   del: <T = any>(path: string) => apiRequest<T>("DELETE", path),
 };
 
+/** Upload an image to the Laravel server; returns its public URL. */
+export async function apiUpload(file: File, folder = "uploads"): Promise<{ path: string; url: string }> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("folder", folder);
+  const headers: Record<string, string> = { Accept: "application/json", "X-Location-Id": currentLocationHeader() };
+  const token = getApiToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(buildUrl("uploads"), { method: "POST", headers, body: fd });
+  const body: any = await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(firstValidationMessage(body) ?? body?.message ?? `Upload failed (${res.status})`, res.status, body);
+  return body;
+}
+
 // ---------------- auth ----------------
 
 export async function apiLogin(email: string, password: string): Promise<ApiSession> {
