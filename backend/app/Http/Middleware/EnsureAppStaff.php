@@ -24,6 +24,9 @@ class EnsureAppStaff
             ], 403);
         }
 
+        // Audit triggers read these to know who made the change.
+        \Illuminate\Support\Facades\DB::statement('SET @app_user_id = ?, @app_user_email = ?', [$user->id, $user->email]);
+
         return $next($request);
     }
 }
