@@ -5,6 +5,8 @@ import { Search, Filter, Eye, Pencil, CreditCard, FileText, Undo2, Bell, Chevron
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { Pager } from "@/components/pager";
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 import { pageTitle, getCachedCompany, defaultCompany } from "@/lib/company-settings";
 
 const sb = supabase as any;
@@ -41,6 +43,35 @@ function SaleList() {
     let cancelled = false;
     const t = setTimeout(async () => {
       setLoading(true);
+      if (isLaravel()) {
+        try {
+          const res: any = await api.get("sales", {
+            from: from ? `${from} 00:00:00` : null, to: to ? `${to} 23:59:59` : null,
+            payment: payment === "All" ? null : String(payment).toLowerCase(),
+            q: q.trim() || null, limit: PAGE_SIZE, offset: page * PAGE_SIZE,
+          });
+          const mapped: Row[] = (res.rows ?? []).map((s: any) => {
+            const total = Number(s.total || 0);
+            const paidN = Number(s.paid || 0);
+            const status: Status = paidN <= 0 ? "Due" : paidN >= total ? "Paid" : "Partial";
+            return {
+              id: s.external_ref ?? String(s.id).slice(0, 8),
+              date: new Date(s.created_at).toLocaleString(),
+              customer: s.customer_name ?? "Walk-in Customer",
+              phone: s.customer_phone ?? "",
+              items: Number(s.item_qty) || 0,
+              total, paid: paidN, status,
+              addedBy: "—",
+              branch: s.showroom_id ? (s.showroom_name ?? "—") : "Factory",
+            };
+          });
+          if (!cancelled) { setRows(mapped); setTotal(Number(res.total) || 0); setLoading(false); }
+        } catch (e) {
+          console.error("Sales load failed", e);
+          if (!cancelled) { setRows([]); setTotal(0); setLoading(false); }
+        }
+        return;
+      }
       // Only the current page is fetched; filters run in the database.
       const cols = "id,external_ref,customer_name,customer_phone,total,paid,due,created_at,showroom_id,sale_items(qty)";
       let q1 = sb.from("sales").select(cols, { count: "exact" });

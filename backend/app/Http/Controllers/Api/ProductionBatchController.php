@@ -57,6 +57,22 @@ class ProductionBatchController extends Controller
 
         $total = (clone $base)->count();
 
+        // Whole-range totals (not just this page) so the summary cards and
+        // print header match the old batch_history_page() output.
+        $rangeQty = (float) (clone $base)->sum('sl.qty');
+        $rangeValue = (float) (clone $base)->sum(DB::raw('sl.qty * p.price'));
+        $rangeBatchIds = (clone $base)->select('sl.ref_id');
+        $rangeMaterial = (float) DB::table('raw_stock_ledger as rl')
+            ->join('raw_materials as m', 'm.id', '=', 'rl.material_id')
+            ->whereIn('rl.ref_id', $rangeBatchIds)
+            ->where('rl.ref_type', 'production')
+            ->sum(DB::raw('ABS(rl.qty) * m.cost'));
+        $rangeOverhead = (float) DB::table('production_overheads')
+            ->whereIn('batch_id', (clone $base)->select('sl.ref_id'))
+            ->sum('amount');
+        $productList = (clone $base)
+            ->select('p.id', 'p.name')->distinct()->orderBy('p.name')->get();
+
         $rows = (clone $base)
             ->orderByDesc('sl.created_at')
             ->limit($limit)->offset($offset)
@@ -69,6 +85,8 @@ class ProductionBatchController extends Controller
                 'p.name as product_name',
                 'p.sku as product_sku',
                 'p.unit as product_unit',
+                'p.price as product_price',
+                'p.transfer_price as product_transfer_price',
             ]);
 
         $batchIds = $rows->pluck('batch_id')->all();
@@ -130,6 +148,8 @@ class ProductionBatchController extends Controller
                 'productName' => $r->product_name,
                 'productSku' => $r->product_sku,
                 'unit' => $r->product_unit,
+                'price' => (float) $r->product_price,
+                'transferPrice' => (float) $r->product_transfer_price,
                 'qty' => (float) $r->produced_qty,
                 'createdAt' => $r->created_at,
                 'note' => $r->note,
@@ -147,11 +167,13 @@ class ProductionBatchController extends Controller
             'offset' => $offset,
             'totals' => [
                 'batches' => $total,
-                'qty' => round($out->sum('qty'), 4),
-                'materialCost' => round($out->sum('materialCost'), 2),
-                'overheadCost' => round($out->sum('overheadCost'), 2),
-                'totalCost' => round($out->sum('totalCost'), 2),
+                'qty' => round($rangeQty, 4),
+                'materialCost' => round($rangeMaterial, 2),
+                'overheadCost' => round($rangeOverhead, 2),
+                'totalCost' => round($rangeMaterial + $rangeOverhead, 2),
+                'value' => round($rangeValue, 2),
             ],
+            'products' => $productList,
             'rows' => $out,
         ]);
     }
