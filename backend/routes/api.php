@@ -104,6 +104,11 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     Route::post('sales/{id}/returns', [SaleController::class, 'storeReturn'])->middleware('perm:sales.return');
 
     // ---------------- purchases ----------------
+    Route::get('purchase-returns', [PurchaseController::class, 'returnsIndex'])->middleware('perm:purchases.view,purchases.return');
+    Route::delete('purchase-returns/{id}', [PurchaseController::class, 'destroyReturn'])->middleware('perm:purchases.return');
+    Route::get('supplier-payments', [PurchaseController::class, 'paymentsIndex'])->middleware('perm:purchases.view,purchases.payments');
+    Route::post('supplier-payments', [PurchaseController::class, 'storeSupplierPayment'])->middleware('perm:purchases.payments');
+    Route::delete('supplier-payments/{id}', [PurchaseController::class, 'destroySupplierPayment'])->middleware('perm:purchases.payments');
     Route::get('purchases', [PurchaseController::class, 'index'])->middleware('perm:purchases.view');
     Route::get('purchases/{id}', [PurchaseController::class, 'show'])->middleware('perm:purchases.view');
     Route::post('purchases', [PurchaseController::class, 'store'])->middleware('perm:purchases.create');
