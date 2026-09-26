@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api, apiUpload } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
 const sb = supabase as any;
@@ -25,6 +27,10 @@ function mapRow(r: any): CarouselSlide {
 }
 
 export async function listCarousels(opts?: { onlyActive?: boolean }): Promise<CarouselSlide[]> {
+  if (isLaravel()) {
+    const rows: any[] = opts?.onlyActive ? (await api.get("public/landing")).carousels : await api.get("landing/carousels");
+    return (rows ?? []).map(mapRow);
+  }
   let q = sb
     .from("landing_carousels")
     .select("id,title,subtitle,image_url,link_url,sort_order,is_active")
@@ -44,6 +50,10 @@ export async function upsertCarousel(slide: Partial<CarouselSlide> & { imageUrl:
     sort_order: slide.sortOrder ?? 0,
     is_active: slide.isActive ?? true,
   };
+  if (isLaravel()) {
+    await (slide.id ? api.put(`landing/carousels/${slide.id}`, payload) : api.post("landing/carousels", payload));
+    return;
+  }
   if (slide.id) {
     const { error } = await sb.from("landing_carousels").update(payload).eq("id", slide.id);
     if (error) throw error;
@@ -54,6 +64,7 @@ export async function upsertCarousel(slide: Partial<CarouselSlide> & { imageUrl:
 }
 
 export async function deleteCarousel(id: string) {
+  if (isLaravel()) { await api.del(`landing/carousels/${id}`); return; }
   const { error } = await sb.from("landing_carousels").delete().eq("id", id);
   if (error) throw error;
 }
@@ -61,6 +72,7 @@ export async function deleteCarousel(id: string) {
 export async function uploadCarouselImage(file: File): Promise<string> {
   const { compressImage } = await import("@/lib/storage");
   const compressed = await compressImage(file, { maxDim: 1920, quality: 0.85, maxBytes: 2 * 1024 * 1024 }).catch(() => file);
+  if (isLaravel()) return (await apiUpload(compressed, "carousel")).url;
   const ext = (compressed.name.split(".").pop() || "webp").toLowerCase();
   const path = `carousel/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from("landing-images").upload(path, compressed, {

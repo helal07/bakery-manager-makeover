@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api, getApiToken } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
 export type CompanySettings = {
@@ -240,6 +242,13 @@ let inflight: Promise<CompanySettings> | null = null;
 export async function getCompany(): Promise<CompanySettings> {
   if (inflight) return inflight;
   inflight = (async () => {
+    if (isLaravel()) {
+      const row: any = await (getApiToken() ? api.get("settings/company") : api.get("public/company")).catch(() => null);
+      if (!row) return defaultCompany;
+      const merged: CompanySettings = { ...defaultCompany, ...fromRow(row) };
+      writeCache(merged);
+      return merged;
+    }
     let { data, error } = await supabase
       .from("company_settings")
       .select("name, tagline, address, phone, email, vat_reg, logo_url, footer_note")
@@ -278,6 +287,12 @@ let invoiceInflight: Promise<InvoiceSettings> | null = null;
 export async function getInvoiceSettings(): Promise<InvoiceSettings> {
   if (invoiceInflight) return invoiceInflight;
   invoiceInflight = (async () => {
+    if (isLaravel()) {
+      const row: any = getApiToken() ? await api.get("settings/company").catch(() => null) : null;
+      const merged: InvoiceSettings = { ...defaultInvoiceSettings, ...(row?.settings?.invoice ?? {}) };
+      writeInvoiceCache(merged);
+      return merged;
+    }
     const { data, error } = await supabase
       .from("company_settings")
       .select("settings")
@@ -295,6 +310,7 @@ export async function getInvoiceSettings(): Promise<InvoiceSettings> {
 }
 
 export async function saveInvoiceSettings(next: InvoiceSettings): Promise<void> {
+  if (isLaravel()) { await api.put("settings/invoice", { invoice: next }); writeInvoiceCache(next); return; }
   const { data: existing } = await supabase
     .from("company_settings")
     .select("id, settings")
@@ -333,6 +349,11 @@ export async function saveCompany(c: CompanySettings) {
     footer_note: c.footerNote || null,
     is_current: true,
   };
+  if (isLaravel()) {
+    const { is_current: _c, ...body } = payload;
+    await api.put("settings/company", body);
+    return;
+  }
   const { data: existing } = await supabase
     .from("company_settings")
     .select("id")
