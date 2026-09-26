@@ -65,7 +65,7 @@ function AuthPage() {
     try {
       if (mode === "signin") {
         await backendSignIn(email, password);
-        if (!isLaravel()) void logLoginEvent("Signed in with email & password");
+        void logLoginEvent("Signed in with email & password");
         navigate({ to: "/dashboard", replace: true });
 
       } else {

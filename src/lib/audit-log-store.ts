@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiRequest } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
 const sb = supabase as any;
@@ -34,6 +36,10 @@ export async function loadAuditLog(
 ): Promise<{ rows: AuditEntry[]; total: number }> {
   const pageSize = f.pageSize ?? AUDIT_PAGE_SIZE;
   const page = Math.max(0, f.page ?? 0);
+  if (isLaravel()) {
+    const r = await apiRequest<any>("GET", "audit-log", { query: { from: f.from, to: f.to, actor: f.actorEmail, table: f.table, action: f.action, limit: pageSize, offset: page * pageSize } });
+    return { rows: (r?.rows ?? []) as AuditEntry[], total: Number(r?.total ?? 0) };
+  }
   let q = sb
     .from("audit_log")
     .select("*", { count: "exact" })
@@ -53,6 +59,7 @@ export async function loadAuditLog(
 
 /** Distinct actors seen in the log (for the filter dropdown). */
 export async function loadAuditActors(): Promise<string[]> {
+  if (isLaravel()) { try { return (await apiRequest<any>("GET", "audit-log/filters")).actors ?? []; } catch { return []; } }
   const { data, error } = await sb
     .from("audit_log")
     .select("actor_email")
@@ -65,6 +72,7 @@ export async function loadAuditActors(): Promise<string[]> {
 
 /** Distinct tables seen in the log (for the filter dropdown). */
 export async function loadAuditTables(): Promise<string[]> {
+  if (isLaravel()) { try { return (await apiRequest<any>("GET", "audit-log/filters")).tables ?? []; } catch { return []; } }
   const { data, error } = await sb
     .from("audit_log")
     .select("table_name")
@@ -76,6 +84,7 @@ export async function loadAuditTables(): Promise<string[]> {
 }
 
 export async function purgeAuditLog(before: Date): Promise<number> {
+  if (isLaravel()) return Number((await apiRequest<any>("POST", "audit-log/purge", { body: { before: before.toISOString() } }))?.deleted ?? 0);
   const { data, error } = await sb.rpc("purge_audit_log", { _before: before.toISOString() });
   if (error) throw error;
   return Number(data) || 0;
@@ -84,6 +93,7 @@ export async function purgeAuditLog(before: Date): Promise<number> {
 /** Best-effort: record a sign-in. Never blocks or fails the login flow. */
 export async function logLoginEvent(note?: string): Promise<void> {
   try {
+    if (isLaravel()) { await apiRequest("POST", "audit-log/event", { body: { action: "login", note: note ?? "Signed in" } }); return; }
     await sb.rpc("log_audit_event", {
       _action: "login",
       _table_name: null,

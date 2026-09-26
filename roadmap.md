@@ -12,5 +12,7 @@
 - [x] POS: sale edit, customer due lookup, today's sales
 - [x] Purchase returns list & supplier payments list
 - [x] Stock adjust dialog & movement history
-- [ ] Settings, HR, expenses, landing page, audit log, backup — no API yet
+- [x] Expenses & categories, audit log (view, filters, purge, sign-in event)
+- [ ] Settings, employees (HR), landing page, backup — no API yet
+- [ ] Audit log: Laravel does not yet record create/update/delete changes automatically
 - [ ] Real test on Hostinger with a live Laravel server (blocked: server not here)
