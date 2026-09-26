@@ -1,6 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
+import { isLaravel } from "@/lib/backend-mode";
+import { apiRequest } from "@/lib/api-client";
+
 const sb = supabase as any;
+const loc = (id: string | null) => id ?? "factory";
+const num = (r: any) => r && ({ ...r, opening_float: Number(r.opening_float ?? 0), total: r.total !== undefined ? Number(r.total) : r.total });
 
 // ---------- Register sessions ----------
 export type RegisterSession = {
@@ -12,6 +17,7 @@ export type RegisterSession = {
 };
 
 export async function getOpenRegister(showroomId: string | null): Promise<RegisterSession | null> {
+  if (isLaravel()) return num(await apiRequest("GET", "pos/register", { location: loc(showroomId) })) ?? null;
   const { data: userRes } = await supabase.auth.getUser();
   const uid = userRes.user?.id;
   if (!uid) return null;
@@ -33,6 +39,7 @@ export async function openRegister(
   openingFloat: number,
   note?: string,
 ): Promise<RegisterSession> {
+  if (isLaravel()) return num(await apiRequest("POST", "pos/register", { location: loc(showroomId), body: { opening_float: openingFloat, note: note ?? null } }));
   const { data: userRes } = await supabase.auth.getUser();
   const uid = userRes.user?.id;
   if (!uid) throw new Error("Not signed in");
@@ -64,6 +71,7 @@ export type RegisterSummary = {
 };
 
 export async function summarizeRegister(reg: RegisterSession): Promise<RegisterSummary> {
+  if (isLaravel()) return apiRequest("GET", `pos/register/${reg.id}/summary`, { location: loc(reg.showroom_id) });
   const { data: sales } = await sb
     .from("sales")
     .select("id,total,sale_payments(method,amount)")
@@ -98,6 +106,7 @@ export async function closeRegister(
   countedCash: number,
   note?: string,
 ): Promise<void> {
+  if (isLaravel()) { await apiRequest("POST", `pos/register/${reg.id}/close`, { location: loc(reg.showroom_id), body: { counted_cash: countedCash, note: note ?? null } }); return; }
   const summary = await summarizeRegister(reg);
   const { error } = await sb
     .from("cash_registers")
@@ -132,6 +141,7 @@ export type HeldSaleRow = {
 };
 
 export async function listHeldSales(showroomId: string | null): Promise<HeldSaleRow[]> {
+  if (isLaravel()) return ((await apiRequest<any[]>("GET", "pos/held", { location: loc(showroomId) })) ?? []).map(num);
   let q = sb
     .from("held_sales")
     .select("id,label,item_count,total,created_at,snapshot")
@@ -151,6 +161,7 @@ export async function holdSale(
   itemCount: number,
   total: number,
 ): Promise<void> {
+  if (isLaravel()) { await apiRequest("POST", "pos/held", { location: loc(showroomId), body: { customer_id: customerId, label, snapshot, item_count: itemCount, total } }); return; }
   const { data: userRes } = await supabase.auth.getUser();
   const uid = userRes.user?.id ?? null;
   const { error } = await sb.from("held_sales").insert({
@@ -166,6 +177,7 @@ export async function holdSale(
 }
 
 export async function deleteHeldSale(id: string): Promise<void> {
+  if (isLaravel()) { await apiRequest("DELETE", `pos/held/${id}`); return; }
   const { error } = await sb.from("held_sales").delete().eq("id", id);
   if (error) throw error;
 }
