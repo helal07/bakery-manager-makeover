@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\LedgerController;
 use App\Http\Controllers\Api\ProductionBatchController;
+use App\Http\Controllers\Api\PosController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\StockController;
@@ -85,6 +86,15 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     Route::delete('transfers/{id}', [TransferController::class, 'destroy'])->middleware('perm:inventory.transfer');
 
     // ---------------- sales ----------------
+    // POS registers & held sales
+    Route::get('pos/register', [PosController::class, 'openRegister'])->middleware('perm:pos.access');
+    Route::post('pos/register', [PosController::class, 'storeRegister'])->middleware('perm:pos.access');
+    Route::get('pos/register/{id}/summary', [PosController::class, 'registerSummary'])->middleware('perm:pos.access');
+    Route::post('pos/register/{id}/close', [PosController::class, 'closeRegister'])->middleware('perm:pos.access');
+    Route::get('pos/held', [PosController::class, 'heldIndex'])->middleware('perm:pos.access');
+    Route::post('pos/held', [PosController::class, 'heldStore'])->middleware('perm:pos.access');
+    Route::delete('pos/held/{id}', [PosController::class, 'heldDestroy'])->middleware('perm:pos.access');
+
     Route::get('sales', [SaleController::class, 'index'])->middleware('perm:sales.view');
     Route::get('sales/{id}', [SaleController::class, 'show'])->middleware('perm:sales.view');
     Route::post('sales', [SaleController::class, 'store'])->middleware('perm:sales.create,pos.access');
