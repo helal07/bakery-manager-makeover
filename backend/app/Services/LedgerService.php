@@ -191,13 +191,13 @@ class LedgerService
 
     public function supplierStatement(string $supplierId, ?callable $locationName = null): array
     {
-        $invoices = DB::table('purchases')->where('supplier_id', $supplierId)
+        $invoices = DB::table('purchases')->where('supplier_id', $supplierId)->orderBy('purchase_date')
             ->get(['id', 'code', 'purchase_date as date', 'total', 'paid', 'showroom_id'])
             ->map(fn ($r) => (array) $r)->all();
-        $payments = DB::table('supplier_payments')->where('supplier_id', $supplierId)
+        $payments = DB::table('supplier_payments')->where('supplier_id', $supplierId)->orderBy('paid_on')
             ->get(['id', 'paid_on as date', 'amount', 'method', 'reference', 'note', 'purchase_id as invoice_id', 'showroom_id'])
             ->map(fn ($r) => (array) $r)->all();
-        $returns = DB::table('purchase_returns')->where('supplier_id', $supplierId)
+        $returns = DB::table('purchase_returns')->where('supplier_id', $supplierId)->orderBy('created_at')
             ->get(['id', 'code', 'created_at as date', 'amount', 'purchase_id as invoice_id', 'reason', 'showroom_id'])
             ->map(fn ($r) => (array) $r)->all();
 
