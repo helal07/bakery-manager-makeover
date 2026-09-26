@@ -110,6 +110,15 @@ function PosPage() {
     setRecentLoading(true);
     try {
       const start = new Date(); start.setHours(0, 0, 0, 0);
+      if (isLaravel()) {
+        const res = await apiRequest<any>("GET", "sales", { location: loc ?? "factory", query: { from: start.toISOString(), limit: 50 } });
+        setRecentSales((res?.rows ?? []).map((r: any) => ({
+          id: r.id, external_ref: r.external_ref ?? null, total: Number(r.total ?? 0),
+          paid: Number(r.paid ?? 0), due: Number(r.due ?? 0), created_at: r.created_at,
+          customer_name: r.customer_name ?? null,
+        })));
+        return;
+      }
       let q = sb.from("sales")
         .select("id, external_ref, total, paid, due, created_at, customer_id, customers(name)")
         .gte("created_at", start.toISOString())
@@ -210,6 +219,13 @@ function PosPage() {
     let cancelled = false;
     const digits = (customerPhone ?? "").replace(/\D/g, "");
     (async () => {
+      if (isLaravel()) {
+        try {
+          const r = await apiRequest<{ due: number }>("GET", "pos/customer-due", { query: { customer_id: customerId, phone: customerPhone || null } });
+          if (!cancelled) setCustomerDue(Number(r?.due ?? 0));
+        } catch { if (!cancelled) setCustomerDue(0); }
+        return;
+      }
       const sb = supabase as any;
       const salesQ = digits
         ? sb.from("sales").select("due,customer_id,customer_phone")
@@ -381,12 +397,22 @@ function PosPage() {
     (async () => {
       try {
         let row: any = null;
+        let apiItems: any[] | null = null;
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(editId);
-        if (isUuid) {
+        if (isLaravel()) {
+          let id = editId;
+          if (!isUuid) {
+            const res = await apiRequest<any>("GET", "sales", { query: { q: editId, limit: 5 } });
+            id = (res?.rows ?? []).find((r: any) => r.external_ref === editId)?.id ?? "";
+          }
+          if (id) {
+            try { const b = await apiRequest<any>("GET", `sales/${id}`); row = b?.sale ?? null; apiItems = b?.items ?? []; } catch { row = null; }
+          }
+        } else if (isUuid) {
           const { data } = await sb.from("sales").select("*").eq("id", editId).maybeSingle();
           row = data;
         }
-        if (!row) {
+        if (!row && !isLaravel()) {
           const { data } = await sb.from("sales").select("*").eq("external_ref", editId).maybeSingle();
           row = data;
         }
@@ -398,7 +424,7 @@ function PosPage() {
           try { setCurrentShowroomId(row.showroom_id); } catch { /* ignore */ }
         }
 
-        const { data: items } = await sb.from("sale_items").select("*").eq("sale_id", row.id);
+        const items = apiItems ?? (await sb.from("sale_items").select("*").eq("sale_id", row.id)).data;
         const cartMap: Record<string, number> = {};
         const editMap: Record<string, LineEdit> = {};
         const originals: Array<{ product_id: string; qty: number }> = [];
@@ -574,6 +600,16 @@ function PosPage() {
     // ============ EDIT MODE ============
     if (editingSaleId) {
       try {
+        if (isLaravel()) {
+          await apiRequest("PUT", `sales/${editingSaleId}`, {
+            location: editShowroomId ?? "factory",
+            body: {
+              customerId, customerName: customerName.trim() || "Walk-in Customer",
+              customerPhone: customerPhone.trim() || null, discount, shipping,
+              items: items.map(({ p, qty }) => ({ productId: p.id, qty, unitPrice: netPriceFor(p) })),
+            },
+          });
+        } else {
         // 1. Stock delta: reverse old, apply new (positive = returned to stock)
         const oldMap = new Map<string, number>();
         for (const l of editOriginalItems) oldMap.set(l.product_id, (oldMap.get(l.product_id) || 0) + l.qty);
@@ -616,6 +652,7 @@ function PosPage() {
           paid: editOriginalPaid, due: newDue,
         }).eq("id", editingSaleId);
         if (upErr) throw upErr;
+        }
 
         invalidate("pos:products:");
         toast.success(`Sale ${editingRef ?? ""} updated · ৳${total.toFixed(2)}`);
