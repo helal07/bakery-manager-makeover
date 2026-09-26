@@ -35,16 +35,20 @@ function SaleList() {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      // Item quantities are embedded in the same request — passing 500 ids in
+      // an `.in()` filter overflows the URL limit (HTTP 414) on the server.
+      const cols = "id,external_ref,customer_name,customer_phone,total,paid,due,created_at,showroom_id,sale_items(qty)";
       const q1 = loc === null
-        ? sb.from("sales").select("id,external_ref,customer_name,customer_phone,total,paid,due,created_at,showroom_id").is("showroom_id", null)
-        : sb.from("sales").select("id,external_ref,customer_name,customer_phone,total,paid,due,created_at,showroom_id").eq("showroom_id", loc);
+        ? sb.from("sales").select(cols).is("showroom_id", null)
+        : sb.from("sales").select(cols).eq("showroom_id", loc);
       const { data: sales } = await q1.order("created_at", { ascending: false }).limit(500);
       const ids = (sales ?? []).map((s: any) => s.id);
       let counts: Record<string, number> = {};
       let showroomNames: Record<string, string> = {};
       if (ids.length) {
-        const { data: si } = await sb.from("sale_items").select("sale_id,qty").in("sale_id", ids);
-        for (const l of si ?? []) counts[l.sale_id] = (counts[l.sale_id] ?? 0) + Number(l.qty || 0);
+        for (const s of (sales ?? []) as any[]) {
+          counts[s.id] = (s.sale_items ?? []).reduce((a: number, l: any) => a + Number(l.qty || 0), 0);
+        }
         const shIds = Array.from(new Set((sales ?? []).map((s: any) => s.showroom_id).filter(Boolean)));
         if (shIds.length) {
           const { data: sh } = await sb.from("showrooms").select("id,name").in("id", shIds);

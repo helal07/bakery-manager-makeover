@@ -1,3 +1,4 @@
+import { chunk } from "@/lib/chunk";
 import { supabase } from "@/integrations/supabase/client";
 
 const sb = supabase as any;
@@ -83,11 +84,17 @@ export type BatchOverheadRow = {
 
 export async function loadOverheadsForBatches(batchIds: string[]): Promise<BatchOverheadRow[]> {
   if (batchIds.length === 0) return [];
-  const { data, error } = await sb
-    .from("production_overheads")
-    .select("id,batch_id,product_id,category_id,amount,note,created_at,production_overhead_categories(name)")
-    .in("batch_id", batchIds);
-  if (error) throw error;
+  const parts = await Promise.all(
+    chunk(batchIds).map((c) =>
+      sb
+        .from("production_overheads")
+        .select("id,batch_id,product_id,category_id,amount,note,created_at,production_overhead_categories(name)")
+        .in("batch_id", c),
+    ),
+  );
+  const failed = parts.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+  const data = parts.flatMap((r) => (r.data ?? []) as any[]);
   return ((data ?? []) as any[]).map((r) => ({
     id: r.id,
     batch_id: r.batch_id,
