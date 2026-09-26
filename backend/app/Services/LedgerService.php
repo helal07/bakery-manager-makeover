@@ -155,18 +155,32 @@ class LedgerService
     // Loaders — read the same tables the React ledger page reads today
     // -------------------------------------------------------------------
 
-    /** Full customer statement (all locations the caller may already see). */
+    /**
+     * Full customer statement. Like the React page, a sale/payment belongs to
+     * the customer when customer_id matches OR the phone digits match
+     * (walk-in sales saved with only a phone number). Returns follow sales.
+     */
     public function customerStatement(string $customerId, ?callable $locationName = null): array
     {
-        $invoices = DB::table('sales')->where('customer_id', $customerId)
+        $phone = (string) DB::table('customers')->where('id', $customerId)->value('phone');
+        $digits = preg_replace('/\D/', '', $phone);
+        $mine = function ($q) use ($customerId, $digits) {
+            $q->where('customer_id', $customerId);
+            if ($digits !== '') {
+                $q->orWhereRaw("REGEXP_REPLACE(COALESCE(customer_phone, ''), '[^0-9]', '') = ?", [$digits]);
+            }
+        };
+
+        $invoices = DB::table('sales')->where($mine)->orderBy('created_at')
             ->get(['id', 'external_ref as code', 'created_at as date', 'total', 'paid', 'showroom_id'])
             ->map(fn ($r) => (array) $r)->all();
-        $payments = DB::table('customer_payments')->where('customer_id', $customerId)
+        $payments = DB::table('customer_payments')->where($mine)->orderBy('paid_on')
             ->get(['id', 'paid_on as date', 'amount', 'method', 'reference', 'note', 'sale_id as invoice_id', 'showroom_id'])
             ->map(fn ($r) => (array) $r)->all();
-        $returns = DB::table('sale_returns as r')
-            ->join('sales as s', 's.id', '=', 'r.sale_id')
-            ->where('s.customer_id', $customerId)
+        $saleIds = array_column($invoices, 'id');
+        $returns = $saleIds === [] ? [] : DB::table('sale_returns as r')
+            ->joinSub(DB::table('sales')->where($mine)->select('id'), 's', 's.id', '=', 'r.sale_id')
+            ->orderBy('r.created_at')
             ->get(['r.id', 'r.code', 'r.created_at as date', 'r.amount', 'r.sale_id as invoice_id', 'r.reason', 'r.showroom_id'])
             ->map(fn ($r) => (array) $r)->all();
 
