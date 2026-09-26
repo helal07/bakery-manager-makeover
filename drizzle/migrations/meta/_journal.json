@@ -15,6 +15,13 @@
       "when": 1790445486102,
       "tag": "0001_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790446119484,
+      "tag": "0002_batch_history_page",
+      "breakpoints": true
     }
   ]
 }

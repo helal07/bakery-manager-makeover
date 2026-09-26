@@ -2859,6 +2859,17 @@ export type Database = {
         Args: { _note: string; _record_id: string; _table_name: string }
         Returns: undefined
       }
+      batch_history_page: {
+        Args: {
+          _from: string
+          _limit?: number
+          _offset?: number
+          _product?: string
+          _q?: string
+          _to: string
+        }
+        Returns: Json
+      }
       commit_damaged_movement: {
         Args: {
           _kind: string
