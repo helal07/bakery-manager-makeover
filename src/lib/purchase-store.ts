@@ -397,6 +397,14 @@ export async function updatePurchasePayment(
   paid: number,
   total: number,
 ): Promise<void> {
+  if (isLaravel()) {
+    // The server records payments as entries; post only the newly paid amount.
+    const current = await loadPurchase(uuid);
+    const extra = Math.round((paid - (current?.paid ?? 0)) * 100) / 100;
+    if (extra < 0) throw new Error("A payment already recorded cannot be reduced here. Record a supplier refund instead.");
+    if (extra > 0) await api.post(`purchases/${uuid}/payments`, { amount: extra, method: payment === "Paid" ? "Cash" : null });
+    return;
+  }
   const due = Math.max(0, total - paid);
   const { error } = await sb
     .from("purchases")
