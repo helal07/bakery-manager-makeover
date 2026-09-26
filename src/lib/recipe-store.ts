@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isLaravel } from "@/lib/backend-mode";
+import { api, apiRequest } from "@/lib/api-client";
 
 const sb = supabase as any;
 
@@ -74,6 +76,13 @@ export async function commitProduction(params: {
       subRecipeId: i.subRecipeId ?? null,
       qty: Number(i.qty),
     }));
+  if (isLaravel()) {
+    const res = await apiRequest<{ batchId: string }>("POST", "production/batches", {
+      body: { productId, batch, ingredients: cleanIngredients, overheads: cleanOverheads },
+      location: showroomId ?? "factory",
+    });
+    return { batchId: res?.batchId ?? null, visible: !!res?.batchId };
+  }
   const { data, error } = await sb.rpc("commit_production_batch", {
     _product_id: productId,
     _showroom_id: showroomId,
@@ -119,6 +128,12 @@ function explainBatchRpcError(err: any): Error {
 
 /** Reverse (delete) a production batch: returns raw materials, removes output. */
 export async function voidProductionBatch(batchId: string, note?: string): Promise<void> {
+  if (isLaravel()) {
+    try {
+      await apiRequest("DELETE", `production/batches/${batchId}`, { body: { note: note ?? null } });
+      return;
+    } catch (e) { throw explainBatchRpcError(e); }
+  }
   const { error } = await sb.rpc("void_production_batch", {
     _batch_id: batchId,
     _note: note ?? null,
@@ -143,6 +158,14 @@ export async function editProductionBatch(params: {
   const cleanOverheads = (params.overheads ?? [])
     .filter((o) => o.categoryId && Number(o.amount) > 0)
     .map((o) => ({ categoryId: o.categoryId, amount: Number(o.amount), note: o.note ?? null }));
+  if (isLaravel()) {
+    try {
+      await api.put(`production/batches/${params.batchId}`, {
+        batch: params.batch, ingredients: cleanIngredients, overheads: cleanOverheads,
+      });
+      return;
+    } catch (e) { throw explainBatchRpcError(e); }
+  }
   const { error } = await sb.rpc("edit_production_batch", {
     _batch_id: params.batchId,
     _batch: params.batch,
@@ -160,6 +183,7 @@ export async function findRecentSimilarBatch(
   productId: string,
   batch: number,
 ): Promise<{ batchId: string; minutesAgo: number } | null> {
+  if (isLaravel()) return null; // duplicate guard not available over the API yet
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const { data, error } = await sb
