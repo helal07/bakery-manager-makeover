@@ -105,6 +105,14 @@ class CatalogController extends Controller
     }
 
     /** Recipe (bill of materials) for one product, materials and sub-recipes together. */
+    /** Every recipe line (product_id, material_id, sub_recipe_id, qty). */
+    public function allRecipes(Request $request): JsonResponse
+    {
+        return response()->json([
+            'rows' => DB::table('recipes')->get(['product_id', 'material_id', 'sub_recipe_id', 'qty']),
+        ]);
+    }
+
     public function recipe(Request $request, string $productId): JsonResponse
     {
         $rows = DB::table('recipes as r')
@@ -162,6 +170,17 @@ class CatalogController extends Controller
             ->orderBy('name')->get();
 
         return response()->json(['rows' => $rows]);
+    }
+
+    /** Deactivate a sub-recipe that no product recipe uses. */
+    public function destroySubRecipe(Request $request, string $id): JsonResponse
+    {
+        if (DB::table('recipes')->where('sub_recipe_id', $id)->exists()) {
+            throw new BusinessRuleException('This sub-recipe is used in a product recipe. Remove it from the recipe first.');
+        }
+        SubRecipe::where('id', $id)->update(['is_active' => false]);
+
+        return response()->json(['ok' => true]);
     }
 
     public function saveSubRecipe(Request $request, ?string $id = null): JsonResponse

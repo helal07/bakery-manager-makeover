@@ -43,12 +43,14 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     Route::post('materials', [CatalogController::class, 'storeMaterial'])->middleware('perm:production.raw_materials.manage');
     Route::put('materials/{id}', [CatalogController::class, 'updateMaterial'])->middleware('perm:production.raw_materials.manage');
 
+    Route::get('recipes', [CatalogController::class, 'allRecipes'])->middleware('perm:production.recipes.view');
     Route::get('recipes/{productId}', [CatalogController::class, 'recipe'])->middleware('perm:production.recipes.view');
     Route::put('recipes/{productId}', [CatalogController::class, 'saveRecipe'])->middleware('perm:production.recipes.manage');
 
     Route::get('sub-recipes', [CatalogController::class, 'subRecipes'])->middleware('perm:production.recipes.view');
     Route::post('sub-recipes', [CatalogController::class, 'saveSubRecipe'])->middleware('perm:production.sub_recipes.manage');
     Route::put('sub-recipes/{id}', [CatalogController::class, 'saveSubRecipe'])->middleware('perm:production.sub_recipes.manage');
+    Route::delete('sub-recipes/{id}', [CatalogController::class, 'destroySubRecipe'])->middleware('perm:production.sub_recipes.manage');
 
     Route::get('customers', [CatalogController::class, 'customers'])->middleware('perm:contacts.customers.view');
     Route::get('suppliers', [CatalogController::class, 'suppliers'])->middleware('perm:contacts.suppliers.view');

@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
 const sb = supabase as any;
@@ -15,6 +17,14 @@ export type SubRecipe = {
 };
 
 export async function loadSubRecipes(): Promise<SubRecipe[]> {
+  if (isLaravel()) {
+    const res = await api.get<{ rows: any[] }>("sub-recipes");
+    return (res.rows ?? []).map((h) => ({
+      id: h.id, name: h.name, yield_qty: Number(h.yield_qty) || 0, yield_unit: h.yield_unit,
+      is_active: h.is_active, created_at: h.created_at ?? undefined,
+      items: (h.items ?? []).map((it: any) => ({ materialId: it.material_id, qty: Number(it.qty) || 0 })),
+    }));
+  }
   const { data: heads, error: e1 } = await sb
     .from("sub_recipes")
     .select("id,name,yield_qty,yield_unit,is_active,created_at")
@@ -118,6 +128,14 @@ export async function saveSubRecipe(input: {
   if (!(input.yield_qty > 0)) throw new Error("Yield qty must be greater than zero");
   if (!input.name.trim()) throw new Error("Name required");
 
+  if (isLaravel()) {
+    const body = {
+      name: input.name.trim(), yield_qty: input.yield_qty, yield_unit: input.yield_unit || "kg",
+      items: populated.map((i) => ({ materialId: i.materialId, qty: i.qty })),
+    };
+    const res = input.id ? await api.put<{ id: string }>(`sub-recipes/${input.id}`, body) : await api.post<{ id: string }>("sub-recipes", body);
+    return res.id;
+  }
   let id = input.id;
   const payload = {
     name: input.name.trim(),
@@ -149,6 +167,7 @@ export async function saveSubRecipe(input: {
 }
 
 export async function deleteSubRecipe(id: string): Promise<void> {
+  if (isLaravel()) { await api.del(`sub-recipes/${id}`); return; }
   // Guard: block if any recipe references this sub-recipe
   const { data: refs, error: e1 } = await sb
     .from("recipes")
