@@ -61,7 +61,7 @@ class CatalogController extends Controller
     public function updateProduct(Request $request, string $id): JsonResponse
     {
         $product = Product::findOrFail($id);
-        $data = $this->productRules($request);
+        $data = $this->productRules($request, partial: true);
         $this->assertSkuFree($data['sku'] ?? null, $id);
 
         $product->update($data);
@@ -260,9 +260,9 @@ class CatalogController extends Controller
 
     // -------------------------------------------------------------------
 
-    private function productRules(Request $request): array
+    private function productRules(Request $request, bool $partial = false): array
     {
-        return $request->validate([
+        $rules = [
             'sku' => ['nullable', 'string', 'max:60'],
             'name' => ['required', 'string', 'max:200'],
             'category_id' => ['nullable', 'uuid'],
@@ -277,7 +277,16 @@ class CatalogController extends Controller
             'description' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
             'show_on_landing' => ['nullable', 'boolean'],
-        ]);
+            'category' => ['nullable', 'string', 'max:120'],
+            'mfg_date' => ['nullable', 'date'],
+            'expiry_date' => ['nullable', 'date'],
+        ];
+        if ($partial) {
+            // Edits may send only the changed fields.
+            $rules = array_map(fn ($r) => array_map(fn ($x) => $x === 'required' ? 'sometimes' : $x, $r), $rules);
+        }
+
+        return $request->validate($rules);
     }
 
     private function materialRules(Request $request): array

@@ -1,3 +1,6 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api, apiRequest } from "@/lib/api-client";
+import { apiProductStock } from "@/lib/stock-api";
 import { supabase } from "@/integrations/supabase/client";
 import type { ProductCategory } from "./product-types";
 
@@ -64,6 +67,11 @@ export async function findProductBySku(
 ): Promise<{ id: string; name: string; sku: string } | null> {
   const s = sku.trim();
   if (!s) return null;
+  if (isLaravel()) {
+    const res = await api.get<{ rows: any[] }>("products", { q: s, include_inactive: true, limit: 50 });
+    const row = (res.rows ?? []).find((r) => String(r.sku ?? "").toLowerCase() === s.toLowerCase() && r.id !== excludeId);
+    return row ? { id: row.id, name: row.name, sku: row.sku ?? "" } : null;
+  }
   let q = sb.from("products").select("id,name,sku").ilike("sku", s).limit(1);
   if (excludeId) q = q.neq("id", excludeId);
   const { data, error } = await q;
@@ -86,6 +94,26 @@ export async function loadProducts(
   showroomId?: string | null,
   opts?: { includeInactive?: boolean; aggregateAll?: boolean },
 ): Promise<Product[]> {
+  if (isLaravel()) {
+    const rows: any[] = [];
+    for (let offset = 0; ; offset += 200) {
+      const page = await api.get<{ total: number; rows: any[] }>("products", {
+        limit: 200, offset, include_inactive: opts?.includeInactive ? true : undefined,
+      });
+      rows.push(...(page.rows ?? []));
+      if (!page.rows?.length || offset + 200 >= Number(page.total ?? 0)) break;
+    }
+    const stockMap = new Map<string, { qty: number; min: number }>();
+    if (!opts?.aggregateAll) {
+      for (const s of await apiProductStock(showroomId ?? null)) {
+        stockMap.set(s.product_id, { qty: s.quantity, min: s.min_stock });
+      }
+    }
+    return rows.map((r) => mapRow({
+      ...r,
+      category: r.category && typeof r.category === "object" ? r.category.name : r.category,
+    }, stockMap));
+  }
   let q = sb
     .from("products")
     .select("id,sku,name,category,price,cost,transfer_price,mfg_date,expiry_date,shelf_life_days,image_url,is_active,unit")
@@ -127,6 +155,28 @@ export async function addProduct(
     const d = new Date(mfg);
     d.setDate(d.getDate() + Number(p.shelfLifeDays));
     expiry = d.toISOString().slice(0, 10);
+  }
+  if (isLaravel()) {
+    const created = await api.post<any>("products", {
+      sku: p.sku || null, name: p.name, category: p.category, unit: p.unit ?? null,
+      price: p.price, cost: p.cost ?? 0, transfer_price: p.transferPrice ?? 0,
+      mfg_date: mfg, expiry_date: expiry, shelf_life_days: p.shelfLifeDays ?? null,
+      image_url: p.imageUrl ?? null, threshold: p.threshold ?? 0,
+    }).catch((e) => { throw friendlySkuError(e, p.sku); });
+    const opening = opts?.openingStock ?? 0;
+    if (opening > 0) {
+      await apiRequest("POST", "stock/adjust", {
+        body: { type: "product", id: created.id, qty: opening, note: "Opening stock" },
+        location: opts?.showroomId ?? "factory",
+      });
+    }
+    return {
+      id: created.id, sku: created.sku ?? "", name: created.name, category: p.category,
+      unit: created.unit ?? undefined, price: Number(created.price) || 0, cost: Number(created.cost) || 0,
+      transferPrice: Number(created.transfer_price) || 0, stock: opening, threshold: p.threshold ?? 0,
+      mfgDate: mfg ?? undefined, expiryDate: expiry ?? undefined,
+      shelfLifeDays: created.shelf_life_days ?? undefined, imageUrl: created.image_url ?? undefined,
+    };
   }
   const { data, error } = await sb
     .from("products")
@@ -199,6 +249,13 @@ export async function updateProduct(
   if (patch.expiryDate !== undefined) row.expiry_date = patch.expiryDate || null;
   if (patch.shelfLifeDays !== undefined) row.shelf_life_days = patch.shelfLifeDays ?? null;
   if (patch.imageUrl !== undefined) row.image_url = patch.imageUrl || null;
+  if (isLaravel()) {
+    if (patch.threshold !== undefined) row.threshold = patch.threshold;
+    if (Object.keys(row).length > 0) {
+      await api.put(`products/${id}`, row).catch((e) => { throw friendlySkuError(e, patch.sku ?? ""); });
+    }
+    return;
+  }
   if (Object.keys(row).length > 0) {
     const { error } = await sb.from("products").update(row).eq("id", id);
     if (error) throw friendlySkuError(error, patch.sku ?? "");
@@ -213,6 +270,7 @@ export async function updateProduct(
 }
 
 export async function removeProduct(id: string): Promise<void> {
+  if (isLaravel()) { await api.del(`products/${id}`); return; }
   const { error } = await sb.from("products").update({ is_active: false }).eq("id", id);
   if (error) throw error;
 }
