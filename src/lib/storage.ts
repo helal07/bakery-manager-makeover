@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiUpload } from "@/lib/api-client";
 import { supabase } from "@/integrations/supabase/client";
 
 export type ImageBucket = "product-images" | "customer-avatars" | "company-logos" | "landing-images";
@@ -94,6 +96,11 @@ export async function uploadImage(
   file: File,
 ): Promise<{ path: string; url: string }> {
   const compressed = await compressImage(file, COMPRESS_DEFAULTS[bucket]).catch(() => file);
+  if (isLaravel()) {
+    // Laravel keeps images public, so the stored "path" is simply the URL.
+    const up = await apiUpload(compressed, `${bucket}/${key}`.replace(/[^a-z0-9_\-/]/gi, "-"));
+    return { path: up.url, url: up.url };
+  }
   const rand = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)).replace(/-/g, "");
   const path = `${key}/${Date.now()}-${rand}.${extOf(compressed)}`;
   const { error: upErr } = await supabase.storage
@@ -109,6 +116,7 @@ export async function uploadImage(
 
 /** Refresh a signed URL for a stored object path (when it has expired). */
 export async function signImagePath(bucket: ImageBucket, path: string) {
+  if (isLaravel() || /^https?:/.test(path)) return path;
   const { data, error } = await supabase.storage
     .from(bucket)
     .createSignedUrl(path, SIGN_TTL);
