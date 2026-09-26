@@ -1,4 +1,4 @@
-import { api } from "@/lib/api-client";
+import { api, apiRequest } from "@/lib/api-client";
 
 /** Transfer calls to the Laravel API, shaped like the current database rows. */
 
@@ -23,12 +23,18 @@ export const apiTransferReceive = (id: string) => api.post(`transfers/${id}/rece
 export const apiTransferApproveDamaged = (id: string) => api.post(`transfers/${id}/approve-damaged`);
 export const apiTransferCancel = (id: string) => api.post(`transfers/${id}/cancel`);
 
-export async function apiTransferCreate(body: {
+export async function apiTransferCreate(source: string | null, body: {
   destShowroomId: string | null;
   kind?: string;
   note?: string | null;
   items: { productId?: string | null; materialId?: string | null; qty: number; unitPrice?: number | null }[];
 }): Promise<string> {
-  const res = await api.post<{ id: string }>("transfers", body);
+  const res = await apiRequest<{ id: string }>("POST", "transfers", { body, location: source ?? "factory" });
   return res.id;
+}
+
+/** Rows like `damaged_stock` for one showroom. */
+export async function apiDamagedStock(showroomId: string): Promise<{ product_id: string; showroom_id: string; quantity: number }[]> {
+  const res = await apiRequest<{ rows: any[] }>("GET", "stock/damaged", { location: showroomId });
+  return (res.rows ?? []).map((r) => ({ product_id: r.product_id, showroom_id: showroomId, quantity: Number(r.quantity ?? 0) }));
 }

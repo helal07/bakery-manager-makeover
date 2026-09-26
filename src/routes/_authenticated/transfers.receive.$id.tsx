@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { apiTransferById, apiTransferReceive, apiTransferCancel } from "@/lib/transfer-api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell, Card, Badge } from "@/components/app-shell";
@@ -47,6 +49,15 @@ function ReceiveTransferPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      if (isLaravel()) {
+        const { transfer: t, items: its } = await apiTransferById(id);
+        setTransfer(t as IncomingTransfer);
+        setItems(its as IncomingTransferItem[]);
+        const map: Record<string, Product> = {};
+        for (const i of its) if (i.product_id) map[i.product_id] = { id: i.product_id, name: i.product_name, sku: i.sku, unit: i.product_unit };
+        setProducts(map);
+        return;
+      }
       const { data: t, error } = await sb.from("transfers").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
       if (!t) { toast.error("Transfer not found"); navigate({ to: "/transfers" }); return; }
@@ -78,7 +89,8 @@ function ReceiveTransferPage() {
     if (!transfer) return;
     setBusy(true);
     try {
-      await receiveTransfer(transfer);
+      if (isLaravel()) await apiTransferReceive(transfer.id);
+      else await receiveTransfer(transfer);
       toast.success("Received and added to stock");
       setConfirm(null);
       load();
@@ -93,8 +105,11 @@ function ReceiveTransferPage() {
     if (!transfer) return;
     setBusy(true);
     try {
-      const { error } = await sb.from("transfers").update({ status: "cancelled" }).eq("id", transfer.id);
-      if (error) throw error;
+      if (isLaravel()) await apiTransferCancel(transfer.id);
+      else {
+        const { error } = await sb.from("transfers").update({ status: "cancelled" }).eq("id", transfer.id);
+        if (error) throw error;
+      }
       toast.success("Transfer cancelled");
       setConfirm(null);
       load();

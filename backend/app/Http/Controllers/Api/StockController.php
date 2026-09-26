@@ -74,6 +74,18 @@ class StockController extends Controller
         return response()->json(['total' => $total, 'limit' => $limit, 'offset' => $offset, 'rows' => $rows]);
     }
 
+    /** Damaged stock on hand at the current location. */
+    public function damaged(Request $request): JsonResponse
+    {
+        $showroomId = $this->location($request);
+        $q = DB::table('damaged_stock as s')
+            ->join('products as p', 'p.id', '=', 's.product_id')
+            ->where('s.quantity', '>', 0);
+        $q = $showroomId === null ? $q->whereNull('s.showroom_id') : $q->where('s.showroom_id', $showroomId);
+
+        return response()->json(['rows' => $q->orderBy('p.name')->get(['s.product_id', 'p.name', 'p.sku', 'p.unit', 's.quantity'])]);
+    }
+
     /** Movement history. type=product|material|damaged */
     public function ledger(Request $request): JsonResponse
     {

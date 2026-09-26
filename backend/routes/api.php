@@ -66,6 +66,7 @@ Route::middleware(['auth:sanctum', 'staff', 'location'])->group(function () {
     // ---------------- stock ----------------
     Route::get('stock/products', [StockController::class, 'products'])->middleware('perm:inventory.view');
     Route::get('stock/materials', [StockController::class, 'materials'])->middleware('perm:production.factory_stock.view,inventory.view');
+    Route::get('stock/damaged', [StockController::class, 'damaged'])->middleware('perm:inventory.view,inventory.damaged_return');
     Route::get('stock/ledger', [StockController::class, 'ledger'])->middleware('perm:inventory.view');
     Route::post('stock/adjust', [StockController::class, 'adjust'])->middleware('perm:inventory.adjust');
     Route::post('stock/damaged-sale', [StockController::class, 'damagedSale'])->middleware('perm:production.damaged.sell');
