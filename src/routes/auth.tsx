@@ -6,6 +6,8 @@ import { ChefHat, Loader2, Eye, EyeOff, Croissant, Wheat, Cookie, Sparkles } fro
 import bakeryBg from "@/assets/auth-bakery-bg.jpg";
 import { getCompany, pageTitle, getCompanyName } from "@/lib/company-settings";
 import { logLoginEvent } from "@/lib/audit-log-store";
+import { isLaravel } from "@/lib/backend-mode";
+import { backendSignIn, backendUserId } from "@/lib/auth-backend";
 
 
 const searchSchema = z.object({ denied: z.coerce.number().optional() });
@@ -34,6 +36,7 @@ function AuthPage() {
   // First-run lock: signup only visible when no users exist yet.
   useEffect(() => {
     (async () => {
+      if (isLaravel()) { setSignupAllowed(false); setMode("signin"); setCheckingSignup(false); return; }
       try {
         const { hasAnyUser } = await import("@/lib/bootstrap.functions");
         const res = await hasAnyUser();
@@ -46,8 +49,8 @@ function AuthPage() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
+    backendUserId().then((id) => {
+      if (id) navigate({ to: "/dashboard", replace: true });
     });
   }, [navigate]);
 
@@ -61,9 +64,8 @@ function AuthPage() {
     setBusy(true); setError(null); setInfo(null);
     try {
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        void logLoginEvent("Signed in with email & password");
+        await backendSignIn(email, password);
+        if (!isLaravel()) void logLoginEvent("Signed in with email & password");
         navigate({ to: "/dashboard", replace: true });
 
       } else {

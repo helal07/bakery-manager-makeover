@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 import { AppShell, Card } from "@/components/app-shell";
 import { Printer, FileDown, ChevronRight, Boxes, Layers, Receipt, BarChart3, Search, Pencil, Trash2 } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -177,6 +179,7 @@ function BatchHistoryPage() {
 
   /** One page (or, for print/Excel, every row) computed on the server. */
   const fetchPage = async (limit: number, offset: number) => {
+    if (isLaravel()) return fetchPageApi(limit, offset);
     const { data, error } = await sb.rpc("batch_history_page", {
       _from: `${from}T00:00:00.000Z`,
       _to: `${to}T23:59:59.999Z`,
@@ -201,6 +204,46 @@ function BatchHistoryPage() {
       materialCost: Number(r.material_cost) || 0,
       overhead: Number(r.overhead) || 0,
     }));
+    return { data, rows };
+  };
+
+  // Laravel API: max 200 rows per call, so larger requests (print/export) loop.
+  const fetchPageApi = async (limit: number, offset: number) => {
+    const all: any[] = [];
+    let first: any = null;
+    let off = offset;
+    while (all.length < limit) {
+      const take = Math.min(200, limit - all.length);
+      const res: any = await api.get("production/batches", {
+        from: `${from} 00:00:00`, to: `${to} 23:59:59`,
+        product: productFilter || null, q: q.trim() || null, limit: take, offset: off,
+      });
+      first ??= res;
+      all.push(...(res.rows ?? []));
+      off += take;
+      if ((res.rows ?? []).length < take || off >= Number(res.total)) break;
+    }
+    const rows: Batch[] = all.map((r) => ({
+      batchId: r.batchId,
+      batchNo: String(r.batchId).replace(/-/g, "").slice(0, 6).toUpperCase(),
+      createdAt: r.createdAt,
+      productId: r.productId,
+      productName: r.productName ?? "—",
+      qty: Number(r.qty) || 0,
+      price: Number(r.price) || 0,
+      transferPrice: Number(r.transferPrice) || 0,
+      materials: ((r.materials ?? []) as any[]).map((m) => ({
+        name: m.name, unit: m.unit, qty: Number(m.qty) || 0, cost: Number(m.cost) || 0,
+      })),
+      materialCost: Number(r.materialCost) || 0,
+      overhead: Number(r.overheadCost) || 0,
+    }));
+    const t = first?.totals ?? {};
+    const data = {
+      total: first?.total ?? 0,
+      products: first?.products ?? [],
+      totals: { qty: t.qty, cost: t.materialCost, overhead: t.overheadCost, value: t.value },
+    };
     return { data, rows };
   };
 
