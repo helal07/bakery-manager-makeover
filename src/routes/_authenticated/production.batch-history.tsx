@@ -3,7 +3,7 @@ import { AppShell, Card } from "@/components/app-shell";
 import { Printer, FileDown, ChevronRight, Boxes, Layers, Receipt, BarChart3, Search, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { scopeTo } from "@/lib/scope";
+import { Pager } from "@/components/pager";
 import { pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,194 +166,87 @@ function BatchHistoryPage() {
     return "custom";
   }, [from, to]);
 
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
+  const [totals, setTotals] = useState({ batches: 0, qty: 0, cost: 0, overhead: 0, value: 0 });
+
+  // Filters change → back to the first page.
+  useEffect(() => setPage(0), [from, to, productFilter, q]);
+
+  /** One page (or, for print/Excel, every row) computed on the server. */
+  const fetchPage = async (limit: number, offset: number) => {
+    const { data, error } = await sb.rpc("batch_history_page", {
+      _from: `${from}T00:00:00.000Z`,
+      _to: `${to}T23:59:59.999Z`,
+      _product: productFilter || null,
+      _q: q.trim() || null,
+      _limit: limit,
+      _offset: offset,
+    });
+    if (error) throw error;
+    const rows: Batch[] = ((data?.rows ?? []) as any[]).map((r) => ({
+      batchId: r.bid,
+      batchNo: String(r.bid).replace(/-/g, "").slice(0, 6).toUpperCase(),
+      createdAt: r.created_at,
+      productId: r.product_id,
+      productName: r.name ?? "—",
+      qty: Number(r.net) || 0,
+      price: Number(r.price) || 0,
+      transferPrice: Number(r.transfer_price) || 0,
+      materials: ((r.materials ?? []) as any[]).map((m) => ({
+        name: m.name, unit: m.unit, qty: Number(m.qty) || 0, cost: Number(m.cost) || 0,
+      })),
+      materialCost: Number(r.material_cost) || 0,
+      overhead: Number(r.overhead) || 0,
+    }));
+    return { data, rows };
+  };
+
   useEffect(() => {
     let cancel = false;
     setLoading(true);
     setDenied(false);
     setLoadError(null);
-    (async () => {
-      // Production always lives in the factory scope (showroom_id IS NULL).
-      const ledRes = await scopeTo(
-        sb
-          .from("stock_ledger")
-          .select("id,ref_id,product_id,qty,kind,created_at,products(name,price,transfer_price)")
-          .in("kind", ["production", "production_void"])
-          .gte("created_at", `${from}T00:00:00.000Z`)
-          .lte("created_at", `${to}T23:59:59.999Z`)
-          .order("created_at", { ascending: false }),
-        null,
-      );
-
-      if (cancel) return;
-      if (ledRes.error) {
-        console.error("Batch history load failed", ledRes.error);
-        const code = (ledRes.error as any).code;
-        if (code === "42501" || /permission/i.test(ledRes.error.message)) setDenied(true);
-        else setLoadError(ledRes.error.message);
-        setBatches([]);
-        setLoading(false);
-        return;
-      }
-      const allRows = (ledRes.data ?? []) as any[];
-      // Net out reversals: a deleted (voided) batch nets to zero and must vanish
-      // from the list; an edited batch keeps only its latest effective quantity.
-      const netQty = new Map<string, number>();
-      for (const r of allRows) {
-        const key = r.ref_id ?? r.id;
-        netQty.set(key, (netQty.get(key) ?? 0) + (Number(r.qty) || 0));
-      }
-      const seen = new Set<string>();
-      const rows = allRows.filter((r) => {
-        const key = r.ref_id ?? r.id;
-        if (r.kind !== "production") return false;
-        if ((netQty.get(key) ?? 0) <= 1e-9) return false;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      const ids = Array.from(new Set(rows.map((r) => r.ref_id).filter(Boolean)));
-
-      let consumed: any[] = [];
-      let overheads: any[] = [];
-      if (ids.length) {
-        // Long id lists make the request URL exceed proxy limits (HTTP 414),
-        // so fetch in small chunks and merge the results.
-        const chunks: string[][] = [];
-        for (let i = 0; i < ids.length; i += 20) chunks.push(ids.slice(i, i + 20) as string[]);
-        // Run chunks in parallel (not one after another) and always scope to the
-        // factory so the showroom index is used.
-        const results = await Promise.all(
-          chunks.map((chunk) =>
-            Promise.all([
-              scopeTo(
-                sb
-                  .from("raw_stock_ledger")
-                  .select("ref_id,material_id,qty,kind,raw_materials(name,unit,cost)")
-                  .in("kind", ["production_consume", "production_reverse"])
-                  .in("ref_id", chunk),
-                null,
-              ),
-              sb.from("production_overheads").select("batch_id,amount").in("batch_id", chunk),
-            ]),
-          ),
-        );
-        if (cancel) return;
-        for (const [cRes, oRes] of results) {
-          if (cRes.error) {
-            console.error("Batch history materials load failed", cRes.error);
-            setLoadError(cRes.error.message);
-            setBatches([]);
-            setLoading(false);
-            return;
-          }
-          consumed = consumed.concat((cRes.data ?? []) as any[]);
-          overheads = overheads.concat((oRes.data ?? []) as any[]);
-        }
-      }
-
-      if (cancel) return;
-
-      // Net consumption per material (consume rows are negative, reverse rows positive)
-      const netMats = new Map<string, Map<string, { name: string; unit: string; cost: number; qty: number }>>();
-      for (const c of consumed) {
-        const perBatch = netMats.get(c.ref_id) ?? new Map();
-        const entry =
-          perBatch.get(c.material_id) ?? {
-            name: c.raw_materials?.name ?? "—",
-            unit: c.raw_materials?.unit ?? "",
-            cost: Number(c.raw_materials?.cost) || 0,
-            qty: 0,
-          };
-        entry.qty += Number(c.qty) || 0;
-        perBatch.set(c.material_id, entry);
-        netMats.set(c.ref_id, perBatch);
-      }
-      const matsByBatch = new Map<string, Batch["materials"]>();
-      for (const [ref, perBatch] of netMats) {
-        const arr: Batch["materials"] = [];
-        for (const e of perBatch.values()) {
-          const qty = Math.abs(e.qty);
-          if (qty <= 1e-9) continue;
-          arr.push({ name: e.name, unit: e.unit, qty, cost: qty * e.cost });
-        }
-        matsByBatch.set(ref, arr);
-      }
-      const ohByBatch = new Map<string, number>();
-      for (const o of overheads) {
-        ohByBatch.set(o.batch_id, (ohByBatch.get(o.batch_id) ?? 0) + (Number(o.amount) || 0));
-      }
-
-      const list: Batch[] = rows.map((r) => {
-        const batchId: string = r.ref_id ?? r.id;
-        const mats = (matsByBatch.get(batchId) ?? []).sort((a, b) => a.name.localeCompare(b.name));
-        return {
-          batchId,
-          batchNo: String(batchId).replace(/-/g, "").slice(0, 6).toUpperCase(),
-          createdAt: r.created_at,
-          productId: r.product_id,
-          productName: r.products?.name ?? "—",
-          qty: netQty.get(batchId) ?? (Number(r.qty) || 0),
-
-          price: Number(r.products?.price) || 0,
-          transferPrice: Number(r.products?.transfer_price) || 0,
-          materials: mats,
-          materialCost: mats.reduce((s, m) => s + m.cost, 0),
-          overhead: ohByBatch.get(batchId) ?? 0,
-        };
-      });
-
-
-      setBatches(list);
-      setLoading(false);
-    })().catch((e) => {
-      if (!cancel) {
-        console.error("Batch history load failed", e);
-        setLoadError(e?.message ?? "Could not load batches");
-        setLoading(false);
-      }
-    });
+    const t = setTimeout(() => {
+      fetchPage(PAGE_SIZE, page * PAGE_SIZE)
+        .then(({ data, rows }) => {
+          if (cancel) return;
+          setBatches(rows);
+          setTotal(Number(data?.total) || 0);
+          setProducts((data?.products ?? []) as any[]);
+          const tt = data?.totals ?? {};
+          setTotals({
+            batches: Number(data?.total) || 0,
+            qty: Number(tt.qty) || 0,
+            cost: Number(tt.cost) || 0,
+            overhead: Number(tt.overhead) || 0,
+            value: Number(tt.value) || 0,
+          });
+          setLoading(false);
+        })
+        .catch((e: any) => {
+          if (cancel) return;
+          console.error("Batch history load failed", e);
+          if (e?.code === "42501" || /permission/i.test(e?.message ?? "")) setDenied(true);
+          else setLoadError(e?.message ?? "Could not load batches");
+          setBatches([]);
+          setLoading(false);
+        });
+    }, q ? 300 : 0); // debounce typing in the search box
     return () => {
       cancel = true;
+      clearTimeout(t);
     };
-  }, [from, to, reloadKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [from, to, productFilter, q, page, reloadKey]);
 
-  const products = useMemo(() => {
-    const m = new Map<string, string>();
-    batches.forEach((b) => m.set(b.productId, b.productName));
-    return Array.from(m, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [batches]);
-
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return batches.filter((b) => {
-      if (productFilter && b.productId !== productFilter) return false;
-      if (!needle) return true;
-      return (
-        b.batchNo.toLowerCase().includes(needle) ||
-        b.productName.toLowerCase().includes(needle) ||
-        b.materials.some((m) => m.name.toLowerCase().includes(needle))
-      );
-    });
-  }, [batches, productFilter, q]);
-
-  const totals = useMemo(
-    () =>
-      filtered.reduce(
-        (a, b) => ({
-          batches: a.batches + 1,
-          qty: a.qty + b.qty,
-          cost: a.cost + b.materialCost,
-          overhead: a.overhead + b.overhead,
-          value: a.value + b.qty * b.price,
-        }),
-        { batches: 0, qty: 0, cost: 0, overhead: 0, value: 0 },
-      ),
-    [filtered],
-  );
+  const filtered = batches;
 
   const rangeLabel = from === to ? from : `${from} → ${to}`;
 
-  const reportRows: BatchReportRow[] = filtered.map((b) => ({
+  const toReportRows = (list: Batch[]): BatchReportRow[] => list.map((b) => ({
     batchNo: b.batchNo,
     // Short date for compact printing: dd/mm HH:mm (year is in the period line)
     dateTime: new Date(b.createdAt).toLocaleString("en-GB", {
@@ -370,9 +263,30 @@ function BatchHistoryPage() {
 
 
 
-  const doPrint = () => {
-    const ok = printBatchHistoryReport({ company, rangeLabel, rows: reportRows });
+  // Print / Excel need every batch in the range, fetched only on demand.
+  const loadAllRows = async () => {
+    try {
+      const { rows } = await fetchPage(100000, 0);
+      return toReportRows(rows);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not load batches");
+      return null;
+    }
+  };
+
+  const doPrint = async () => {
+    // Open the window synchronously would be ideal, but the report builder
+    // opens it itself; most browsers allow it right after a click.
+    const rows = await loadAllRows();
+    if (!rows) return;
+    const ok = printBatchHistoryReport({ company, rangeLabel, rows });
     if (!ok) toast.error("Please allow pop-ups to print the report");
+  };
+
+  const doExcel = async () => {
+    const rows = await loadAllRows();
+    if (!rows) return;
+    exportBatchHistoryXlsx({ company, rangeLabel, rows, fileName: `batch-history-${from}_to_${to}.xlsx` });
   };
 
   return (
@@ -381,7 +295,7 @@ function BatchHistoryPage() {
       subtitle="সব প্রোডাক্টের ব্যাচ হিস্টরি — দিন/সপ্তাহ/মাস অনুযায়ী ফিল্টার ও প্রিন্ট"
       actions={
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => exportBatchHistoryXlsx({ company, rangeLabel, rows: reportRows, fileName: `batch-history-${from}_to_${to}.xlsx` })}>
+          <Button size="sm" variant="outline" onClick={doExcel}>
             <FileDown className="size-3.5" /> Excel
           </Button>
           <Button size="sm" onClick={doPrint}>
