@@ -1,5 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isLaravel } from "@/lib/backend-mode";
+import { apiMe } from "@/lib/api-client";
+import { backendUserId } from "@/lib/auth-backend";
 
 /**
  * Single source of truth for the signed-in user's RBAC data.
@@ -73,6 +76,7 @@ export function clearRbacSnapshots() {
 /** Fetches everything RBAC needs in two requests (roles bridge + assignments). */
 export async function fetchRbac(userId: string): Promise<RbacData> {
   if (!userId) return emptyRbac();
+  if (isLaravel()) return fetchRbacFromApi(userId);
 
   const [legacyRes, assignmentsRes] = await Promise.all([
     supabase.from("user_roles").select("role").eq("user_id", userId),
@@ -125,6 +129,33 @@ export async function fetchRbac(userId: string): Promise<RbacData> {
   return data;
 }
 
+/** Laravel mode: one /api/auth/me call gives roles, permissions and locations. */
+async function fetchRbacFromApi(userId: string): Promise<RbacData> {
+  const me = await apiMe();
+  if (!me) return emptyRbac(userId);
+  const legacyRoles = (me.roles ?? []).map((r) => String(r).toLowerCase());
+  const isSuperadmin = legacyRoles.includes("superadmin") || legacyRoles.includes("owner");
+  const hasGlobalAccess = isSuperadmin || !!me.is_global_admin || !!me.can_access_factory;
+  const locIds = (me.locations ?? []).map((l) => l.id);
+  const perms = me.permissions ?? [];
+  // The server enforces location + permission on every call; here the same
+  // key list is applied to each allowed location so menus/gates match.
+  const scoped: Record<string, string[]> = {};
+  for (const id of locIds) scoped[id] = perms;
+  const data: RbacData = {
+    userId,
+    legacyRoles,
+    isSuperadmin,
+    hasGlobalAccess,
+    hasAnyRole: isSuperadmin || legacyRoles.length > 0 || perms.length > 0,
+    global: hasGlobalAccess ? perms : [],
+    scoped,
+    assignedShowroomIds: locIds,
+  };
+  writeRbacSnapshot(data);
+  return data;
+}
+
 export const rbacQueryKey = (userId: string) => ["rbac", userId] as const;
 
 export const rbacQueryOptions = (userId: string) =>
@@ -142,6 +173,5 @@ export const rbacQueryOptions = (userId: string) =>
 
 /** Reads the current user id without a network round-trip when a session exists. */
 export async function getCurrentUserId(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.user?.id ?? null;
+  return backendUserId();
 }

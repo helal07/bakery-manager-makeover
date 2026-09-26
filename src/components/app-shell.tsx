@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate, Outlet } from "@tanstack/react-router";
+import { backendSignOut } from "@/lib/auth-backend";
 import { DevFooter } from "@/components/dev-footer";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { LogOut, Menu, X, Store, Factory, Calendar, ShoppingCart } from "lucide-react";
@@ -550,7 +551,7 @@ function TopBarUser() {
       sessionStorage.removeItem("mf.locationAsked");
     } catch { /* ignore */ }
 
-    await supabase.auth.signOut();
+    await backendSignOut();
     navigate({ to: "/auth", replace: true });
   };
 
@@ -865,7 +866,7 @@ function UserMenu() {
     } catch { /* ignore */ }
 
     userMenuLoadedOnce = false;
-    await supabase.auth.signOut();
+    await backendSignOut();
     navigate({ to: "/auth", replace: true });
   };
 

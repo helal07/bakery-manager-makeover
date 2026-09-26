@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRbac } from "@/hooks/use-permissions";
+import { isLaravel } from "@/lib/backend-mode";
+import { getCachedApiSession } from "@/lib/api-client";
 
 
 export type Showroom = {
@@ -59,6 +61,13 @@ export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
 
   const loadShowrooms = useCallback(async () => {
     setRoomsLoading(true);
+    if (isLaravel()) {
+      // Allowed locations come with the session (/api/auth/me).
+      const locs = (getCachedApiSession()?.locations ?? []).filter((l) => !l.is_factory);
+      setShowrooms(locs.map((l) => ({ id: l.id, name: l.name, code: l.code, city: l.city })));
+      setRoomsLoading(false);
+      return;
+    }
     // Load showrooms — RLS filters to the user's assigned outlets automatically.
     const { data: rooms } = await supabase
       .from("showrooms")
@@ -73,7 +82,7 @@ export function ShowroomScopeProvider({ children }: { children: ReactNode }) {
     await Promise.all([reloadRbac(), loadShowrooms()]);
   }, [reloadRbac, loadShowrooms]);
 
-  useEffect(() => { void loadShowrooms(); }, [loadShowrooms]);
+  useEffect(() => { void loadShowrooms(); }, [loadShowrooms, rbac.userId, rbac.assignedShowroomIds.length]);
 
   const optionCount = showrooms.length + (hasGlobalAccess ? 1 : 0);
 
