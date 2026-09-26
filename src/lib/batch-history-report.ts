@@ -39,13 +39,18 @@ type MatCol = { name: string; unit: string };
 
 function materialColumns(rows: BatchReportRow[]): MatCol[] {
   const seen = new Map<string, MatCol>();
+  const totals = new Map<string, number>();
   for (const r of rows) {
     for (const m of r.materials) {
       const key = `${m.name}||${m.unit}`;
       if (!seen.has(key)) seen.set(key, { name: m.name, unit: m.unit });
+      totals.set(key, (totals.get(key) ?? 0) + Math.abs(m.qty));
     }
   }
-  return [...seen.values()];
+  // Most-used ingredients first (descending total usage), ties by name
+  return [...seen.entries()]
+    .sort((a, b) => (totals.get(b[0]) ?? 0) - (totals.get(a[0]) ?? 0) || a[0].localeCompare(b[0]))
+    .map(([, col]) => col);
 }
 
 const cellFor = (r: BatchReportRow, c: MatCol) => {
