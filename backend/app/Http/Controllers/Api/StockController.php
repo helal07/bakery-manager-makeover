@@ -141,7 +141,7 @@ class StockController extends Controller
         ]);
 
         $showroomId = $this->location($request);
-        $kind = $data['qty'] >= 0 ? 'adjust_in' : 'adjust_out';
+        $kind = 'adjustment'; // same kind the current database writes, so reports match
 
         $id = $data['type'] === 'product'
             ? $this->stock->productMovement($request->user(), $data['id'], $showroomId, $data['qty'], $kind, 'adjustment', null, $data['note'] ?? null)

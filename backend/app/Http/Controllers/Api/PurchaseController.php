@@ -270,6 +270,86 @@ class PurchaseController extends Controller
         });
     }
 
+    /** Purchase returns list for the current location (with supplier name and line count). */
+    public function returnsIndex(Request $request): JsonResponse
+    {
+        $showroomId = $this->location($request);
+        $q = DB::table('purchase_returns as r')->leftJoin('suppliers as s', 's.id', '=', 'r.supplier_id');
+        $q = $showroomId === null ? $q->whereNull('r.showroom_id') : $q->where('r.showroom_id', $showroomId);
+        $rows = $q->orderByDesc('r.created_at')->limit(1000)->get([
+            'r.id', 'r.code', 'r.created_at', 'r.purchase_id', 'r.invoice_ref', 'r.amount',
+            'r.reason', 'r.showroom_id', 's.name as supplier_name',
+            DB::raw('(SELECT COUNT(*) FROM purchase_return_items i WHERE i.return_id = r.id) as item_count'),
+        ]);
+
+        return response()->json(['rows' => $rows]);
+    }
+
+    public function destroyReturn(Request $request, string $id): JsonResponse
+    {
+        $showroomId = $this->location($request);
+        $q = DB::table('purchase_returns')->where('id', $id);
+        $q = $showroomId === null ? $q->whereNull('showroom_id') : $q->where('showroom_id', $showroomId);
+        $q->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Supplier payments list for the current location. */
+    public function paymentsIndex(Request $request): JsonResponse
+    {
+        $showroomId = $this->location($request);
+        $q = DB::table('supplier_payments as sp')
+            ->leftJoin('suppliers as s', 's.id', '=', 'sp.supplier_id')
+            ->leftJoin('purchases as p', 'p.id', '=', 'sp.purchase_id');
+        $q = $showroomId === null ? $q->whereNull('sp.showroom_id') : $q->where('sp.showroom_id', $showroomId);
+        $rows = $q->orderByDesc('sp.paid_on')->orderByDesc('sp.created_at')->limit(2000)->get([
+            'sp.id', 'sp.paid_on', 'sp.amount', 'sp.method', 'sp.reference', 'sp.note', 'sp.showroom_id',
+            'sp.supplier_id', 'sp.purchase_id', 's.name as supplier_name', 'p.code as purchase_code',
+        ]);
+
+        return response()->json(['rows' => $rows]);
+    }
+
+    /** Payment not tied to a purchase (on account). Purchase-linked payments use addPayment. */
+    public function storeSupplierPayment(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'supplierId' => ['required', 'uuid'],
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'method' => ['nullable', 'string', 'max:40'],
+            'reference' => ['nullable', 'string', 'max:80'],
+            'note' => ['nullable', 'string', 'max:500'],
+            'paidOn' => ['nullable', 'date'],
+        ]);
+        DB::table('supplier_payments')->insert([
+            'id' => (string) Str::uuid(),
+            'supplier_id' => $data['supplierId'],
+            'purchase_id' => null,
+            'showroom_id' => $this->location($request),
+            'amount' => Num::money($data['amount']),
+            'method' => $data['method'] ?? 'cash',
+            'reference' => $data['reference'] ?? null,
+            'note' => $data['note'] ?? null,
+            'paid_on' => $data['paidOn'] ?? now()->toDateString(),
+            'created_by' => $request->user()?->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['ok' => true], 201);
+    }
+
+    public function destroySupplierPayment(Request $request, string $id): JsonResponse
+    {
+        $showroomId = $this->location($request);
+        $q = DB::table('supplier_payments')->where('id', $id);
+        $q = $showroomId === null ? $q->whereNull('showroom_id') : $q->where('showroom_id', $showroomId);
+        $q->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
     // -------------------------------------------------------------------
 
     private function rules(Request $request): array

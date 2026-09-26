@@ -10,7 +10,7 @@
 - [x] POS checkout (new sale)
 - [x] POS: held sales, cash register
 - [x] POS: sale edit, customer due lookup, today's sales
-- [ ] Purchase returns list & supplier payments list — need API endpoints
-- [ ] Stock adjust dialog & movement history — wire to stock/adjust + stock/ledger
+- [x] Purchase returns list & supplier payments list
+- [x] Stock adjust dialog & movement history
 - [ ] Settings, HR, expenses, landing page, audit log, backup — no API yet
 - [ ] Real test on Hostinger with a live Laravel server (blocked: server not here)

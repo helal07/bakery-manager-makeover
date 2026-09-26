@@ -1,4 +1,5 @@
 import { isLaravel } from "@/lib/backend-mode";
+import { apiRequest } from "@/lib/api-client";
 import { apiRawMaterialsWithStock } from "@/lib/stock-api";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -84,6 +85,10 @@ export async function adjustRawStock(
   delta: number,
   note?: string,
 ): Promise<void> {
+  if (isLaravel()) {
+    await apiRequest("POST", "stock/adjust", { location: showroomId ?? "factory", body: { type: "material", id: materialId, qty: delta, note: note ?? null } });
+    return;
+  }
   const { error } = await sb.rpc("commit_raw_stock_movement", {
     _material_id: materialId,
     _showroom_id: showroomId,
