@@ -1,3 +1,4 @@
+import { chunk } from "@/lib/chunk";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeTo } from "@/lib/scope";
 
@@ -39,8 +40,10 @@ export async function loadRecentBatchesWithQc(showroomId: string | null): Promis
   const ids = ((batches ?? []) as any[]).map((b) => b.id);
   const qcMap: Record<string, QcCheck> = {};
   if (ids.length > 0) {
-    const { data: qcs } = await sb.from("qc_checks").select("*").in("batch_id", ids);
-    for (const q of (qcs ?? []) as QcCheck[]) qcMap[q.batch_id] = q;
+    const parts = await Promise.all(
+      chunk(ids).map((c) => sb.from("qc_checks").select("*").in("batch_id", c)),
+    );
+    for (const { data: qcs } of parts) for (const q of (qcs ?? []) as QcCheck[]) qcMap[q.batch_id] = q;
   }
 
   return ((batches ?? []) as any[]).map((b) => ({

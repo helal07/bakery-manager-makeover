@@ -66,17 +66,15 @@ export type RegisterSummary = {
 export async function summarizeRegister(reg: RegisterSession): Promise<RegisterSummary> {
   const { data: sales } = await sb
     .from("sales")
-    .select("id,total")
+    .select("id,total,sale_payments(method,amount)")
     .eq("register_id", reg.id);
   const saleIds = (sales ?? []).map((s: any) => s.id);
   const totalSales = (sales ?? []).reduce((s: number, x: any) => s + Number(x.total || 0), 0);
   const saleCount = (sales ?? []).length;
   let cash = 0, card = 0, mobile = 0, bank = 0, cheque = 0, other = 0;
   if (saleIds.length) {
-    const { data: pays } = await sb
-      .from("sale_payments")
-      .select("method,amount")
-      .in("sale_id", saleIds);
+    // Payments come embedded with the sales (avoids a huge id list in the URL).
+    const pays = (sales ?? []).flatMap((s: any) => s.sale_payments ?? []);
     for (const p of pays ?? []) {
       const a = Number(p.amount || 0);
       if (p.method === "cash") cash += a;
