@@ -5,6 +5,8 @@ import { Search, Filter, Plus, X, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { scopeTo } from "@/lib/scope";
+import { isLaravel } from "@/lib/backend-mode";
+import { apiRequest } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/purchasing/payments")({
   head: () => ({ meta: [{ title: "Supplier Payments · Muzahid Food" }] }),
@@ -39,6 +41,14 @@ function SupplierPayments() {
 
   const refresh = async () => {
     setLoading(true);
+    if (isLaravel()) {
+      try {
+        const res = await apiRequest<any>("GET", "supplier-payments", { location: currentShowroomId ?? "factory" });
+        setRows((res?.rows ?? []).map((r: any) => ({ ...r, amount: Number(r.amount) || 0 })));
+      } catch (e) { console.error(e); setRows([]); }
+      setLoading(false);
+      return;
+    }
     let query = sb.from("supplier_payments")
       .select("id,paid_on,amount,method,reference,note,showroom_id,supplier_id,purchase_id,suppliers(name),purchases(code)")
       .order("paid_on", { ascending: false }).order("created_at", { ascending: false });
@@ -73,6 +83,11 @@ function SupplierPayments() {
 
   const remove = async (id: string) => {
     if (!confirm("Delete this payment?")) return;
+    if (isLaravel()) {
+      try { await apiRequest("DELETE", `supplier-payments/${id}`, { location: currentShowroomId ?? "factory" }); refresh(); }
+      catch (e: any) { alert(e?.message ?? "Failed"); }
+      return;
+    }
     const { error } = await sb.from("supplier_payments").delete().eq("id", id);
     if (error) { alert(error.message); return; }
     refresh();
@@ -173,6 +188,10 @@ function NewPayment({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
 
   useEffect(() => {
     (async () => {
+      if (isLaravel()) {
+        try { const r = await apiRequest<any>("GET", "suppliers"); setSuppliers(r?.rows ?? []); } catch { setSuppliers([]); }
+        return;
+      }
       const { data } = await sb.from("suppliers").select("id,name").eq("is_active", true).order("name");
       setSuppliers(data ?? []);
     })();
@@ -181,6 +200,13 @@ function NewPayment({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
   useEffect(() => {
     if (!supplierId) { setPurchases([]); return; }
     (async () => {
+      if (isLaravel()) {
+        try {
+          const r = await apiRequest<any>("GET", "purchases", { location: currentShowroomId ?? "factory", query: { supplier: supplierId, limit: 50 } });
+          setPurchases(r?.rows ?? []);
+        } catch { setPurchases([]); }
+        return;
+      }
       let q = sb.from("purchases").select("id,code,total,paid,due,purchase_date").eq("supplier_id", supplierId).order("purchase_date", { ascending: false }).limit(50);
       q = scopeTo(q, currentShowroomId, "showroom_id");
       const { data } = await q;
@@ -192,6 +218,16 @@ function NewPayment({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
     if (!supplierId) { alert("Pick a supplier"); return; }
     if (!amount || amount <= 0) { alert("Enter an amount"); return; }
     setSaving(true);
+    if (isLaravel()) {
+      try {
+        const body = { amount, method, reference: reference || null, note: note || null, paidOn };
+        if (purchaseId) await apiRequest("POST", `purchases/${purchaseId}/payments`, { location: currentShowroomId ?? "factory", body });
+        else await apiRequest("POST", "supplier-payments", { location: currentShowroomId ?? "factory", body: { ...body, supplierId } });
+      } catch (e: any) { setSaving(false); alert(e?.message ?? "Failed"); return; }
+      setSaving(false);
+      onSaved();
+      return;
+    }
     const { data: userRes } = await supabase.auth.getUser();
     const chosen = purchases.find((p) => p.id === purchaseId);
     const { error } = await sb.from("supplier_payments").insert({

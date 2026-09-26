@@ -5,6 +5,8 @@ import { Search, Filter, Undo2, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShowroomScope } from "@/hooks/use-showroom-scope";
 import { scopeTo } from "@/lib/scope";
+import { isLaravel } from "@/lib/backend-mode";
+import { apiRequest } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/purchasing/returns")({
   head: () => ({ meta: [{ title: "Purchase Returns · Muzahid Food" }] }),
@@ -50,6 +52,14 @@ function PurchaseReturns() {
 
   const refresh = async () => {
     setLoading(true);
+    if (isLaravel()) {
+      try {
+        const res = await apiRequest<any>("GET", "purchase-returns", { location: currentShowroomId ?? "factory" });
+        setRows((res?.rows ?? []).map((r: any) => ({ ...r, amount: Number(r.amount) || 0, item_count: Number(r.item_count) || 0 })));
+      } catch (e) { console.error(e); setRows([]); }
+      setLoading(false);
+      return;
+    }
     let query = sb
       .from("purchase_returns")
       .select("id,code,created_at,purchase_id,invoice_ref,amount,reason,showroom_id,supplier_id,suppliers(name),purchase_return_items(id)")
@@ -87,6 +97,11 @@ function PurchaseReturns() {
 
   const remove = async (id: string) => {
     if (!confirm("Delete this return?")) return;
+    if (isLaravel()) {
+      try { await apiRequest("DELETE", `purchase-returns/${id}`, { location: currentShowroomId ?? "factory" }); refresh(); }
+      catch (e: any) { alert(e?.message ?? "Failed"); }
+      return;
+    }
     const { error } = await sb.from("purchase_returns").delete().eq("id", id);
     if (error) { alert(error.message); return; }
     refresh();
@@ -190,6 +205,13 @@ function NewReturn({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
     let cancel = false;
     const t = setTimeout(async () => {
       if (!pQuery.trim()) { setMatches([]); return; }
+      if (isLaravel()) {
+        try {
+          const r = await apiRequest<any>("GET", "purchases", { location: currentShowroomId ?? "factory", query: { q: pQuery.trim(), limit: 20 } });
+          if (!cancel) setMatches((r?.rows ?? []).map((x: any) => ({ ...x, showroom_id: currentShowroomId, suppliers: { name: x.supplier_name } })));
+        } catch { if (!cancel) setMatches([]); }
+        return;
+      }
       let q = sb.from("purchases").select("id,code,supplier_id,total,purchase_date,showroom_id,suppliers(name)").order("purchase_date", { ascending: false }).limit(20);
       q = scopeTo(q, currentShowroomId, "showroom_id");
       const s = pQuery.trim();
@@ -202,7 +224,9 @@ function NewReturn({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
 
   const pick = async (p: any) => {
     setPurchase(p); setMatches([]); setPQuery("");
-    const { data } = await sb.from("purchase_items").select("*").eq("purchase_id", p.id);
+    const data = isLaravel()
+      ? ((await apiRequest<any>("GET", `purchases/${p.id}`)).items ?? [])
+      : (await sb.from("purchase_items").select("*").eq("purchase_id", p.id)).data;
     setItems(data ?? []); setSelected({});
   };
 
@@ -224,6 +248,20 @@ function NewReturn({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       }));
     if (!chosen.length) { alert("Select at least one item"); return; }
     setSaving(true);
+    if (isLaravel()) {
+      try {
+        await apiRequest("POST", `purchases/${purchase.id}/returns`, {
+          location: purchase.showroom_id ?? "factory",
+          body: { reason, note: note || null, items: items.filter((it) => (selected[it.id] ?? 0) > 0).map((it) => ({
+            materialId: it.material_id ?? null, productId: it.material_id ? null : (it.product_id ?? null),
+            qty: selected[it.id], price: Number(it.unit_price || it.price || 0),
+          })) },
+        });
+      } catch (e: any) { setSaving(false); alert(e?.message ?? "Failed"); return; }
+      setSaving(false);
+      onSaved();
+      return;
+    }
     const { data: userRes } = await supabase.auth.getUser();
     const { data: ret, error } = await sb
       .from("purchase_returns")
