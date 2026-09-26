@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { Printer, FileDown, ChevronRight, Boxes, Layers, Receipt, BarChart3, Search, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Pager } from "@/components/pager";
 import { pageTitle, getCompany, getCachedCompany, defaultCompany, type CompanySettings } from "@/lib/company-settings";
@@ -404,9 +404,8 @@ function BatchHistoryPage() {
                 filtered.map((b) => {
                   const isOpen = !!open[b.batchId];
                   return (
-                    <>
+                    <Fragment key={b.batchId}>
                       <tr
-                        key={b.batchId}
                         className="cursor-pointer hover:bg-muted/30"
                         onClick={() => setOpen((s) => ({ ...s, [b.batchId]: !s[b.batchId] }))}
                       >
@@ -485,7 +484,7 @@ function BatchHistoryPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })
               )}
