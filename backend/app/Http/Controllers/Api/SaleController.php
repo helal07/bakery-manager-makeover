@@ -145,6 +145,11 @@ class SaleController extends Controller
             'items.*.productId' => ['required', 'uuid'],
             'items.*.qty' => ['required', 'numeric', 'gt:0'],
             'items.*.unitPrice' => ['required', 'numeric', 'min:0'],
+            // Optional multi-tender split; when sent it replaces the single paid row.
+            'payments' => ['nullable', 'array'],
+            'payments.*.method' => ['required', 'string', 'max:40'],
+            'payments.*.amount' => ['required', 'numeric', 'gt:0'],
+            'payments.*.reference' => ['nullable', 'string', 'max:80'],
         ]);
 
         $showroomId = $this->location($request);
@@ -208,7 +213,19 @@ class SaleController extends Controller
 
             DB::table('sale_items')->insert($lines);
 
-            if (Num::cmp($paid, 0) > 0) {
+            if (! empty($data['payments'])) {
+                foreach ($data['payments'] as $pay) {
+                    DB::table('sale_payments')->insert([
+                        'id' => (string) Str::uuid(),
+                        'sale_id' => $saleId,
+                        'method' => $pay['method'],
+                        'amount' => Num::money($pay['amount']),
+                        'reference' => $pay['reference'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            } elseif (Num::cmp($paid, 0) > 0) {
                 DB::table('sale_payments')->insert([
                     'id' => (string) Str::uuid(),
                     'sale_id' => $saleId,
@@ -222,7 +239,7 @@ class SaleController extends Controller
             // Stock out, one movement per line — checks availability itself.
             foreach ($data['items'] as $item) {
                 $this->stock->productMovement($user, $item['productId'], $showroomId,
-                    Num::neg(Num::abs($item['qty'])), 'sale_out', 'sale', $saleId, null);
+                    Num::neg(Num::abs($item['qty'])), 'sale', 'sale', $saleId, null);
             }
 
             return response()->json(['id' => $saleId], 201);
