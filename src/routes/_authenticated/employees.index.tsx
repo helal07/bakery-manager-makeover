@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -79,6 +81,17 @@ function EmployeesPage() {
 
   const refresh = async () => {
     setLoading(true);
+    if (isLaravel()) {
+      try {
+        const res: any = await api.get("employees");
+        setList((res.employees ?? []).map((r: any) => ({
+          ...r, salary: Number(r.salary ?? 0), attendance: Number(r.attendance ?? 0), user_id: r.user_id ?? null,
+        })) as Employee[]);
+        setShowrooms((res.showrooms ?? []) as Showroom[]);
+      } catch (e) { toast.error((e as Error).message); }
+      setLoading(false);
+      return;
+    }
     const withUserId = await supabase
       .from("employees")
       .select("id, name, role, showroom_id, email, phone, salary, attendance, is_active, user_id")
@@ -150,7 +163,9 @@ function EmployeesPage() {
   const remove = async (id: string) => {
     if (!guard()) return;
     if (!confirm("Remove this employee?")) return;
-    const { error } = await supabase.from("employees").delete().eq("id", id);
+    const { error } = isLaravel()
+      ? await api.del(`employees/${id}`).then(() => ({ error: null as any }), (e) => ({ error: e }))
+      : await supabase.from("employees").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Removed");
     refresh();

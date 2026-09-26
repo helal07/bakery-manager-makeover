@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -90,13 +92,24 @@ export function EmployeeForm({ initial, mode }: { initial: EmployeeDraft; mode: 
   const [password, setPassword] = useState<string>("");
   const [showPw, setShowPw] = useState(false);
 
-  const createLogin = useServerFn(createEmployeeLogin);
-  const resetPw = useServerFn(resetEmployeePassword);
-  const updateAccess = useServerFn(updateEmployeeAccess);
-  const disableLogin = useServerFn(disableEmployeeLogin);
+  const createLoginFn = useServerFn(createEmployeeLogin);
+  const resetPwFn = useServerFn(resetEmployeePassword);
+  const updateAccessFn = useServerFn(updateEmployeeAccess);
+  const disableLoginFn = useServerFn(disableEmployeeLogin);
+  const viaApi = (path: string) => ((a: { data: unknown }) => api.post(path, a.data)) as any;
+  const createLogin: typeof createLoginFn = isLaravel() ? viaApi("employee-logins") : createLoginFn;
+  const resetPw: typeof resetPwFn = isLaravel() ? viaApi("employee-logins/password") : resetPwFn;
+  const updateAccess: typeof updateAccessFn = isLaravel() ? viaApi("employee-logins/access") : updateAccessFn;
+  const disableLogin: typeof disableLoginFn = isLaravel() ? viaApi("employee-logins/disable") : disableLoginFn;
 
   useEffect(() => {
     (async () => {
+      if (isLaravel()) {
+        const res: any = await api.get("employees").catch(() => ({}));
+        setRoles(((res.roles ?? []) as Role[]).filter((x) => x.name?.toLowerCase() !== "superadmin"));
+        setShowrooms((res.showrooms ?? []) as Showroom[]);
+        return;
+      }
       const [r, s] = await Promise.all([
         (supabase as any).from("app_roles").select("id, name").eq("is_active", true).order("name"),
         supabase.from("showrooms").select("id, name").eq("is_active", true).order("name"),
@@ -136,7 +149,12 @@ export function EmployeeForm({ initial, mode }: { initial: EmployeeDraft; mode: 
     };
 
     let employeeId = draft.id;
-    if (mode === "edit" && employeeId) {
+    if (isLaravel()) {
+      try {
+        if (mode === "edit" && employeeId) await api.put(`employees/${employeeId}`, payload);
+        else employeeId = (await api.post("employees", payload)).id;
+      } catch (e) { setSaving(false); return toast.error((e as Error).message); }
+    } else if (mode === "edit" && employeeId) {
       const { error } = await (supabase as any).from("employees").update(payload).eq("id", employeeId);
       if (error) { setSaving(false); return toast.error(error.message); }
     } else {

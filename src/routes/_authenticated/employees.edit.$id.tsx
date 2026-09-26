@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell, Card } from "@/components/app-shell";
@@ -18,11 +20,9 @@ function EditEmployeePage() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("employees")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
+      const { data, error } = isLaravel()
+        ? await api.get(`employees/${id}`).then((d) => ({ data: d, error: null as any }), (e) => ({ data: null, error: e }))
+        : await (supabase as any).from("employees").select("*").eq("id", id).maybeSingle();
       if (error) toast.error(error.message);
       if (data) {
         setDraft({

@@ -1,3 +1,5 @@
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Card } from "@/components/app-shell";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -170,8 +172,12 @@ function SettingsPage() {
   };
 
   // ---- Full database dump / restore ----
-  const runExportDb = useServerFn(exportDatabase);
-  const runRestoreDb = useServerFn(restoreDatabase);
+  const runExportDbFn = useServerFn(exportDatabase);
+  const runRestoreDbFn = useServerFn(restoreDatabase);
+  const runExportDb: typeof runExportDbFn = isLaravel() ? ((() => api.post("backup/export")) as any) : runExportDbFn;
+  const runRestoreDb: typeof runRestoreDbFn = isLaravel()
+    ? (((a: any) => api.post("backup/restore", { dump: a.data.dump })) as any)
+    : runRestoreDbFn;
   const [dbBusy, setDbBusy] = useState<"idle" | "export" | "restore">("idle");
   const [pending, setPending] = useState<{ name: string; dump: BackupFile; total: number } | null>(null);
   const [confirmText, setConfirmText] = useState("");
