@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 
 const sb = supabase as any;
 
@@ -38,6 +40,10 @@ function normalize(row: any): Unit {
 }
 
 export async function loadUnits(): Promise<Unit[]> {
+  if (isLaravel()) {
+    const res = await api.get<{ units: any[] }>("lookups");
+    return (res.units ?? []).map(normalize);
+  }
   const { data, error } = await sb
     .from("units")
     .select(COLS)

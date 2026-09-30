@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isLaravel } from "@/lib/backend-mode";
+import { api } from "@/lib/api-client";
 
 export type ProductCategory = string;
 
@@ -16,6 +18,10 @@ function mapError(e: any, action: string): Error {
 }
 
 export async function loadCategoryRows(): Promise<CategoryRow[]> {
+  if (isLaravel()) {
+    const res = await api.get<{ productCategories: CategoryRow[] }>("lookups");
+    return res.productCategories ?? [];
+  }
   const { data, error } = await supabase
     .from("product_categories")
     .select("id, name")

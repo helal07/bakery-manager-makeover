@@ -50,8 +50,8 @@ return new class extends Migration
             $table->boolean('show_on_landing')->default(false);
             $table->timestamps();
 
-            // SKU must stay unique but may be empty -> unique index tolerates NULL in MySQL
-            $table->unique('sku');
+            // SKU index for search & lookups (non-unique to support legacy duplicate/multilingual SKUs)
+            $table->index('sku');
             $table->index('barcode');
             $table->index(['is_active', 'name']);
             $table->index('category_id');

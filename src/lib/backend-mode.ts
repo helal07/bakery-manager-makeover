@@ -1,12 +1,8 @@
 /**
- * Which server the app talks to.
- *
- * Set `VITE_API_BASE_URL` (e.g. https://api.example.com) at build time to use
- * the Laravel API in `backend/`. Leave it empty to keep using the current
- * database — that is the default in Lovable while developing.
+ * App communicates exclusively with the local Laravel 12 API backend.
  */
-export const API_BASE: string = String(import.meta.env.VITE_API_BASE_URL ?? "")
+export const API_BASE: string = String(import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000")
   .trim()
   .replace(/\/+$/, "");
 
-export const isLaravel = (): boolean => API_BASE.length > 0;
+export const isLaravel = (): boolean => true;
