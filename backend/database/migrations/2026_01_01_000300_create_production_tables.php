@@ -32,7 +32,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->index('name');
+            $table->unique('name');
         });
 
         Schema::create('sub_recipe_items', function (Blueprint $table) {

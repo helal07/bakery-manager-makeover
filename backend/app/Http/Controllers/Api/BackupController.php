@@ -71,9 +71,6 @@ class BackupController extends Controller
     /** Turn one exported value into something MySQL accepts. */
     private function cell($v)
     {
-        if ($v === '') {
-            return null;
-        }
         if (is_array($v) || is_object($v)) {
             return json_encode($v);
         }
@@ -103,7 +100,6 @@ class BackupController extends Controller
         $inserted = [];
         $errors = [];
         $tables = $this->tables();
-        $currentUser = $request->user();
 
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
         try {
@@ -119,8 +115,6 @@ class BackupController extends Controller
                 if (! is_array($rows) || ! $rows) {
                     continue;
                 }
-
-
                 $cols = array_flip(Schema::getColumnListing($t));
                 $ok = 0;
                 foreach (array_chunk($rows, 500) as $chunk) {
@@ -129,62 +123,11 @@ class BackupController extends Controller
                         DB::table($t)->insert($clean);
                         $ok += count($clean);
                     } catch (\Throwable $e) {
-                        // Fallback: insert row-by-row so one problematic row does not drop the rest of the table
-                        foreach ($clean as $singleRow) {
-                            try {
-                                DB::table($t)->insert($singleRow);
-                                $ok++;
-                            } catch (\Throwable $rowErr) {
-                                try {
-                                    $cnt = DB::table($t)->insertOrIgnore([$singleRow]);
-                                    if ($cnt > 0) {
-                                        $ok += $cnt;
-                                    } else {
-                                        $errors[] = ['table' => $t, 'stage' => 'insert', 'error' => $rowErr->getMessage()];
-                                    }
-                                } catch (\Throwable $ignErr) {
-                                    $errors[] = ['table' => $t, 'stage' => 'insert', 'error' => $ignErr->getMessage()];
-                                }
-                            }
-                        }
+                        $errors[] = ['table' => $t, 'stage' => 'insert', 'error' => $e->getMessage()];
+                        break;
                     }
                 }
                 $inserted[$t] = $ok;
-            }
-
-            // Keep the restoring user as superadmin so they don't get locked out
-            if ($currentUser) {
-                $superRole = DB::table('app_roles')->whereIn('name', ['superadmin', 'owner'])->first()
-                    ?? DB::table('app_roles')->first();
-
-                DB::table('user_roles')->updateOrInsert(
-                    ['user_id' => $currentUser->id, 'role' => 'superadmin'],
-                    ['id' => (string) \Illuminate\Support\Str::uuid(), 'created_at' => now(), 'updated_at' => now()]
-                );
-                if ($superRole) {
-                    DB::table('user_role_assignments')->updateOrInsert(
-                        ['user_id' => $currentUser->id, 'role_id' => $superRole->id, 'showroom_id' => null],
-                        ['id' => (string) \Illuminate\Support\Str::uuid(), 'created_at' => now(), 'updated_at' => now()]
-                    );
-                }
-            }
-
-            // Sync imported user profiles into Laravel users table
-            $profiles = DB::table('user_profiles')->get();
-            foreach ($profiles as $p) {
-                if (! $p->email) continue;
-                $exists = DB::table('users')->where('id', $p->user_id)->orWhere('email', $p->email)->exists();
-                if (! $exists) {
-                    DB::table('users')->insert([
-                        'id' => $p->user_id,
-                        'name' => $p->name ?? 'User',
-                        'email' => $p->email,
-                        'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-                        'is_active' => 1,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
             }
         } finally {
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
